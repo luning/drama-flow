@@ -243,19 +243,21 @@
 
 **4.3 [实践步骤] 数据层（15min）**
 
-- 任务：Drama / Episode Pydantic 模型 + SQLAlchemy ORM Repository 层（SQLite 后端）
-- 运行 `seed-data` Skill 导入测试数据（幂等导入，发现边界问题时现场迭代改进）
+- 任务：Drama / Episode / Category Pydantic 模型 + SQLAlchemy ORM Repository 层（SQLite 后端，Category 模型直接服务于 4.4 Home 页分类 Tab）
+- **自我尝试**：第一轮不读 SPEC.md，直接让 AI 生成数据模型 → 第二轮加入 SPEC.md 约束重新生成 → 对比两次输出差异，体会 SDD 如何约束 AI 输出质量
 
-**4.4 [实践步骤] Home 首页开发（70min）**
+**4.4 [实践步骤] Home 首页开发（55min）**
 
 - 任务：Python 后端 `/api/dramas` 接口 + Vue3 H5 首页（Banner 轮播 + 分类 Tab + 剧集列表 + Pinia 状态管理）+ Android WebView 加载
 - 工具：Claude Code（内联编辑 + Chat 模式切换）
 
-**4.5 [实践步骤] 实现三个 Skill（20min）**
+**4.5 [实践步骤] 实现三个 Skill（35min）**
 
-- `seed-data`：幂等导入、结构化反馈、可重复调用
-- `spec-validate`：AC 覆盖检查，SDD 验收门——结构化输出覆盖率报告
-- `cr-refactor`：输出 CR 清单 + 重构建议，参数最小化设计（只接受路径，自动定位问题）
+- **Skill 设计理念与适用场景**：什么场景应该封装成 Skill？颗粒度如何把握？参数设计原则（最小化、自包含）
+- **最佳实践**：幂等性（可重复调用不产生副作用）、结构化反馈（成功/失败/变更明细）、可重复调用的设计模式
+- 实现并运行 `seed-data` Skill（幂等导入测试数据，结构化反馈，可重复调用）
+- 实现 `spec-validate` Skill：AC 覆盖检查，SDD 验收门——结构化输出覆盖率报告
+- 实现 `cr-refactor` Skill：输出 CR 清单 + 重构建议，参数最小化设计（只接受路径，自动定位问题）
 
 **4.6 [测试自愈] 怎么做测试（10min）**
 
