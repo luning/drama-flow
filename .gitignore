@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+*.egg
+.venv/
+backend/drama-flow/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.apk
+*.aab
+
+# Node / H5
+h5/node_modules/
+h5/dist/
+
+# Environment
+.env
+.env.local
+
+# Java / Maven build
+backend-java/target/
+*.class
+*.jar
+*.war
+
+# SQLite databases (except seed scripts)
+*.db
+*.sqlite3
+
+# Training docs output
+*.log

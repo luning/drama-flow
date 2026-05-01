@@ -1,0 +1,346 @@
+# DramaFlow 可执行规格说明 (SPEC.md)
+
+> 覆盖范围：迭代 1 + 迭代 2 核心领域模型
+> 迭代 3 的 Spec 将以增量方式补写
+
+---
+
+## 一、User 用户领域
+
+### 领域名词
+
+| 术语 | 定义 |
+|------|------|
+| User | 注册用户，拥有邮箱和密码凭证 |
+| JWT Token | JSON Web Token，服务端签发的认证令牌 |
+| Access Token | 短期令牌（默认 2h），用于 API 请求鉴权 |
+| Refresh Token | 长期令牌（默认 7d），用于静默续期 Access Token |
+
+### 前置条件
+
+- 系统已初始化 SQLite 数据库和 User 表
+- FastAPI 服务已配置 JWT 密钥和过期时间
+- Android 端已集成网络请求库（Retrofit/OkHttp）
+
+### 主流程
+
+1. **注册**
+   - 用户填写昵称、邮箱、密码
+   - 客户端提交 POST `/api/auth/register` 请求
+   - 服务端校验邮箱格式和密码强度
+   - 邮箱未被注册 → 创建用户记录，bcrypt 加密密码
+   - 返回 `201 Created` + 用户基本信息（不含密码）
+   - 客户端跳转到登录页
+
+2. **登录**
+   - 用户输入邮箱 + 密码
+   - 客户端提交 POST `/api/auth/login`
+   - 服务端校验邮箱是否存在、密码是否匹配
+   - 校验通过 → 签发 JWT Access Token + Refresh Token
+   - 返回 `200 OK` + `{ access_token, refresh_token, user }`
+   - Android 端将 Token 存入内存（ViewModel）
+   - 如果勾选"记住我"，同步存入 EncryptedSharedPreferences
+
+3. **登出**
+   - 客户端调用 POST `/api/auth/logout`（携带 Access Token）
+   - 服务端将 Token 加入黑名单（可选：Redis / 内存 Set）
+   - 返回 `200 OK`
+   - Android 端清除本地 Token 缓存
+
+4. **Token 刷新**（迭代 3 基础，此处预留接口）
+   - 客户端检测 Access Token 过期
+   - 使用 Refresh Token 调用 POST `/api/auth/refresh`
+   - 服务端验证 Refresh Token 有效性
+   - 签发新的 Access Token 返回
+
+### 异常处理
+
+| 异常场景 | 错误响应 | 处理方式 |
+|---------|---------|---------|
+| 邮箱已注册 | 409 Conflict + "邮箱已被注册" | 显示错误提示 |
+| 邮箱格式无效 | 422 Validation Error | 前端表单校验提示 |
+| 密码强度不足 | 422 密码至少 8 位含字母+数字 | 表单实时校验 |
+| 登录凭证错误 | 401 Unauthorized | 清空密码框，显示"邮箱或密码错误" |
+| Token 过期 | 401 Token expired | 尝试 Refresh Token 自动续期 |
+| Refresh Token 失效 | 401 重新登录 | 跳转登录页 |
+
+### 验收标准 (AC)
+
+| AC-ID | 描述 | 关联 |
+|-------|------|------|
+| AC-USER-01 | 用户可以使用邮箱+密码成功注册新账号 | 注册流程 |
+| AC-USER-02 | 注册时重复邮箱返回 409 错误 | 异常处理 |
+| AC-USER-03 | 注册成功后用户可以立即登录 | 登录流程 |
+| AC-USER-04 | 用户可以使用正确的邮箱+密码登录 | 登录流程 |
+| AC-USER-05 | 登录成功后返回有效的 JWT Token（包含用户 ID 和过期时间） | 登录流程 |
+| AC-USER-06 | 登录错误密码返回 401 且不泄露用户是否存在 | 异常处理 |
+| AC-USER-07 | 用户可以成功登出，登出后 Token 不可再用 | 登出流程 |
+| AC-USER-08 | 所有认证接口返回符合 OpenAPI 规范的错误格式 | 通用 |
+| AC-USER-09 | Token 中包含用户 ID 和角色信息，可解码验证 | JWT |
+
+---
+
+## 二、Drama 剧集领域
+
+### 领域名词
+
+| 术语 | 定义 |
+|------|------|
+| Drama | 一部短剧，包含标题、描述、封面、分类等信息 |
+| Category | 分类标签（甜宠/悬疑/搞笑/奇幻/霸总等） |
+| Banner | 首页顶部轮播推荐位，关联 Drama |
+| Rating | 评分，1-5 星，带小数点（如 4.8） |
+
+### 前置条件
+
+- SQLite 数据库已初始化 Drama 表
+- `seed-data` Skill 已导入测试数据（至少 12 部剧集）
+- FastAPI `/api/dramas` 路由已注册
+
+### 主流程
+
+1. **获取剧集列表**
+   - 客户端 GET `/api/dramas?category={cat}&page={n}&size={m}`
+   - 服务端按分类筛选，按更新时间降序排列
+   - 支持分页：`page` 从 1 开始，`size` 默认 20
+   - 返回 `200 OK` + `{ items: [...], total, page, size }`
+
+2. **获取 Banner 列表**
+   - 客户端 GET `/api/banners`
+   - 服务端返回热门推荐的 Drama 列表（3-5 部）
+   - 每项包含 `{ drama_id, title, image_url, sort_order }`
+
+3. **获取剧集详情**
+   - 客户端 GET `/api/dramas/{drama_id}`
+   - 服务端返回完整剧集信息：标题、描述、封面、分类、评分、总集数、年份、状态（连载/完结）
+   - 返回 `200 OK` + Drama 详情
+
+4. **获取分类列表**
+   - 客户端 GET `/api/categories`
+   - 服务端返回可用分类列表
+   - 返回 `200 OK` + `[{ id, name, icon }]`
+
+### 异常处理
+
+| 异常场景 | 错误响应 | 处理方式 |
+|---------|---------|---------|
+| 分类参数无效 | 400 无效分类 | 默认返回"全部"分类 |
+| 页码超出范围 | 200 空数组 | 返回空列表 |
+| 剧集不存在 | 404 Drama not found | 显示"剧集不存在" |
+
+### 验收标准 (AC)
+
+| AC-ID | 描述 | 关联 |
+|-------|------|------|
+| AC-DRAMA-01 | 首页按分类展示剧集列表，支持分页 | 列表接口 |
+| AC-DRAMA-02 | 不传分类参数时返回全量剧集 | 列表接口 |
+| AC-DRAMA-03 | Banner 返回 3-5 部推荐剧集 | Banner |
+| AC-DRAMA-04 | 剧集详情接口返回完整信息（标题/描述/封面/分类/评分/集数） | 详情接口 |
+| AC-DRAMA-05 | 请求不存在的剧集返回 404 | 异常处理 |
+| AC-DRAMA-06 | 剧集按照更新时间降序排列 | 排序 |
+
+---
+
+## 三、Episode 剧集领域
+
+### 领域名词
+
+| 术语 | 定义 |
+|------|------|
+| Episode | 剧集的单集，包含标题、序号、时长、视频 URL |
+| Video URL | 七牛云 CDN 签名 URL，有时效性 |
+| Episode Number | 集号，从 1 开始递增 |
+
+### 前置条件
+
+- SQLite 数据库已初始化 Episode 表，与 Drama 表通过 `drama_id` 外键关联
+- `seed-data` Skill 已导入测试数据（每部剧集至少 10 集）
+- 七牛云 Bucket 已配置，AccessKey + SecretKey 可用
+
+### 主流程
+
+1. **获取剧集的集数列表**
+   - 客户端 GET `/api/dramas/{drama_id}/episodes`
+   - 服务端按 `episode_number` 升序返回该剧集的所有集
+   - 返回 `200 OK` + `[{ id, episode_number, title, duration, video_url, created_at }]`
+
+2. **获取单集详情**
+   - 客户端 GET `/api/episodes/{episode_id}`
+   - 返回单集完整信息
+   - 返回 `200 OK` + Episode 详情
+
+3. **获取视频签名 URL**
+   - 客户端 GET `/api/episodes/{episode_id}/video-url`
+   - 服务端生成七牛云 CDN 签名 URL（有效期 1h）
+   - 返回 `200 OK` + `{ url, expires_at }`
+
+### 异常处理
+
+| 异常场景 | 错误响应 | 处理方式 |
+|---------|---------|---------|
+| 剧集 ID 无效 | 404 Episode not found | 提示剧集不存在 |
+| Drama ID 无效 | 404 Drama not found | 提示剧集不存在 |
+| 视频 URL 无法生成 | 502 CDN service error | 显示"视频加载失败" |
+| 视频 URL 过期 | 401/403 | 客户端重新请求签名 URL |
+
+### 验收标准 (AC)
+
+| AC-ID | 描述 | 关联 |
+|-------|------|------|
+| AC-EP-01 | 返回的集数列表按序号升序排列 | 列表接口 |
+| AC-EP-02 | 每集包含标题、时长、序号、视频 URL | 列表接口 |
+| AC-EP-03 | 视频签名 URL 有效期内可正常播放 | 签名接口 |
+| AC-EP-04 | URL 过期后重新请求可获取新签名 | 签名接口 |
+| AC-EP-05 | 请求不存在的单集返回 404 | 异常处理 |
+
+---
+
+## 四、WatchRecord 观看记录领域
+
+### 领域名词
+
+| 术语 | 定义 |
+|------|------|
+| WatchRecord | 用户对某一集的观看记录 |
+| Progress | 播放进度百分比（0-100%） |
+| LastPosition | 上次播放位置（秒） |
+| Completed | 是否观看完成（进度 > 90% 视为完成） |
+
+### 前置条件
+
+- SQLite 数据库已初始化 WatchRecord 表，关联 User 和 Episode
+- 用户已登录（有效的 JWT Token）
+- 播放器已集成 ExoPlayer，可获取当前播放位置
+
+### 主流程
+
+1. **记录播放进度**
+   - Android 端每隔 15s 调用 PUT `/api/watch-records/{episode_id}`
+   - 或在暂停/退出播放器时立即上报
+   - 请求体：`{ progress, last_position, completed }`
+   - 服务端 upsert 逻辑：同一用户 + 同一集存在则更新，不存在则创建
+   - 返回 `200 OK` + 更新后的记录
+
+2. **获取用户的观看记录**
+   - 客户端 GET `/api/watch-records?page={n}&size={m}`
+   - 服务端返回当前用户的所有观看记录，按更新时间降序
+   - 关联返回 Drama 基本信息（标题、封面）
+   - 返回 `200 OK` + `{ items: [...], total, page, size }`
+
+3. **获取单集续播位置**
+   - 客户端 GET `/api/watch-records/{episode_id}`
+   - 服务端返回该用户对该集的观看进度
+   - 返回 `200 OK` + `{ progress, last_position, completed, updated_at }`
+
+4. **获取继续观看列表**
+   - 客户端 GET `/api/watch-records/continue-watching`
+   - 服务端返回未看完的最近 5 条记录
+   - 按更新时间降序，剔除已完成（completed=true）的记录
+   - 返回 `200 OK` + `[{ drama_info, episode_info, progress, last_position }]`
+
+### 异常处理
+
+| 异常场景 | 错误响应 | 处理方式 |
+|---------|---------|---------|
+| 未登录请求记录 | 401 Unauthorized | 跳转登录 |
+| Episode ID 无效 | 404 Episode not found | 忽略该记录 |
+| Progress 超出范围 | 422 Progress应在0-100 | 客户端 clamp |
+| 无观看记录 | 200 空数组 | 继续观看区域隐藏 |
+
+### 验收标准 (AC)
+
+| AC-ID | 描述 | 关联 |
+|-------|------|------|
+| AC-WR-01 | 用户播放某集后，服务端正确记录进度 | 记录接口 |
+| AC-WR-02 | 再次播放同一集时返回上次播放位置 | 续播接口 |
+| AC-WR-03 | 观看记录按更新时间降序排列 | 列表接口 |
+| AC-WR-04 | 继续观看列表不包含已完成的剧集 | 继续观看接口 |
+| AC-WR-05 | 未登录用户无法访问观看记录 | 鉴权 |
+| AC-WR-06 | 同一用户重复上报同一集只保留最新记录（upsert） | 幂等性 |
+
+---
+
+## 五、视觉验收规范
+
+### 领域名词
+
+| 术语 | 定义 |
+|------|------|
+| 设计 Token | `design_system.md` 中定义的颜色/字体/间距/圆角/阴影变量 |
+| 视觉基准 | 交互原型截图，存入 `docs/designs/`，作为视觉验收参照 |
+| 截图基线 | 每个页面使用 `shot-scraper` 在 390×844 视口下截取，作为版本比对基准 |
+
+### 前置条件
+
+- `design_system.md` 已定义完整的设计 Token
+- 交互原型（`prototype/index.html`）可在浏览器中正常运行
+- 原型的所有页面可交互导航，所有状态（正常/空态/错误）有视觉呈现
+- 参考截图已存入 `docs/designs/` 目录
+
+### 主流程
+
+1. **设计 Token 提取**
+   - 从交互原型 CSS 中提取所有可复用设计 Token（色彩/字号/间距/圆角）
+   - 整理为 `design_system.md`，按颜色/字体/间距/圆角/阴影/动画分类
+
+2. **页面截图**
+   - 在 390×844（iPhone 14 尺寸）视口下逐页截取原型
+   - 每张截图对应一个独立页面或关键交互状态
+   - 截图统一存入 `docs/designs/`，按 `{序号}-{页面名}.png` 命名
+
+3. **视觉验收**
+   - 人工将实现截图与原型截图进行像素级比对
+   - 使用 `design_system.md` 中的 Token 值验证实现的一致性
+   - 验收通过后在 SPEC.md 对应 AC 中标记
+
+### 异常处理
+
+| 异常场景 | 处理方式 |
+|---------|---------|
+| 原型页面与实现页面布局偏移 > 8px | 标记为视觉缺陷，回归设计 Token |
+| 色彩偏差 ΔE > 3 | 检查 CSS 变量绑定是否正确 |
+| 字体回退导致行高不一致 | 在 `design_system.md` 明确字族优先级 |
+| 截图因浏览器渲染差异不一致 | 统一使用 Headless Chromium 390×844 截图 |
+
+### 验收标准 (AC)
+
+| AC-ID | 描述 | 验证方法 | 关联 |
+|-------|------|---------|------|
+| AC-VIS-01 | 所有页面的背景色使用 `--bg-primary: #0F0F23` | 取色验证 | 色彩系统 |
+| AC-VIS-02 | 卡片/列表项背景使用 `--bg-card: #16163A` | 取色验证 | 色彩系统 |
+| AC-VIS-03 | Primary 按钮使用 `#6C5CE7` → `#A29BFE` 渐变 | 截图比对 | 按钮规范 |
+| AC-VIS-04 | 所有圆角遵循设计 Token：卡片 14px、按钮 12px、输入框 12px | 取色+测量 | 圆角规范 |
+| AC-VIS-05 | 页面左右 Padding 统一为 16px（全屏页面除外） | 截图量测 | 间距系统 |
+| AC-VIS-06 | 剧集卡片 2 列等宽网格，间距 12px | 截图量测 | 首页布局 |
+| AC-VIS-07 | Banner 宽高比 16:7 | 截图量测 | 首页布局 |
+| AC-VIS-08 | 底部导航栏 56px 高，图标 22px，标签 10px | 元素检查 | 底部导航 |
+| AC-VIS-09 | 深色主题贯穿所有页面，无白底透出 | 视觉检查 | 暗色主题 |
+| AC-VIS-10 | 播放器控制条半透明渐变层叠在视频之上 | 截图比对 | 播放器 |
+| AC-VIS-11 | 登录/注册表单页面对齐居中，输入框高度 48px | 截图量测 | 表单规范 |
+| AC-VIS-12 | 原型 9 个页面的截图完整存入 `docs/designs/` | 文件检查 | 文档完整性 |
+
+---
+
+## 附录：API 接口总览
+
+| 方法 | 路径 | 模块 | 认证 |
+|------|------|------|------|
+| POST | `/api/auth/register` | User | 否 |
+| POST | `/api/auth/login` | User | 否 |
+| POST | `/api/auth/logout` | User | 是 |
+| POST | `/api/auth/refresh` | User | 是 (Refresh) |
+| GET | `/api/dramas` | Drama | 否 |
+| GET | `/api/dramas/{id}` | Drama | 否 |
+| GET | `/api/banners` | Drama | 否 |
+| GET | `/api/categories` | Drama | 否 |
+| GET | `/api/dramas/{id}/episodes` | Episode | 否 |
+| GET | `/api/episodes/{id}` | Episode | 否 |
+| GET | `/api/episodes/{id}/video-url` | Episode | 否 |
+| PUT | `/api/watch-records/{episode_id}` | WatchRecord | 是 |
+| GET | `/api/watch-records` | WatchRecord | 是 |
+| GET | `/api/watch-records/{episode_id}` | WatchRecord | 是 |
+| GET | `/api/watch-records/continue-watching` | WatchRecord | 是 |
+
+---
+
+*本文档覆盖迭代 1 + 迭代 2。迭代 3（个性化推荐、倍速控制、Auth 增强）的 Spec 将以增量方式补写。*

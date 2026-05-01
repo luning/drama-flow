@@ -1,0 +1,22 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:dramaflow
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    serialization:
+      write-dates-as-timestamps: false
+
+app:
+  jwt:
+    secret: DramaFlow-JWT-Secret-Key-2024-Min32Bytes!!
+    access-expire-ms: 7200000   # 2h
+    refresh-expire-ms: 604800000 # 7d

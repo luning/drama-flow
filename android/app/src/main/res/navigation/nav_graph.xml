@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph" app:startDestination="@id/login_fragment">
+
+    <fragment android:id="@+id/login_fragment"
+        android:name="com.dramaflow.auth.ui.LoginFragment" >
+        <action android:id="@+id/action_login_to_register"
+            app:destination="@id/register_fragment" />
+        <action android:id="@+id/action_login_to_home"
+            app:destination="@id/home_fragment" app:popUpTo="@id/login_fragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment android:id="@+id/register_fragment"
+        android:name="com.dramaflow.auth.ui.RegisterFragment" />
+
+    <fragment android:id="@+id/home_fragment"
+        android:name="com.dramaflow.home.ui.HomeFragment" />
+
+</navigation>

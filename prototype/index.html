@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DramaFlow Prototype</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #1a1a2e;
+    font-family: -apple-system, 'Noto Sans SC', 'Roboto', sans-serif;
+  }
+
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #0f0f23;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 60px rgba(108, 92, 231, 0.15), 0 0 0 2px #2a2a4a;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    height: 44px;
+    background: #0f0f23;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 28px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .status-bar .time { font-size: 14px; font-weight: 700; }
+  .status-icons { display: flex; gap: 6px; font-size: 12px; }
+
+  /* App Content */
+  .app-content {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+    background: #0f0f23;
+    display: none;
+  }
+  .page.active {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page.slide-in { transform: translateX(100%); }
+  .page.slide-in.active { transform: translateX(0); }
+
+  /* Scrollbar */
+  .page::-webkit-scrollbar { width: 3px; }
+  .page::-webkit-scrollbar-thumb { background: #6c5ce7; border-radius: 3px; }
+
+  /* ===== COMPONENTS ===== */
+
+  .app-bar {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: #0f0f23;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+  .app-bar .back {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .app-bar .back:hover { background: rgba(255,255,255,0.15); }
+  .app-bar h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    flex: 1;
+  }
+  .app-bar .action {
+    width: 36px; height: 36px;
+    border: none;
+    background: transparent;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    display: flex;
+    background: #16163a;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 6px 0 8px;
+    flex-shrink: 0;
+  }
+  .bottom-nav .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-size: 10px;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: color 0.2s;
+  }
+  .bottom-nav .nav-item .icon { font-size: 22px; line-height: 1.2; }
+  .bottom-nav .nav-item.active { color: #6c5ce7; }
+  .bottom-nav .nav-item:not(.active):hover { color: #999; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    gap: 8px;
+  }
+  .btn-primary { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(108,92,231,0.3); }
+  .btn-secondary { background: rgba(255,255,255,0.08); color: #fff; }
+  .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+  .btn-outline { background: transparent; color: #6c5ce7; border: 1.5px solid #6c5ce7; }
+  .btn-full { width: 100%; }
+  .btn-sm { padding: 8px 16px; font-size: 13px; border-radius: 8px; }
+
+  /* Form */
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .form-input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: #6c5ce7; }
+  .form-input::placeholder { color: #555; }
+
+  /* Auth Screens */
+  .auth-screen {
+    padding: 40px 24px 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .auth-screen .logo {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .auth-screen .logo .brand-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .auth-screen .logo h2 { font-size: 24px; color: #fff; font-weight: 700; }
+  .auth-screen .logo p { color: #888; font-size: 14px; margin-top: 4px; }
+  .auth-screen .form { margin-top: 32px; flex: 1; }
+  .auth-screen .form-footer { text-align: center; margin-top: 16px; }
+  .auth-screen .form-footer a { color: #6c5ce7; text-decoration: none; font-size: 14px; cursor: pointer; }
+  .auth-screen .form-footer a:hover { text-decoration: underline; }
+  .auth-screen .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    color: #555;
+    font-size: 12px;
+  }
+  .auth-screen .divider::before,
+  .auth-screen .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+  }
+  .social-login {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+  .social-login button {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    background: transparent;
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .social-login button:hover { background: rgba(255,255,255,0.06); }
+  .remember-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    color: #ccc;
+    font-size: 14px;
+  }
+  .remember-row input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: #6c5ce7;
+    cursor: pointer;
+  }
+
+  /* Banner */
+  .banner {
+    position: relative;
+    padding: 0 16px;
+    margin-top: 8px;
+  }
+  .banner-track {
+    display: flex;
+    border-radius: 16px;
+    overflow: hidden;
+    aspect-ratio: 16/7;
+    position: relative;
+  }
+  .banner-slide {
+    min-width: 100%;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+    padding: 20px;
+    transition: transform 0.5s ease;
+  }
+  .banner-slide .overlay {
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    padding: 16px;
+    border-radius: 8px;
+  }
+  .banner-slide .overlay h3 { color: #fff; font-size: 18px; font-weight: 700; }
+  .banner-slide .overlay p { color: #ddd; font-size: 12px; margin-top: 2px; }
+  .banner-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .banner-dots span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #444;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .banner-dots span.active { width: 20px; border-radius: 3px; background: #6c5ce7; }
+
+  /* Category Tabs */
+  .category-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 16px 16px 8px;
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+  .category-tabs::-webkit-scrollbar { display: none; }
+  .category-tab {
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: none;
+    background: rgba(255,255,255,0.06);
+    color: #888;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .category-tab.active { background: #6c5ce7; color: #fff; }
+  .category-tab:not(.active):hover { background: rgba(255,255,255,0.1); color: #ccc; }
+
+  /* Drama Card Grid */
+  .drama-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px 16px 20px;
+  }
+  .drama-card {
+    border-radius: 14px;
+    overflow: hidden;
+    background: #16163a;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .drama-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+  .drama-card .thumb {
+    aspect-ratio: 3/4;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+  .drama-card .thumb .badge {
+    position: absolute;
+    top: 8px; left: 8px;
+    background: rgba(108,92,231,0.9);
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .drama-card .thumb .duration {
+    position: absolute;
+    bottom: 6px; right: 6px;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .drama-card .info { padding: 10px 12px 12px; }
+  .drama-card .info h4 { color: #fff; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .drama-card .info .meta { display: flex; gap: 6px; margin-top: 4px; color: #777; font-size: 11px; }
+  .drama-card .info .rating { color: #ffc048; font-size: 11px; margin-top: 2px; }
+
+  /* Section Header */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 16px 4px;
+  }
+  .section-header h3 { color: #fff; font-size: 17px; font-weight: 700; }
+  .section-header a { color: #6c5ce7; font-size: 13px; cursor: pointer; text-decoration: none; }
+
+  /* Skeleton */
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px 16px 20px;
+  }
+  .skeleton-card {
+    border-radius: 14px;
+    overflow: hidden;
+    background: #16163a;
+  }
+  .skeleton-card .sk-thumb {
+    aspect-ratio: 3/4;
+    background: linear-gradient(90deg, #1a1a3a 25%, #222244 50%, #1a1a3a 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  .skeleton-card .sk-line {
+    height: 12px;
+    margin: 8px 12px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #1a1a3a 25%, #222244 50%, #1a1a3a 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  .skeleton-card .sk-line.short { width: 60%; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* Detail Page */
+  .detail-header {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+  }
+  .detail-header .gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(transparent 40%, #0f0f23);
+  }
+  .detail-header .play-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 64px; height: 64px;
+    background: rgba(108,92,231,0.85);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .detail-header .play-overlay:hover { transform: translate(-50%, -50%) scale(1.06); background: #6c5ce7; }
+
+  .detail-body { padding: 16px; flex: 1; }
+  .detail-body h1 { color: #fff; font-size: 20px; font-weight: 700; }
+  .detail-body .sub-info { display: flex; gap: 12px; margin-top: 6px; color: #888; font-size: 13px; flex-wrap: wrap; }
+  .detail-body .rating-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .detail-body .rating-row .stars { color: #ffc048; font-size: 16px; }
+  .detail-body .rating-row .score { color: #ffc048; font-size: 18px; font-weight: 700; }
+  .detail-body .rating-row .count { color: #888; font-size: 13px; }
+  .detail-body .tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .detail-body .tags span {
+    padding: 4px 12px;
+    border-radius: 14px;
+    background: rgba(108,92,231,0.15);
+    color: #a29bfe;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .detail-body .desc {
+    color: #bbb;
+    font-size: 14px;
+    line-height: 1.7;
+    margin-top: 14px;
+  }
+  .detail-body .accent-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .episode-tabs {
+    display: flex;
+    gap: 0;
+    margin: 16px 16px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .episode-tab {
+    flex: 1;
+    padding: 10px 0;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .episode-tab.active { color: #6c5ce7; border-bottom-color: #6c5ce7; }
+
+  .episode-list { padding: 8px 16px 20px; }
+  .episode-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .episode-item:hover { background: rgba(255,255,255,0.03); margin: 0 -8px; padding: 10px 8px; border-radius: 8px; }
+  .episode-item .num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .episode-item .num.watched { background: rgba(108,92,231,0.2); color: #6c5ce7; }
+  .episode-item .thumb-sm {
+    width: 80px; aspect-ratio: 16/9; border-radius: 6px;
+    background-size: cover; background-position: center; flex-shrink: 0;
+  }
+  .episode-item .ep-info { flex: 1; }
+  .episode-item .ep-info h5 { color: #fff; font-size: 14px; font-weight: 500; }
+  .episode-item .ep-info p { color: #666; font-size: 12px; margin-top: 2px; }
+  .episode-item .ep-action { color: #555; font-size: 18px; }
+
+  /* Player Screen */
+  .player-container {
+    background: #000;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .player-container .player-controls {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 16px;
+    background: linear-gradient(transparent 60%, rgba(0,0,0,0.8));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .player-container:hover .player-controls,
+  .player-container.controls-show .player-controls { opacity: 1; }
+  .player-container .center-play {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: rgba(108,92,231,0.8);
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .player-container .center-play:hover { background: #6c5ce7; }
+  .player-top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: linear-gradient(rgba(0,0,0,0.6), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .player-container:hover .player-top-bar,
+  .player-container.controls-show .player-top-bar { opacity: 1; }
+  .player-top-bar button {
+    background: none; border: none; color: #fff; font-size: 20px; cursor: pointer;
+  }
+  .player-top-bar .ep-title { color: #fff; font-size: 14px; font-weight: 500; }
+  .player-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+  .player-progress .time { color: #fff; font-size: 11px; flex-shrink: 0; width: 40px; }
+  .player-progress .time:last-child { text-align: right; }
+  .player-progress .bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+  }
+  .player-progress .bar .filled {
+    height: 100%;
+    background: #6c5ce7;
+    border-radius: 2px;
+    width: 35%;
+    position: relative;
+  }
+  .player-progress .bar .thumb {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #6c5ce7;
+    position: absolute;
+    right: -7px; top: 50%;
+    transform: translateY(-50%);
+    box-shadow: 0 0 6px rgba(108,92,231,0.5);
+    display: none;
+  }
+  .player-progress:hover .bar .thumb { display: block; }
+  .player-bottom-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .player-bottom-row .left, .player-bottom-row .right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .player-bottom-row button {
+    background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; opacity: 0.8;
+    transition: opacity 0.2s;
+  }
+  .player-bottom-row button:hover { opacity: 1; }
+  .player-bottom-row button.active { color: #6c5ce7; }
+
+  /* Speed Menu */
+  .speed-menu {
+    position: absolute;
+    right: 16px;
+    bottom: 60px;
+    background: rgba(20,20,50,0.95);
+    border-radius: 12px;
+    padding: 6px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: none;
+    z-index: 10;
+  }
+  .speed-menu.show { display: block; }
+  .speed-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    color: #888;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .speed-menu button:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .speed-menu button.active { color: #6c5ce7; font-weight: 600; }
+
+  /* Player placeholder gradient */
+  .player-bg {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1a1a3e, #2d1b4e, #1a1a3e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    color: rgba(255,255,255,0.06);
+  }
+
+  /* Progress / History */
+  .continue-watching {
+    padding: 0 16px;
+    margin-top: 16px;
+  }
+  .continue-watching .card {
+    display: flex;
+    gap: 12px;
+    background: #16163a;
+    border-radius: 14px;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid rgba(108,92,231,0.15);
+  }
+  .continue-watching .card:hover { background: #1c1c44; }
+  .continue-watching .card .thumb {
+    width: 80px; aspect-ratio: 3/4; border-radius: 8px;
+    background-size: cover; background-position: center; flex-shrink: 0;
+  }
+  .continue-watching .card .info { flex: 1; }
+  .continue-watching .card .info h4 { color: #fff; font-size: 14px; font-weight: 600; }
+  .continue-watching .card .info .ep { color: #888; font-size: 12px; margin-top: 2px; }
+  .continue-watching .card .info .progress-sm {
+    height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 8px; overflow: hidden;
+  }
+  .continue-watching .card .info .progress-sm .fill {
+    height: 100%; background: linear-gradient(90deg, #6c5ce7, #a29bfe); border-radius: 2px;
+  }
+  .continue-watching .card .info .label {
+    color: #6c5ce7; font-size: 11px; margin-top: 4px; font-weight: 500;
+  }
+
+  /* Profile Page */
+  .profile-header {
+    padding: 24px 16px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .profile-header .avatar {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .profile-header h2 { color: #fff; font-size: 18px; font-weight: 600; }
+  .profile-header p { color: #888; font-size: 13px; }
+
+  .profile-menu { padding: 8px 0; }
+  .profile-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    color: #ddd;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+  }
+  .profile-item:hover { background: rgba(255,255,255,0.04); }
+  .profile-item .icon { font-size: 20px; width: 24px; text-align: center; }
+  .profile-item .arrow { margin-left: auto; color: #555; font-size: 14px; }
+
+  /* Toast */
+  .toast {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: all 0.35s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Search */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+  }
+  .search-bar input {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 24px;
+    border: none;
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+  }
+  .search-bar input::placeholder { color: #555; }
+  .search-bar input:focus { background: rgba(255,255,255,0.1); }
+  .search-bar button {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  /* Fullscreen simulation */
+  .fullscreen-mode .phone {
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .fullscreen-mode .status-bar,
+  .fullscreen-mode .bottom-nav { display: none; }
+
+  /* Watch Progress Toast (resume) */
+  .resume-toast {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(108,92,231,0.9);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .resume-toast.show { display: flex; }
+
+  /* Comment section */
+  .comment-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+  }
+  .comment-input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+  }
+  .comment-input-row input:focus { border-color: #6c5ce7; }
+  .comment-item {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .comment-item .c-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #6c5ce7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .comment-item .c-body { flex: 1; }
+  .comment-item .c-body .c-name { color: #888; font-size: 12px; }
+  .comment-item .c-body .c-text { color: #ddd; font-size: 13px; margin-top: 2px; }
+  .comment-item .c-body .c-time { color: #555; font-size: 11px; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <span class="status-icons">📶 📶 🔋</span>
+  </div>
+
+  <!-- App Content -->
+  <div class="app-content" id="appContent">
+
+    <!-- ===== PAGE: Splash / Welcome ===== -->
+    <div class="page active" id="page-splash" style="display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;">
+      <div style="text-align:center;">
+        <div style="width:88px;height:88px;margin:0 auto 16px;background:linear-gradient(135deg,#6c5ce7,#fd79a8);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;">🎬</div>
+        <h1 style="color:#fff;font-size:28px;font-weight:800;">DramaFlow</h1>
+        <p style="color:#888;font-size:14px;margin-top:8px;">海外短剧 · 随时随地</p>
+      </div>
+      <div style="margin-top:40px;padding:0 32px;width:100%;display:flex;flex-direction:column;gap:12px;">
+        <button class="btn btn-primary btn-full" onclick="navigateTo('page-login')">登录</button>
+        <button class="btn btn-secondary btn-full" onclick="navigateTo('page-register')">注册</button>
+      </div>
+      <p style="color:#555;font-size:12px;margin-top:8px;">跳过，先看看 →</p>
+    </div>
+
+    <!-- ===== PAGE: Login ===== -->
+    <div class="page" id="page-login" style="display:none;">
+      <div class="app-bar"><button class="back" onclick="navigateTo('page-splash')">‹</button><h1></h1></div>
+      <div class="auth-screen">
+        <div class="logo">
+          <div class="brand-icon">🎬</div>
+          <h2>欢迎回来</h2>
+          <p>登录 DramaFlow 继续追剧</p>
+        </div>
+        <div class="form">
+          <div class="form-group">
+            <label>邮箱</label>
+            <input class="form-input" type="email" placeholder="your@email.com" value="demo@dramaflow.com">
+          </div>
+          <div class="form-group">
+            <label>密码</label>
+            <input class="form-input" type="password" placeholder="••••••••" value="123456">
+          </div>
+          <div class="remember-row">
+            <input type="checkbox" id="rememberMe" checked>
+            <label for="rememberMe">记住我</label>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="showToast('登录成功！'); setTimeout(()=>navigateTo('page-home'),500)">登录</button>
+          <div class="form-footer">
+            <span style="color:#888;font-size:14px;">没有账号？</span>
+            <a onclick="navigateTo('page-register')">立即注册</a>
+          </div>
+          <div class="divider">或</div>
+          <div class="social-login">
+            <button title="Google">G</button>
+            <button title="Apple"></button>
+            <button title="Facebook">f</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: Register ===== -->
+    <div class="page" id="page-register" style="display:none;">
+      <div class="app-bar"><button class="back" onclick="navigateTo('page-splash')">‹</button><h1></h1></div>
+      <div class="auth-screen">
+        <div class="logo">
+          <div class="brand-icon">🎬</div>
+          <h2>创建账号</h2>
+          <p>加入 DramaFlow，开启追剧之旅</p>
+        </div>
+        <div class="form">
+          <div class="form-group">
+            <label>昵称</label>
+            <input class="form-input" type="text" placeholder="你的昵称">
+          </div>
+          <div class="form-group">
+            <label>邮箱</label>
+            <input class="form-input" type="email" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label>密码</label>
+            <input class="form-input" type="password" placeholder="至少 8 位密码">
+          </div>
+          <button class="btn btn-primary btn-full" onclick="showToast('注册成功！'); setTimeout(()=>navigateTo('page-login'),500)">注册</button>
+          <div class="form-footer">
+            <span style="color:#888;font-size:14px;">已有账号？</span>
+            <a onclick="navigateTo('page-login')">去登录</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: Home ===== -->
+    <div class="page" id="page-home" style="display:none;">
+      <div class="app-bar">
+        <h1 style="font-size:22px;font-weight:800;background:linear-gradient(135deg,#6c5ce7,#a29bfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">DramaFlow</h1>
+        <button class="action" onclick="navigateTo('page-search')">🔍</button>
+      </div>
+
+      <!-- Continue Watching -->
+      <div class="continue-watching">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="color:#fff;font-size:14px;font-weight:600;">继续观看</span>
+          <span style="color:#6c5ce7;font-size:12px;cursor:pointer;">查看全部 →</span>
+        </div>
+        <div class="card" onclick="navigateTo('page-player')">
+          <div class="thumb" style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 240 320%22%3E%3Crect width=%22240%22 height=%22320%22 fill=%22%232d1b4e%22/%3E%3Ctext x=%22120%22 y=%22160%22 text-anchor=%22middle%22 fill=%22rgba(255,255,255,0.1)%22 font-size=%2218%22%3E🎬%3C/text%3E%3C/svg%3E');">
+            <span class="badge">续播</span>
+          </div>
+          <div class="info">
+            <h4>重生之女王归来</h4>
+            <div class="ep">第 8 集 · 45%</div>
+            <div class="progress-sm"><div class="fill" style="width:45%"></div></div>
+            <div class="label">上次看到 08:32</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner -->
+      <div class="section-header" style="margin-top:4px;"><h3>🔥 热门推荐</h3></div>
+      <div class="banner">
+        <div class="banner-track" id="bannerTrack">
+          <div class="banner-slide" style="background-image:linear-gradient(135deg,#6c5ce7,#2d1b4e);">
+            <div class="overlay"><h3>🏆 本周必追</h3><p>霸道总裁爱上我 · 新更 2 集</p></div>
+          </div>
+          <div class="banner-slide" style="background-image:linear-gradient(135deg,#e17055,#2d1b4e);">
+            <div class="overlay"><h3>🔥 热播榜第一</h3><p>重生之女王归来 · 12万人在看</p></div>
+          </div>
+          <div class="banner-slide" style="background-image:linear-gradient(135deg,#00b894,#2d1b4e);">
+            <div class="overlay"><h3>✨ 新剧上线</h3><p>我的房东是财阀 · 首集免费</p></div>
+          </div>
+        </div>
+        <div class="banner-dots" id="bannerDots">
+          <span class="active" onclick="goBanner(0)"></span>
+          <span onclick="goBanner(1)"></span>
+          <span onclick="goBanner(2)"></span>
+        </div>
+      </div>
+
+      <!-- Category Tabs -->
+      <div class="category-tabs" id="categoryTabs">
+        <button class="category-tab active" onclick="setCategory(this,'all')">全部</button>
+        <button class="category-tab" onclick="setCategory(this,'romance')">甜宠</button>
+        <button class="category-tab" onclick="setCategory(this,'suspense')">悬疑</button>
+        <button class="category-tab" onclick="setCategory(this,'comedy')">搞笑</button>
+        <button class="category-tab" onclick="setCategory(this,'fantasy')">奇幻</button>
+        <button class="category-tab" onclick="setCategory(this,'president')">霸总</button>
+      </div>
+
+      <!-- Drama Grid -->
+      <div class="section-header"><h3>为你推荐</h3><a onclick="showToast('已加载更多剧集')">更多 →</a></div>
+      <div class="drama-grid" id="dramaGrid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- ===== PAGE: Detail ===== -->
+    <div class="page" id="page-detail" style="display:none;">
+      <div style="flex-shrink:0;">
+        <div class="detail-header" style="background-image:linear-gradient(135deg,#6c5ce7,#2d1b4e);">
+          <div class="gradient"></div>
+          <div class="play-overlay" onclick="navigateTo('page-player')">▶</div>
+        </div>
+        <div class="app-bar" style="position:absolute;top:44px;left:0;right:0;background:transparent;z-index:2;">
+          <button class="back" onclick="navigateTo('page-home')">‹</button>
+          <h1></h1>
+          <button class="action">⋯</button>
+        </div>
+      </div>
+      <div class="detail-body">
+        <h1 id="detailTitle">重生之女王归来</h1>
+        <div class="sub-info">
+          <span>2025 · 共24集 · 甜宠</span>
+          <span>完结</span>
+        </div>
+        <div class="rating-row">
+          <span class="stars">★★★★★</span>
+          <span class="score" id="detailScore">4.8</span>
+          <span class="count">(1.2万评)</span>
+        </div>
+        <div class="tags">
+          <span>逆袭</span><span>甜宠</span><span>重生</span><span>轻喜剧</span>
+        </div>
+        <p class="desc">
+          她是商界女王，却遭人暗算重生回到十年前。这一次，她要改变命运，让所有背叛者付出代价。然而，那个高高在上的总裁，却一次次闯入她的计划……
+        </p>
+        <div class="accent-btn-row">
+          <button class="btn btn-primary" style="flex:1;" onclick="navigateTo('page-player')">▶ 立即观看</button>
+          <button class="btn btn-outline" onclick="showToast('已收藏')">♡ 收藏</button>
+        </div>
+      </div>
+      <div class="episode-tabs">
+        <button class="episode-tab active">剧集列表</button>
+        <button class="episode-tab" onclick="showToast('评论区功能')">评论 (128)</button>
+      </div>
+      <div class="episode-list" id="episodeList" style="flex:1;overflow-y:auto;">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- ===== PAGE: Player ===== -->
+    <div class="page" id="page-player" style="display:none;">
+      <div class="player-container" id="playerContainer" onclick="toggleControls()">
+        <div class="player-bg">▶</div>
+        <div class="player-top-bar">
+          <button onclick="closePlayer()">‹</button>
+          <span class="ep-title">E03 · 命运的转折</span>
+          <button onclick="showToast('更多选项')">⋯</button>
+        </div>
+        <button class="center-play" onclick="event.stopPropagation();togglePlay(this)">▶</button>
+        <div class="player-controls">
+          <div class="player-progress">
+            <span class="time">08:32</span>
+            <div class="bar">
+              <div class="filled" style="width:45%"><div class="thumb"></div></div>
+            </div>
+            <span class="time">18:52</span>
+          </div>
+          <div class="player-bottom-row">
+            <div class="left">
+              <button onclick="showToast('后退10秒')">↺</button>
+              <button onclick="togglePlay(document.querySelector('.center-play'))">▶</button>
+              <button onclick="showToast('快进10秒')">↻</button>
+              <button class="active" onclick="toggleFullscreen()">⛶</button>
+            </div>
+            <div class="right">
+              <div style="position:relative;">
+                <button class="active" id="speedBtn" onclick="event.stopPropagation();toggleSpeedMenu()">1.0x</button>
+                <div class="speed-menu" id="speedMenu">
+                  <button onclick="setSpeed(0.5,this)">0.5x</button>
+                  <button onclick="setSpeed(0.75,this)">0.75x</button>
+                  <button class="active" onclick="setSpeed(1.0,this)">1.0x</button>
+                  <button onclick="setSpeed(1.25,this)">1.25x</button>
+                  <button onclick="setSpeed(1.5,this)">1.5x</button>
+                  <button onclick="setSpeed(2.0,this)">2.0x</button>
+                </div>
+              </div>
+              <button onclick="showToast('画质切换')">HD</button>
+            </div>
+          </div>
+        </div>
+        <div class="resume-toast" id="resumeToast">⏮ 上次看到 08:32，点击续播</div>
+      </div>
+      <div style="padding:12px 16px 8px;flex-shrink:0;">
+        <h3 style="color:#fff;font-size:16px;font-weight:600;">命运的转折</h3>
+        <p style="color:#888;font-size:12px;margin-top:2px;">第 3 集 · 18:52</p>
+      </div>
+      <div style="padding:0 16px;flex-shrink:0;display:flex;gap:10px;overflow-x:auto;">
+        <button class="btn btn-sm btn-secondary" onclick="showToast('上一集')">‹ 上一集</button>
+        <button class="btn btn-sm btn-primary" onclick="showToast('下一集')">下一集 ›</button>
+      </div>
+      <div class="detail-body" style="flex:1;overflow-y:auto;padding-top:8px;">
+        <p style="color:#999;font-size:13px;line-height:1.7;">
+          她推开会议室的大门，所有人都愣住了。曾经被赶出公司的女孩，如今以投资方代表的身份回归……原来一切都在她的计划之中。
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: Search ===== -->
+    <div class="page" id="page-search" style="display:none;">
+      <div class="app-bar"><button class="back" onclick="navigateTo('page-home')">‹</button><h1>搜索</h1></div>
+      <div class="search-bar">
+        <input type="text" placeholder="搜索剧集、演员..." id="searchInput" oninput="searchDramas(this.value)">
+        <button onclick="document.getElementById('searchInput').value='';searchDramas('')">✕</button>
+      </div>
+      <div style="padding:12px 16px;">
+        <p style="color:#888;font-size:13px;font-weight:600;">热门搜索</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <span style="padding:6px 14px;border-radius:16px;background:rgba(108,92,231,0.12);color:#a29bfe;font-size:12px;cursor:pointer;" onclick="showToast('搜索：霸道总裁')">霸道总裁</span>
+          <span style="padding:6px 14px;border-radius:16px;background:rgba(255,255,255,0.04);color:#888;font-size:12px;cursor:pointer;" onclick="showToast('搜索：重生')">重生逆袭</span>
+          <span style="padding:6px 14px;border-radius:16px;background:rgba(255,255,255,0.04);color:#888;font-size:12px;cursor:pointer;" onclick="showToast('搜索：甜宠')">甜宠</span>
+          <span style="padding:6px 14px;border-radius:16px;background:rgba(255,255,255,0.04);color:#888;font-size:12px;cursor:pointer;" onclick="showToast('搜索：悬疑')">悬疑反转</span>
+        </div>
+      </div>
+      <div class="drama-grid" id="searchResults" style="padding-top:4px;">
+      </div>
+    </div>
+
+    <!-- ===== PAGE: Profile ===== -->
+    <div class="page" id="page-profile" style="display:none;">
+      <div class="profile-header">
+        <div class="avatar">D</div>
+        <h2>Demo 用户</h2>
+        <p>demo@dramaflow.com</p>
+      </div>
+      <div class="profile-menu">
+        <button class="profile-item" onclick="navigateTo('page-history')"><span class="icon">⏱</span>观看历史<span class="arrow">›</span></button>
+        <button class="profile-item" onclick="showToast('我的收藏')"><span class="icon">♡</span>我的收藏<span class="arrow">›</span></button>
+        <button class="profile-item" onclick="showToast('下载管理')"><span class="icon">⬇</span>下载管理<span class="arrow">›</span></button>
+        <button class="profile-item" onclick="showToast('播放设置')"><span class="icon">⚙</span>播放设置<span class="arrow">›</span></button>
+        <button class="profile-item" onclick="showToast('关于')"><span class="icon">ℹ</span>关于 DramaFlow<span class="arrow">›</span></button>
+        <button class="profile-item" style="color:#e17055;" onclick="showToast('已退出登录');setTimeout(()=>navigateTo('page-splash'),500)"><span class="icon">↩</span>退出登录<span class="arrow">›</span></button>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: History ===== -->
+    <div class="page" id="page-history" style="display:none;">
+      <div class="app-bar"><button class="back" onclick="navigateTo('page-profile')">‹</button><h1>观看历史</h1></div>
+      <div class="continue-watching" style="margin-top:0;padding:8px 16px;">
+        <div class="card" onclick="navigateTo('page-player')"><div class="thumb" style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 240 320%22%3E%3Crect width=%22240%22 height=%22320%22 fill=%22%232d1b4e%22/%3E%3Ctext x=%22120%22 y=%22160%22 text-anchor=%22middle%22 fill=%22rgba(255,255,255,0.1)%22 font-size=%2218%22%3E🎬%3C/text%3E%3C/svg%3E');"></div>
+          <div class="info"><h4>重生之女王归来</h4><div class="ep">第 8 集 · 45%</div><div class="progress-sm"><div class="fill" style="width:45%"></div></div><div class="label">昨天 22:15</div></div>
+        </div>
+        <div class="card" onclick="navigateTo('page-player')" style="margin-top:8px;"><div class="thumb" style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 240 320%22%3E%3Crect width=%22240%22 height=%22320%22 fill=%22%233d1b4e%22/%3E%3Ctext x=%22120%22 y=%22160%22 text-anchor=%22middle%22 fill=%22rgba(255,255,255,0.1)%22 font-size=%2218%22%3E🎬%3C/text%3E%3C/svg%3E');"></div>
+          <div class="info"><h4>霸道总裁爱上我</h4><div class="ep">第 3 集 · 72%</div><div class="progress-sm"><div class="fill" style="width:72%"></div></div><div class="label">今天 14:30</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app-content -->
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="navigateTo('page-home')"><span class="icon">🏠</span>首页</button>
+    <button class="nav-item" onclick="showToast('搜索页面');navigateTo('page-search')"><span class="icon">🔍</span>发现</button>
+    <button class="nav-item" onclick="navigateTo('page-player')"><span class="icon">▶</span>播放</button>
+    <button class="nav-item" onclick="navigateTo('page-profile')"><span class="icon">👤</span>我的</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+  // ===== DRAMA DATA =====
+  const DRAMAS = [
+    { id:1, title:'重生之女王归来', category:'fantasy', rating:4.8, episodes:24, tag:'重生逆袭', color:'#6c5ce7' },
+    { id:2, title:'霸道总裁爱上我', category:'president', rating:4.9, episodes:36, tag:'霸总甜宠', color:'#e17055' },
+    { id:3, title:'我的房东是财阀', category:'comedy', rating:4.6, episodes:12, tag:'搞笑财阀', color:'#00b894' },
+    { id:4, title:'深渊回响', category:'suspense', rating:4.7, episodes:20, tag:'悬疑反转', color:'#0984e3' },
+    { id:5, title:'契约婚姻', category:'romance', rating:4.5, episodes:30, tag:'先婚后爱', color:'#fd79a8' },
+    { id:6, title:'绝世神医', category:'fantasy', rating:4.4, episodes:48, tag:'逆袭爽剧', color:'#6c5ce7' },
+    { id:7, title:'他的小秘密', category:'romance', rating:4.3, episodes:16, tag:'校园甜宠', color:'#fd79a8' },
+    { id:8, title:'迷雾追踪', category:'suspense', rating:4.6, episodes:14, tag:'悬疑推理', color:'#0984e3' },
+    { id:9, title:'总裁的替身前妻', category:'president', rating:4.7, episodes:40, tag:'虐恋', color:'#e17055' },
+    { id:10, title:'我在古代当团宠', category:'comedy', rating:4.5, episodes:22, tag:'穿越搞笑', color:'#00b894' },
+    { id:11, title:'恶魔少爷别吻我', category:'romance', rating:4.2, episodes:28, tag:'青春甜宠', color:'#fd79a8' },
+    { id:12, title:'金牌律师是前妻', category:'president', rating:4.8, episodes:32, tag:'职场霸总', color:'#e17055' },
+  ];
+
+  const EPISODES = [
+    { num:1, title:'命运的相遇', duration:'18:52' },
+    { num:2, title:'意外的转折', duration:'19:10' },
+    { num:3, title:'命运的转折', duration:'18:52' },
+    { num:4, title:'迷雾重重', duration:'20:05' },
+    { num:5, title:'真相浮现', duration:'17:48' },
+    { num:6, title:'逆袭之路', duration:'19:33' },
+    { num:7, title:'暗流涌动', duration:'18:12' },
+    { num:8, title:'王者归来', duration:'20:00' },
+    { num:9, title:'新的开始', duration:'18:30' },
+    { num:10, title:'巅峰对决', duration:'22:15' },
+  ];
+
+  let currentCategory = 'all';
+  let bannerIdx = 0;
+  let bannerTimer = null;
+
+  // ===== RENDER =====
+  function renderDramas(category) {
+    const grid = document.getElementById('dramaGrid');
+    const filtered = category === 'all' ? DRAMAS : DRAMAS.filter(d => d.category === category);
+    grid.innerHTML = filtered.map(d => `
+      <div class="drama-card" onclick="openDetail(${d.id})">
+        <div class="thumb" style="background:linear-gradient(135deg,${d.color},#1a1a3e);display:flex;align-items:flex-end;padding:10px;">
+          <div style="display:flex;flex-direction:column;gap:4px;width:100%;">
+            <span style="color:rgba(255,255,255,0.9);font-size:28px;">🎬</span>
+            <span class="badge" style="background:rgba(108,92,231,0.9);align-self:flex-start;">${d.tag}</span>
+          </div>
+          <span class="duration">${d.episodes}集</span>
+        </div>
+        <div class="info">
+          <h4>${d.title}</h4>
+          <div class="meta"><span>${d.episodes}集</span><span>·</span><span>${d.category === 'romance' ? '甜宠' : d.category === 'suspense' ? '悬疑' : d.category === 'comedy' ? '搞笑' : d.category === 'fantasy' ? '奇幻' : '霸总'}</span></div>
+          <div class="rating">★ ${d.rating}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderEpisodes() {
+    const list = document.getElementById('episodeList');
+    list.innerHTML = EPISODES.map((ep, i) => `
+      <div class="episode-item" onclick="navigateTo('page-player')">
+        <span class="num ${i < 2 ? 'watched' : ''}">${ep.num}</span>
+        <div class="thumb-sm" style="background:linear-gradient(135deg,#3d1b6e,#1a1a3e);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.15);font-size:16px;">▶</div>
+        <div class="ep-info">
+          <h5>${ep.title}</h5>
+          <p>${ep.duration}${i < 2 ? ' · 已观看' : ''}</p>
+        </div>
+        <span class="ep-action">${i < 3 ? '↻' : '▷'}</span>
+      </div>
+    `).join('');
+  }
+
+  // ===== BANNER =====
+  function goBanner(idx) {
+    bannerIdx = idx;
+    const track = document.getElementById('bannerTrack');
+    const dots = document.querySelectorAll('#bannerDots span');
+    track.style.transform = `translateX(-${idx * 100}%)`;
+    dots.forEach((d,i) => d.classList.toggle('active', i===idx));
+    resetBannerTimer();
+  }
+  function resetBannerTimer() {
+    if (bannerTimer) clearInterval(bannerTimer);
+    bannerTimer = setInterval(() => goBanner((bannerIdx + 1) % 3), 4000);
+  }
+
+  // ===== CATEGORY =====
+  function setCategory(el, cat) {
+    document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    currentCategory = cat;
+    renderDramas(cat);
+  }
+
+  // ===== NAVIGATION =====
+  function navigateTo(pageId) {
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(p => {
+      p.classList.remove('active');
+      p.style.display = 'none';
+    });
+    const target = document.getElementById(pageId);
+    if (target) {
+      target.style.display = 'flex';
+      target.style.flexDirection = 'column';
+      requestAnimationFrame(() => target.classList.add('active'));
+    }
+
+    // Bottom nav sync
+    const navMap = { 'page-home':0, 'page-search':1, 'page-player':2, 'page-profile':3 };
+    document.querySelectorAll('.nav-item').forEach((item,i) => {
+      item.classList.toggle('active', navMap[pageId] === i);
+    });
+
+    // Init content
+    if (pageId === 'page-home') { renderDramas(currentCategory); resetBannerTimer(); }
+    if (pageId === 'page-detail') renderEpisodes();
+    if (pageId === 'page-player') showResumeToast();
+  }
+
+  function openDetail(id) {
+    const drama = DRAMAS.find(d => d.id === id);
+    if (drama) {
+      document.getElementById('detailTitle').textContent = drama.title;
+      document.getElementById('detailScore').textContent = drama.rating;
+    }
+    navigateTo('page-detail');
+  }
+
+  function closePlayer() {
+    navigateTo('page-detail');
+  }
+
+  // ===== PLAYER =====
+  let isPlaying = false;
+  function togglePlay(btn) {
+    isPlaying = !isPlaying;
+    btn.textContent = isPlaying ? '⏸' : '▶';
+    showToast(isPlaying ? '播放中' : '已暂停');
+  }
+  function toggleControls() {
+    const c = document.getElementById('playerContainer');
+    c.classList.toggle('controls-show');
+    setTimeout(() => c.classList.remove('controls-show'), 4000);
+  }
+  function toggleFullscreen() {
+    const phone = document.getElementById('phone');
+    document.body.classList.toggle('fullscreen-mode');
+    showToast(document.body.classList.contains('fullscreen-mode') ? '全屏模式' : '退出全屏');
+  }
+  function toggleSpeedMenu() {
+    document.getElementById('speedMenu').classList.toggle('show');
+  }
+  function setSpeed(val, btn) {
+    document.querySelectorAll('#speedMenu button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('speedBtn').textContent = val + 'x';
+    document.getElementById('speedMenu').classList.remove('show');
+    showToast('倍速：' + val + 'x');
+  }
+  function showResumeToast() {
+    const t = document.getElementById('resumeToast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  // ===== SEARCH =====
+  function searchDramas(q) {
+    const grid = document.getElementById('searchResults');
+    if (!q) { grid.innerHTML = ''; return; }
+    const filtered = DRAMAS.filter(d => d.title.includes(q) || d.tag.includes(q));
+    grid.innerHTML = filtered.map(d => `
+      <div class="drama-card" onclick="openDetail(${d.id})">
+        <div class="thumb" style="background:linear-gradient(135deg,${d.color},#1a1a3e);display:flex;align-items:flex-end;padding:10px;">
+          <span class="badge">${d.tag}</span>
+        </div>
+        <div class="info">
+          <h4>${d.title}</h4>
+          <div class="rating">★ ${d.rating}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ===== TOAST =====
+  let toastTimer = null;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // ===== INIT =====
+  renderDramas('all');
+  resetBannerTimer();
+
+  // Click outside speed menu to close
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('speedMenu');
+    if (!e.target.closest('#speedBtn') && !e.target.closest('#speedMenu')) {
+      menu.classList.remove('show');
+    }
+  });
+</script>
+</body>
+</html>

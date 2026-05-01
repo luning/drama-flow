@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#000000">
+
+    <LinearLayout android:layout_width="match_parent"
+        android:layout_height="match_parent" android:orientation="vertical">
+
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/player_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#000000" />
+
+        <LinearLayout android:id="@+id/player_controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:gravity="center"
+            android:background="#0F0F23">
+
+            <ImageButton android:id="@+id/btn_back"
+                style="@style/Widget.AppCompat.ImageButton"
+                android:layout_width="40dp" android:layout_height="40dp"
+                android:src="@android:drawable/ic_media_previous"
+                android:tint="#FFFFFF" />
+
+            <ImageButton android:id="@+id/btn_play_pause"
+                style="@style/Widget.AppCompat.ImageButton"
+                android:layout_width="48dp" android:layout_height="48dp"
+                android:src="@android:drawable/ic_media_play"
+                android:tint="#FFFFFF" />
+
+            <Button android:id="@+id/btn_speed"
+                android:layout_width="wrap_content" android:layout_height="40dp"
+                android:text="1.0x" android:textColor="#6C5CE7"
+                android:background="@null" />
+
+            <ImageButton android:id="@+id/btn_fullscreen"
+                style="@style/Widget.AppCompat.ImageButton"
+                android:layout_width="40dp" android:layout_height="40dp"
+                android:src="@android:drawable/ic_menu_camera"
+                android:tint="#FFFFFF" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/speed_menu"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="#1A1A3E"
+        android:elevation="8dp"
+        android:visibility="gone"
+        android:layout_marginEnd="16dp"
+        android:layout_gravity="end|bottom"
+        android:layout_marginBottom="80dp">
+
+        <Button android:layout_width="match_parent" android:layout_height="40dp"
+            android:text="0.5x" android:textColor="#888888" android:background="@null" />
+        <Button android:layout_width="match_parent" android:layout_height="40dp"
+            android:text="1.0x" android:textColor="#6C5CE7" android:background="@null" />
+        <Button android:layout_width="match_parent" android:layout_height="40dp"
+            android:text="1.5x" android:textColor="#888888" android:background="@null" />
+        <Button android:layout_width="match_parent" android:layout_height="40dp"
+            android:text="2.0x" android:textColor="#888888" android:background="@null" />
+    </LinearLayout>
+
+</FrameLayout>
