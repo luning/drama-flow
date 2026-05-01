@@ -249,7 +249,6 @@
 **4.4 [实践步骤] Home 首页开发（55min）**
 
 - 任务：Python 后端 `/api/dramas` 接口 + Vue3 H5 首页（Banner 轮播 + 分类 Tab + 剧集列表 + Pinia 状态管理）+ Android WebView 加载
-- 工具：Claude Code（内联编辑 + Chat 模式切换）
 
 **4.5 [实践步骤] 实现三个 Skill（35min）**
 
