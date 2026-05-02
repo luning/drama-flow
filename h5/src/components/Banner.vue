@@ -1,12 +1,11 @@
 <template>
   <div class="banner-wrapper" v-if="items.length > 0">
-    <div class="banner-track" :style="{ transform: `translateX(-${current * 100}%)` }">
-      <div v-for="(item, i) in items" :key="i" class="banner-slide" @click="goDetail(item.drama_id)">
-        <div class="banner-bg" :style="{ backgroundImage: `url(${item.image_url})` }">
-          <div class="overlay">
-            <h3>{{ item.title }}</h3>
-            <p>{{ getSubtitle(item) }}</p>
-          </div>
+    <div class="banner-track">
+      <div v-for="(item, i) in items" :key="i" class="banner-slide" :class="{ active: i === current }" @click="goDetail(item.drama_id)">
+        <img class="banner-img" :src="item.image_url" alt="" />
+        <div class="overlay">
+          <h3>{{ item.title }}</h3>
+          <p>{{ getSubtitle(item) }}</p>
         </div>
       </div>
     </div>
@@ -50,10 +49,11 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 
 <style scoped>
 .banner-wrapper { padding: 0 16px; margin-top: 8px; }
-.banner-track { display: flex; border-radius: 16px; overflow: hidden; aspect-ratio: 16/7; transition: transform 0.5s ease; }
-.banner-slide { min-width: 100%; display: flex; cursor: pointer; }
-.banner-bg { width: 100%; background-size: cover; background-position: center; display: flex; align-items: flex-end; }
-.overlay { background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 16px; width: 100%; }
+.banner-track { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 16/7; }
+.banner-slide { position: absolute; inset: 0; display: flex; flex-direction: column; cursor: pointer; opacity: 0; transition: opacity 0.6s ease; }
+.banner-slide.active { opacity: 1; }
+.banner-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.overlay { position: relative; z-index: 1; margin-top: auto; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 16px; width: 100%; }
 .overlay h3 { color: #fff; font-size: 18px; font-weight: 700; }
 .overlay p { color: #ddd; font-size: 12px; margin-top: 2px; }
 .dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }

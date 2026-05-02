@@ -8,6 +8,8 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.lifecycle.lifecycleScope
 import com.dramaflow.databinding.ActivityPlayerBinding
@@ -37,6 +39,13 @@ class PlayerActivity : AppCompatActivity() {
     private fun initPlayer(videoUrl: String) {
         player = ExoPlayer.Builder(this).build().apply {
             binding.playerView.player = this
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                    .build(),
+                /* handleAudioFocus= */ true
+            )
             val mediaItem = MediaItem.fromUri(videoUrl)
             setMediaItem(mediaItem)
             prepare()

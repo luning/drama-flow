@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <div class="detail-header">
+    <div class="detail-header" :style="coverBg">
       <div class="gradient"></div>
       <button class="back-btn" @click="goBack">‹</button>
     </div>
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDramaStore } from '@/stores/drama'
 import EpisodeList from '@/components/EpisodeList.vue'
@@ -64,6 +64,11 @@ import EpisodeList from '@/components/EpisodeList.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useDramaStore()
+
+const coverBg = computed(() => {
+  const url = store.detail?.cover_url
+  return url ? { backgroundImage: `url(${url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}
+})
 
 function playFirst() {
   if (store.episodes.length > 0) {

@@ -18,6 +18,15 @@ def seed():
         print(f"[seed] 数据已存在（{existing} 部剧集），跳过导入")
         return
 
+    # 测试用户
+    from app.services.auth_service import hash_password
+    test_user = User(
+        nickname="测试用户",
+        email="test@test.com",
+        hashed_password=hash_password("123456ab"),
+    )
+    db.add(test_user)
+
     # 分类
     categories = [
         Category(id=1, name="甜宠", slug="romance", sort_order=1),
@@ -31,27 +40,31 @@ def seed():
     # 剧集
     dramas = [
         Drama(id=1, title="重生之女王归来", description="她是商界女王，却遭人暗算重生回到十年前...",
-              category_id=4, rating=4.8, cover_url="/covers/drama01.jpg", year=2025, status="ongoing"),
+              category_id=4, rating=4.8, cover_url="videos/andu_chencang/andu_chencang_00_cover.jpg", year=2025, status="ongoing"),
         Drama(id=2, title="霸道总裁爱上我", description="平凡女孩意外闯入总裁的世界...",
-              category_id=5, rating=4.9, cover_url="/covers/drama02.jpg", year=2025, status="ongoing"),
+              category_id=5, rating=4.9, cover_url="videos/andu_chencang/andu_chencang_01_cover.jpg", year=2025, status="ongoing"),
         Drama(id=3, title="我的房东是财阀", description="为了省钱租了个地下室，没想到房东竟是...",
-              category_id=3, rating=4.6, cover_url="/covers/drama03.jpg", year=2025, status="completed"),
+              category_id=3, rating=4.6, cover_url="videos/andu_chencang/andu_chencang_02_cover.jpg", year=2025, status="completed"),
         Drama(id=4, title="深渊回响", description="每个谎言都有回响，每个真相都有代价...",
-              category_id=2, rating=4.7, cover_url="/covers/drama04.jpg", year=2024, status="completed"),
+              category_id=2, rating=4.7, cover_url="videos/andu_chencang/andu_chencang_03_cover.jpg", year=2024, status="completed"),
         Drama(id=5, title="契约婚姻", description="一场契约开始的婚姻，却在不经意间动了真心...",
-              category_id=1, rating=4.5, cover_url="/covers/drama05.jpg", year=2025, status="ongoing"),
+              category_id=1, rating=4.5, cover_url="videos/andu_chencang/andu_chencang_04_cover.jpg", year=2025, status="ongoing"),
     ]
     db.add_all(dramas)
     db.flush()
 
-    # 集数
+    # 集数（所有剧集共用 andu_chencang 系列视频）
+    andu_videos = [f"videos/andu_chencang/andu_chencang_{i:02d}.mp4" for i in range(9)]
+    andu_durations = ["01:01", "00:59", "01:00", "00:59", "01:00",
+                      "00:59", "00:59", "01:00", "00:45"]
     episodes = []
     for d in dramas:
         for i in range(1, 11):
+            idx = min(i - 1, 8)  # 9 videos for 10 episodes
             episodes.append(Episode(
                 drama_id=d.id, episode_number=i,
-                title=f"第{i}集", duration=f"{18 + i % 5}:{i * 4:02d}",
-                video_url=f"/videos/drama{d.id:02d}_ep{i:02d}.mp4",
+                title=f"第{i}集", duration=andu_durations[idx],
+                video_url=andu_videos[idx],
             ))
     db.add_all(episodes)
 
