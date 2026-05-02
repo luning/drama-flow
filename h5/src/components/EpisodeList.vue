@@ -1,6 +1,6 @@
 <template>
   <div class="episode-list">
-    <div v-for="ep in episodes" :key="ep.id" class="episode-item">
+    <div v-for="ep in episodes" :key="ep.id" class="episode-item" @click="handleClick(ep)">
       <span class="num" :class="{ watched: ep.watched }">{{ ep.episode_number }}</span>
       <div class="thumb-sm"></div>
       <div class="info">
@@ -13,18 +13,23 @@
 </template>
 
 <script setup lang="ts">
+const emit = defineEmits<{ play: [ep: any] }>()
 defineProps<{ episodes: any[] }>()
+
+function handleClick(ep: any) {
+  emit('play', ep)
+}
 </script>
 
 <style scoped>
 .episode-list { padding: 8px 16px 20px; }
 .episode-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; }
 .episode-item:hover { background: rgba(255,255,255,0.03); margin: 0 -8px; padding: 10px 8px; border-radius: 8px; }
-.num { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.num { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 12px; font-weight: 600; flex-shrink: 0; }
 .num.watched { background: rgba(108,92,231,0.2); color: var(--primary); }
 .thumb-sm { width: 80px; aspect-ratio: 16/9; border-radius: 6px; background: linear-gradient(135deg, #3d1b6e, #1a1a3e); flex-shrink: 0; }
 .info { flex: 1; }
-.info h5 { color: #fff; font-size: 14px; font-weight: 500; }
-.info p { color: #666; font-size: 12px; margin-top: 2px; }
-.action { color: #555; font-size: 18px; }
+.info h5 { color: var(--text); font-size: 14px; font-weight: 500; }
+.info p { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+.action { color: var(--text-muted); font-size: 18px; }
 </style>
