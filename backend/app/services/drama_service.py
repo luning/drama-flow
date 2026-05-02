@@ -23,6 +23,7 @@ def list_dramas(db: Session, category: Optional[str] = None, page: int = 1, size
         ep_count = db.query(Episode).filter(Episode.drama_id == d.id).count()
         result.append({
             "id": d.id, "title": d.title, "category_id": d.category_id,
+            "category_slug": d.category.slug if d.category else "",
             "rating": d.rating, "cover_url": d.cover_url, "year": d.year,
             "status": d.status, "episode_count": ep_count,
         })

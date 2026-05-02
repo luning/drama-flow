@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.config import settings
 from app.api import auth, dramas, episodes, watch_records
@@ -51,11 +53,22 @@ app.include_router(episodes.router, prefix="/api", tags=["Episodes"])
 app.include_router(watch_records.router, prefix="/api", tags=["Watch Records"])
 
 
-@app.on_event("startup")
-async def startup():
-    Base.metadata.create_all(bind=engine)
-
-
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "1.0.0"}
+
+
+# 挂载 H5 静态文件，供 Android WebView / 浏览器直接访问
+h5_dist = Path(__file__).parent.parent.parent / "h5" / "dist"
+if h5_dist.exists():
+    app.mount("/assets", StaticFiles(directory=str(h5_dist / "assets")), name="h5_assets")
+
+    @app.get("/")
+    async def serve_h5():
+        return HTMLResponse(content=(h5_dist / "index.html").read_text(encoding="utf-8"))
+
+    @app.get("/{path:path}")
+    async def serve_h5_spa(path: str):
+        if path.startswith("api/"):
+            raise HTTPException(status_code=404)
+        return HTMLResponse(content=(h5_dist / "index.html").read_text(encoding="utf-8"))

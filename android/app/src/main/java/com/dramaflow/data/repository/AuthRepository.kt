@@ -16,12 +16,26 @@ class AuthRepository(
 
     suspend fun register(nickname: String, email: String, password: String) {
         val resp = api.register(RegisterRequest(nickname, email, password))
-        if (!resp.isSuccessful) throw Exception("注册失败")
+        if (!resp.isSuccessful) {
+            val detail = resp.errorBody()?.string()?.let { body ->
+                try {
+                    org.json.JSONObject(body).optString("detail", "注册失败")
+                } catch (_: Exception) { "注册失败" }
+            } ?: "注册失败"
+            throw Exception(detail)
+        }
     }
 
     suspend fun login(email: String, password: String, remember: Boolean): TokenResponse {
         val resp = api.login(LoginRequest(email, password))
-        if (!resp.isSuccessful) throw Exception("邮箱或密码错误")
+        if (!resp.isSuccessful) {
+            val detail = resp.errorBody()?.string()?.let { body ->
+                try {
+                    org.json.JSONObject(body).optString("detail", "邮箱或密码错误")
+                } catch (_: Exception) { "邮箱或密码错误" }
+            } ?: "邮箱或密码错误"
+            throw Exception(detail)
+        }
 
         val token = resp.body()!!
         currentToken = token

@@ -2,7 +2,6 @@ package com.dramaflow.auth.ui
 
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -34,13 +33,23 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
 
         viewModel.loginState.observe(viewLifecycleOwner) { state ->
             when (state) {
-                is AuthState.Loading -> binding.btnLogin.isEnabled = false
-                is AuthState.Success -> findNavController().navigate(R.id.action_login_to_home)
+                is AuthState.Loading -> {
+                    binding.btnLogin.isEnabled = false
+                    binding.tvError.visibility = View.GONE
+                }
+                is AuthState.Success -> {
+                    binding.tvError.visibility = View.GONE
+                    findNavController().navigate(R.id.action_login_to_home)
+                }
                 is AuthState.Error -> {
                     binding.btnLogin.isEnabled = true
-                    Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    binding.tvError.text = state.message
+                    binding.tvError.visibility = View.VISIBLE
                 }
-                else -> binding.btnLogin.isEnabled = true
+                else -> {
+                    binding.btnLogin.isEnabled = true
+                    binding.tvError.visibility = View.GONE
+                }
             }
         }
     }

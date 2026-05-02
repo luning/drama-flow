@@ -19,10 +19,14 @@
       </div>
     </div>
 
-    <section class="section"><h3>🔥 热门推荐</h3></section>
-    <Banner :items="bannerItems" />
+    <section class="section" v-if="store.banners.length > 0"><h3>🔥 热门推荐</h3></section>
+    <Banner :items="store.banners" />
 
-    <CategoryTabs :tabs="categoryTabs" :active="store.currentCategory" @change="store.setCategory" />
+    <CategoryTabs
+      :tabs="tabItems"
+      :active="store.currentCategory"
+      @change="store.setCategory"
+    />
 
     <section class="section" style="padding:0 16px;"><h3>为你推荐</h3></section>
     <div class="drama-grid" v-if="!store.loading">
@@ -41,20 +45,13 @@ import DramaCard from '@/components/DramaCard.vue'
 
 const store = useHomeStore()
 
-const bannerItems = computed(() => [
-  { title: '🏆 本周必追', subtitle: '霸道总裁爱上我 · 新更 2 集', color: 'linear-gradient(135deg, #6c5ce7, #2d1b4e)' },
-  { title: '🔥 热播榜第一', subtitle: '重生之女王归来 · 12万人在看', color: 'linear-gradient(135deg, #e17055, #2d1b4e)' },
-  { title: '✨ 新剧上线', subtitle: '我的房东是财阀 · 首集免费', color: 'linear-gradient(135deg, #00b894, #2d1b4e)' },
-])
-
-const categoryTabs = [
-  { key: 'all', label: '全部' },
-  { key: 'romance', label: '甜宠' },
-  { key: 'suspense', label: '悬疑' },
-  { key: 'comedy', label: '搞笑' },
-  { key: 'fantasy', label: '奇幻' },
-  { key: 'president', label: '霸总' },
-]
+const tabItems = computed(() => {
+  const tabs = store.categories.map((c: { slug: string; name: string }) => ({
+    key: c.slug,
+    label: c.name,
+  }))
+  return [{ key: 'all', label: '全部' }, ...tabs]
+})
 
 const continueList = computed(() => [])
 

@@ -1,7 +1,7 @@
 <template>
   <div class="card" @click="$router.push(`/detail/${drama.id}`)">
-    <div class="thumb" :style="{ background: `linear-gradient(135deg, ${color}, #1a1a3e)` }">
-      <span class="badge">{{ drama.tag || '热门' }}</span>
+    <div class="thumb" :style="{ backgroundImage: drama.cover_url ? `url(${drama.cover_url})` : undefined }">
+      <span class="badge">{{ badgeText }}</span>
       <span class="duration">{{ drama.episode_count }}集</span>
     </div>
     <div class="info">
@@ -17,19 +17,25 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ drama: any; color?: string }>()
-const color = props.color || '#6c5ce7'
+import { computed } from 'vue'
+
+const props = defineProps<{ drama: any }>()
 
 const categoryNames: Record<string, string> = {
   romance: '甜宠', suspense: '悬疑', comedy: '搞笑', fantasy: '奇幻', president: '霸总',
 }
-const categoryName = categoryNames[props.drama.category_slug] || '热门'
+
+const categoryName = computed(() => categoryNames[props.drama.category_slug] || props.drama.category_slug || '热门')
+
+const badgeText = computed(() => {
+  return props.drama.status === 'completed' ? '完结' : '热门'
+})
 </script>
 
 <style scoped>
 .card { border-radius: 14px; overflow: hidden; background: var(--bg-card); cursor: pointer; transition: transform 0.2s; }
 .card:hover { transform: translateY(-3px); }
-.thumb { aspect-ratio: 3/4; display: flex; align-items: flex-end; padding: 10px; position: relative; }
+.thumb { aspect-ratio: 3/4; display: flex; align-items: flex-end; padding: 10px; position: relative; background-size: cover; background-position: center; background-color: #2d1b4e; }
 .badge { position: absolute; top: 8px; left: 8px; background: rgba(108,92,231,0.9); color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
 .duration { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.7); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
 .info { padding: 10px 12px 12px; }

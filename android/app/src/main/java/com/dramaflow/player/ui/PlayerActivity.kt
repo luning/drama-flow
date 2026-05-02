@@ -2,12 +2,14 @@ package com.dramaflow.player.ui
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.lifecycle.lifecycleScope
 import com.dramaflow.databinding.ActivityPlayerBinding
 import com.dramaflow.player.viewmodel.PlayerViewModel
 import com.dramaflow.player.viewmodel.PlaybackSpeed
@@ -59,8 +61,13 @@ class PlayerActivity : AppCompatActivity() {
     private fun setupControls() {
         binding.btnPlayPause.setOnClickListener {
             player?.let { p ->
-                if (p.isPlaying) { p.pause(); binding.btnPlayPause.text = "▶" }
-                else { p.play(); binding.btnPlayPause.text = "⏸" }
+                if (p.isPlaying) {
+                    p.pause()
+                    binding.btnPlayPause.setImageResource(android.R.drawable.ic_media_play)
+                } else {
+                    p.play()
+                    binding.btnPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+                }
             }
         }
 
@@ -69,11 +76,11 @@ class PlayerActivity : AppCompatActivity() {
                 View.GONE else View.VISIBLE
         }
 
-        binding.speedValues.forEach { btn ->
+        for (i in 0 until binding.speedMenu.childCount) {
+            val btn = binding.speedMenu.getChildAt(i) as? Button ?: continue
             btn.setOnClickListener {
-                val speed = when (btn.text) {
+                val speed = when (btn.text.toString()) {
                     "0.5x" -> PlaybackSpeed.SPEED_0_5X
-                    "0.75x" -> PlaybackSpeed.SPEED_0_75X
                     "1.5x" -> PlaybackSpeed.SPEED_1_5X
                     "2.0x" -> PlaybackSpeed.SPEED_2X
                     else -> PlaybackSpeed.SPEED_1X

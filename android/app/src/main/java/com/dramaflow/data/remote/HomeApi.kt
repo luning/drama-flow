@@ -1,6 +1,5 @@
 package com.dramaflow.data.remote
 
-import com.dramaflow.data.remote.model.*
 import retrofit2.Response
 import retrofit2.http.*
 

@@ -8,6 +8,9 @@
         <item name="colorOnSecondary">#FFFFFF</item>
         <item name="android:colorBackground">#0F0F23</item>
         <item name="colorSurface">#16163A</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorControlNormal">#666666</item>
+        <item name="colorControlActivated">#6C5CE7</item>
     </style>
 
     <style name="Theme.DramaFlow.Fullscreen" parent="Theme.DramaFlow">

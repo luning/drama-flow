@@ -30,16 +30,23 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
 
         viewModel.registerState.observe(viewLifecycleOwner) { state ->
             when (state) {
-                is AuthState.Loading -> binding.btnRegister.isEnabled = false
+                is AuthState.Loading -> {
+                    binding.btnRegister.isEnabled = false
+                    binding.tvError.visibility = View.GONE
+                }
                 is AuthState.Success -> {
                     Toast.makeText(context, "注册成功，请登录", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }
                 is AuthState.Error -> {
                     binding.btnRegister.isEnabled = true
-                    Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    binding.tvError.text = state.message
+                    binding.tvError.visibility = View.VISIBLE
                 }
-                else -> binding.btnRegister.isEnabled = true
+                else -> {
+                    binding.btnRegister.isEnabled = true
+                    binding.tvError.visibility = View.GONE
+                }
             }
         }
     }

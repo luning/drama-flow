@@ -23,7 +23,7 @@ body {
 
 a { color: var(--primary-light); text-decoration: none; }
 button { cursor: pointer; border: none; outline: none; }
-input { outline: none; }
+input { outline: none; color: var(--text); background: var(--bg-card); }
 
 .page {
   min-height: 100vh;

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical" android:padding="24dp"
     android:gravity="center_horizontal"
@@ -16,34 +17,47 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="32dp" android:hint="昵称"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:hintTextColor="#999999" app:boxStrokeColor="#666666">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_nickname" android:layout_width="match_parent"
-            android:layout_height="48dp" android:inputType="textPersonName" />
+            android:layout_height="48dp" android:inputType="textPersonName"
+            android:textColor="#FFFFFF" android:textColorHint="#666666" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="16dp" android:hint="邮箱"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:hintTextColor="#999999" app:boxStrokeColor="#666666">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_email" android:layout_width="match_parent"
-            android:layout_height="48dp" android:inputType="textEmailAddress" />
+            android:layout_height="48dp" android:inputType="textEmailAddress"
+            android:textColor="#FFFFFF" android:textColorHint="#666666" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="16dp" android:hint="密码"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        app:passwordToggleEnabled="true">
+        app:hintTextColor="#999999" app:boxStrokeColor="#666666"
+        app:endIconMode="password_toggle">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_password" android:layout_width="match_parent"
-            android:layout_height="48dp" android:inputType="textPassword" />
+            android:layout_height="48dp" android:inputType="textPassword"
+            android:textColor="#FFFFFF" android:textColorHint="#666666" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_register" android:layout_width="match_parent"
         android:layout_height="48dp" android:layout_marginTop="24dp"
         android:text="注册" android:backgroundTint="#6C5CE7" />
+
+    <TextView android:id="@+id/tv_error" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginTop="12dp"
+        android:textColor="#FF6B6B" android:textSize="13dp"
+        android:visibility="gone" android:lineSpacingExtra="3dp"
+        android:background="#1AFF6B6B" android:padding="10dp"
+        android:gravity="center" />
 
 </LinearLayout>
