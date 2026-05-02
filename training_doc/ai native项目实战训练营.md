@@ -58,18 +58,19 @@
 | 状态管理（Vue3）| Pinia | 轻量，AI 生成代码质量高 |
 | 设计工具 | HTML/CSS 原型（浏览器预览）| 由 Claude Code 从 PRD 直接生成，作为视觉验收基准；WebView 页面可直接演进为 Vue3 组件 |
 | IDE | Android Studio（移动端）/ VS Code（H5 + Python）/ IntelliJ（Java）| |
-| AI 工具 | Claude Code + GLM | 核心 Agent 及模型 |
+| AI 工具 | Claude Code + GLM / DeepSeek | 核心 Agent 及模型 |
 | 后端测试 | Thunder Client（VS Code）/ pytest 集成测试 | |
 | 前端测试 | Android Espresso（行为级）/ Vue3 Cypress（H5 E2E）| |
 
 ### 学员课前准备
 
-- [ ] **Android Studio及模拟器**
-- [ ] **VS Code 或 IntelliJ IDEA Claude Code 插件**
-- [ ] **Python 3.10+**
+- [ ] **Java 17** + **Android Studio** + API 34 SDK + **模拟器 AVD**（arm64-v8a 镜像，Pixel 6 Pro 推荐）
+- [ ] **VS Code**（H5 + Python）或 **IntelliJ IDEA**（Android）安装 **Claude Code 插件**
+- [ ] **Python 3.10+**，并提前创建好 venv
 - [ ] **Node.js 20 LTS**
-- [ ] **GLM API**
-- [ ] **七牛云**：注册后创建 Bucket，记录 AccessKey + SecretKey（用于视频 CDN，测试域名无需备案）
+- [ ] **GLM / DeepSeek API Key**（二选一）
+- [ ] **七牛云**：注册后创建 Bucket，记录 AccessKey + SecretKey（测试域名无需备案）
+- [ ] **环境变量**：`JAVA_HOME`、`ANDROID_HOME`、adb/emulator 加入 PATH
 
 ---
 
@@ -158,7 +159,7 @@
 
 **1.3 工具链说明（10min）**
 
-- Claude Code + GLM：Agent 任务、跨文件操作、长任务执行、使用时的注意事项和最佳实践。
+- Claude Code + GLM / DeepSeek：Agent 任务、跨文件操作、长任务执行、使用时的注意事项和最佳实践。
 
 ---
 
