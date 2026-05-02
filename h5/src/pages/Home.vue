@@ -53,7 +53,15 @@ const tabItems = computed(() => {
   return [{ key: 'all', label: '全部' }, ...tabs]
 })
 
-const continueList = computed(() => [])
+interface ContinueItem {
+  episode_id: number
+  drama_id: number
+  drama_title: string
+  episode_number: number
+  progress: number
+}
+
+const continueList = computed<ContinueItem[]>(() => [])
 
 onMounted(() => {
   store.fetchBanners()
