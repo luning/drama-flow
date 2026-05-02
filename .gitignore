@@ -44,5 +44,8 @@ backend-java/target/
 *.db
 *.sqlite3
 
+# Generated media (视频分割输出)
+mp4/
+
 # Training docs output
 *.log

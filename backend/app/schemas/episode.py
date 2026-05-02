@@ -9,6 +9,7 @@ class EpisodeResponse(BaseModel):
     title: str
     duration: str
     video_url: str
+    cover_url: str = ""
 
     class Config:
         from_attributes = True

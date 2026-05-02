@@ -12,10 +12,16 @@ class Settings(BaseSettings):
     jwt_access_expire_minutes: int = 120
     jwt_refresh_expire_days: int = 7
 
-    qiniu_access_key: str = ""
-    qiniu_secret_key: str = ""
-    qiniu_bucket: str = ""
-    qiniu_domain: str = ""
+    # Volcengine TOS (对象存储) — 通过 .env 注入
+    tos_access_key: str = ""
+    tos_secret_key: str = ""
+    tos_endpoint: str = "tos-cn-beijing.volces.com"
+    tos_region: str = "cn-beijing"
+    tos_bucket: str = ""
+    tos_domain: str = ""
+
+    # 预签名 URL 过期时间（秒），默认 6 小时
+    tos_signed_url_expires: int = 21600
 
     class Config:
         env_file = ".env"
