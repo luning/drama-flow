@@ -118,7 +118,7 @@
 
 | 主线 | 对应知识点 |
 |------|-----------|
-| **规格驱动** | SDD、PRD→Spec、增量 Spec |
+| **规格驱动** | PRD→Spec、增量 Spec、SDD、OpenSpec等工具 |
 | **Agent友好架构** | CLAUDE.md、模块 README、Architecture as Code |
 | **技能设计** | Skill实践、参数设计、管理、幂等性 |
 | **测试自愈** | 行为级测试、Bug 注入、RCA |
@@ -217,41 +217,36 @@
 - 指令示例：`基于 SPEC.md 的模块划分，生成 Kotlin Android 项目骨架 + Vue3 H5 项目骨架 + Python FastAPI 后端骨架 + SQLite 初始化脚本`
 - 产出：可编译的项目目录结构（android/ + h5/ + backend/）+ 每个模块的 README 模板
 
-**3.3 [实践步骤] 撰写最小 CLAUDE.md（15min）**
+**3.3 [实践步骤][规格驱动] 撰写 CLAUDE.md + Prompt SDD 初体验（15min）**
 
-- 内容：技术栈说明、架构约束（禁止跨模块直接调用）、命名规范、SDD 最小约束（接受任务前必须阅读对应 Spec、生成代码后自检 AC）
-- **演示重点**：有 SDD 约束 vs 无约束时 AI 生成代码的差异（颜色是否自动引用 Token）
-- CLAUDE.md 贯穿整个课程，每轮 CR 后持续演化，课程结束时统一回顾其完整演变轨迹
+- 写入技术栈说明、架构约束（禁止跨模块直接调用）、命名规范
+- 写入 SDD 最小约束：接受任务前必须阅读对应 Spec、生成代码后自检 AC
+- **演示**："无 Spec" vs "有 Spec"的 AI 响应差异；CLAUDE.md 中 SDD 约束如何影响 Agent 行为。
+- Prompt SDD 的本质：在 CLAUDE.md 中固化约束 → Agent 读取后自动遵循
 
 ---
 
-#### 4. 迭代 1：用户认证 + 首页（14:10–17:30，约 3h20min）
+#### 4. 迭代 1：用户认证 + 首页（14:10–17:25，约 3h15min）
 
 > 功能：FastAPI JWT 认证 + 首页（Banner + 分类 + 剧集列表）
 
-**4.1 [规格驱动] SDD 实战入门（5min）**
-
-- 演示"无 Spec" vs "有 Spec"的 AI 响应差异
-- 演示 CLAUDE.md 中 SDD 约束如何影响 Agent 行为
-- SDD 三层结构回顾：SPEC.md 格式 + CLAUDE.md 规则 + spec-validate Skill
-
-**4.2 [实践步骤] Auth 模块开发（40min）**
+**4.1 [实践步骤] Auth 模块开发（40min）**
 
 - 任务：Python FastAPI 认证接口（注册 / 登录 / JWT）+ Kotlin Android 登录页（ViewModel + LiveData 表单）
 - **演示重点**：Claude Code 读取 CLAUDE.md + auth/README.md + SPEC.md → 生成代码（Agent 如何利用上下文）
 - 开发策略：先生成 Pydantic 数据模型和 API 路由（后端），再补充 Android UI 逻辑（多轮约束生成）
 - **Java 辅助演示**：同一登录接口用 Java Spring Boot 实现一遍，对比 AI 在两种语言下的代码生成差异
 
-**4.3 [实践步骤] 数据层（15min）**
+**4.2 [实践步骤] 数据层（15min）**
 
-- 任务：Drama / Episode / Category Pydantic 模型 + SQLAlchemy ORM Repository 层（SQLite 后端，Category 模型直接服务于 4.4 Home 页分类 Tab）
+- 任务：Drama / Episode / Category Pydantic 模型 + SQLAlchemy ORM Repository 层（SQLite 后端，Category 模型直接服务于 4.3 Home 页分类 Tab）
 - **自我尝试**：第一轮不读 SPEC.md，直接让 AI 生成数据模型 → 第二轮加入 SPEC.md 约束重新生成 → 对比两次输出差异，体会 SDD 如何约束 AI 输出质量
 
-**4.4 [实践步骤] Home 首页开发（55min）**
+**4.3 [实践步骤] Home 首页开发（55min）**
 
 - 任务：Python 后端 `/api/dramas` 接口 + Vue3 H5 首页（Banner 轮播 + 分类 Tab + 剧集列表 + Pinia 状态管理）+ Android WebView 加载
 
-**4.5 [实践步骤] 实现三个 Skill（35min）**
+**4.4 [实践步骤] 实现三个 Skill（35min）**
 
 - **Skill 设计理念与适用场景**：什么场景应该封装成 Skill？颗粒度如何把握？参数设计原则（最小化、自包含）
 - **最佳实践**：幂等性（可重复调用不产生副作用）、结构化反馈（成功/失败/变更明细）、可重复调用的设计模式
@@ -259,14 +254,14 @@
 - 实现 `spec-validate` Skill：AC 覆盖检查，SDD 验收门——结构化输出覆盖率报告
 - 实现 `cr-refactor` Skill：输出 CR 清单 + 重构建议，参数最小化设计（只接受路径，自动定位问题）
 
-**4.6 [测试自愈] 怎么做测试（10min）**
+**4.5 [测试自愈] 怎么做测试（10min）**
 
 - 单元测试绑定实现，AI 加速后技术债积累更快，维护成本高于价值
 - 行为级测试策略：后端用 pytest 测 API 行为（不测实现），Android 用 Espresso 测用户操作流程，Vue3 H5 用 Cypress 测端到端
 - 用 AI 生成测试场景矩阵（正常 / 异常 / 边界），人工筛选关键场景
 - 运行 `spec-validate` Skill 检查 AC 覆盖率
 
-**4.7 [实践步骤] 集成测试 + CR + 重构（40min）**
+**4.6 [实践步骤] 集成测试 + CR + 重构（40min）**
 
 - 设计和执行集成测试
 - 运行 `cr-refactor` Skill，输出 CR 清单
@@ -291,29 +286,36 @@
 
 ### Day 2
 
-#### 6. 迭代 2：剧集详情 + 播放器（09:00–11:30，2.5h）
+#### 6. 迭代 2：剧集详情 + 播放器（09:00–11:40，2h40min）
 
 > 功能：Drama Detail 页（Vue3 H5）+ ExoPlayer 视频播放器（Android）+ 播放进度持久化
 
-**6.1 [实践步骤] Drama Detail 页（40min）**
+**6.1 [规格驱动] OpenSpec：从 Prompt SDD 到工具化 SDD（15min）**
+
+- 问题暴露：项目复杂度上升后纯 Prompt 约束的局限（约束易遗漏、AC 无法自动化验证、Traceability 缺失）
+- OpenSpec 核心能力演示：Change Proposal → Spec → Task → 实现
+- 工具原理说明：Claude Code，OpenSpec 及 Spec 的互动关系
+- 与 Prompt SDD 的对比跃迁：从"读 Spec → 编码 → 手动检查"到"Spec 即代码 → 自动化验证"，什么样的团队/项目值得引入工具化 SDD。
+
+**6.2 [实践步骤] Drama Detail 页（35min）**
 
 - 任务：Python 后端 `/api/dramas/{id}` 接口 + **Vue3 H5** 详情页（简介 / 集数列表 / 评分）+ Android WebView 加载
 - **演示重点**：Agent 如何通过 Project Context 自动发现关联的 Pydantic 模型（跨文件定位）；Android WebView 与 H5 的通信机制（JSBridge）
 
-**6.2 [实践步骤] 视频播放器集成（40min）**
+**6.3 [实践步骤] 视频播放器集成（35min）**
 
 - 任务：Python 后端七牛云（Qiniu）签名 URL 接口 + Android **ExoPlayer** 集成 + 自定义控制条（Kotlin）
 
-**6.3 [实践步骤] 播放器状态机（25min）**
+**6.4 [实践步骤] 播放器状态机（25min）**
 
 - 任务：实现最基础的状态记忆
 - 留意状态机缺陷（缓冲/错误状态遗漏），识别"必须人工接手"的信号
 
-**6.4 [实践步骤] 播放进度持久化（25min）**
+**6.5 [实践步骤] 播放进度持久化（25min）**
 
 - SQLite WatchRecord 模型 + 播放记录读写接口 + Android 写入调用
 
-**6.5 [实践步骤] 迭代 2 集成测试 + CR + 重构（25min）**
+**6.6 [实践步骤] 迭代 2 集成测试 + CR + 重构（25min）**
 
 - Bug 注入演练——让 Agent 读取 Python / Android 错误日志自动修复；如何写出"不脆弱"的集成测试
 - 两轮代码积累后的系统性重构——跨模块重复模式识别；重构 vs 重写的判断标准；保持行为不变的重构提示词
@@ -337,27 +339,32 @@
 
 > 改造场景：首页推荐改版 + 播放器功能增强 + Auth 增强
 
-**8.1 [规格驱动][Agent友好架构] AI 辅助存量改造的核心方法（15min）**
+**8.1 [规格驱动] 增量更新可执行 Spec（10min）**
 
-- "先理解，再修改"：让 Agent 先输出"这段代码的当前行为"，再提出修改方案
-- 通过Agent友好架构让Agent快速理解设计
-- 如何注入存量代码上下文：在提示中附上相关文件路径和当前实现摘要，避免 Agent 默认重写
-- HITL 卡点：安全相关改动（Auth Token 刷新）必须人工审阅，不能依赖 AI 判断
-- **何时需要先规划再动手**：改动涉及多个模块或已有测试覆盖时，先用 `cr-refactor` 输出影响范围
-- 变更 Spec vs 增量 Spec：修改已有 AC 时标注 `[Changed]` 保留历史意图，而非直接覆盖
+- 迭代 3 是需求演进，而非全新开发——原有 SPEC.md 中的 AC 需要增量更新
+- 变更 Spec 的原则：修改已有 AC 时标注 `[Changed v2]` 保留历史意图，而非直接覆盖
+- 演示：在首页推荐改版场景中，在原 Spec 基础上追加新 AC，标注哪些变更了
 
-**8.2 [实践步骤] 首页推荐改版（40min）**
+**8.2 [规格驱动] 引入 GSD——上下文工程 + 阶段化执行（10min）**
+
+- 存量改造最大的挑战不是"改哪里"，而是"让 Agent 理解上下文不丢失"（context rot）
+- GSD 核心理念：把复杂改造任务拆成原子计划，按阶段执行，每阶段可验证
+- **演示**：修改首页推荐前，先用 GSD 思路输出"当前行为分析"→ 按阶段分解 → 逐阶段执行
+- `cr-refactor` vs GSD：前者是快速扫描影响范围，适合"先看看再改"；后者是系统化的阶段化执行框架，适合"知道要改什么但步骤复杂"。二者是替代选择，按场景选用
+- 适用场景：长任务、跨模块改造、重构
+
+**8.3 [实践步骤] 首页推荐改版（40min）**
 
 - 任务：修改后端推荐 API（从按分类查询改为基于 WatchRecord 的个性化排序）+ 更新 Vue3 H5 首页数据绑定
 - **演示**：用 `cr-refactor` Skill 先理解现有首页逻辑 → 再生成改造方案，对比"直接改"的 AI 响应
 - 在变更的 AC 旁标注 `[Changed v2]`，保留历史意图
 
-**8.3 [实践步骤] 播放器增强 + Auth 增强（60min）**
+**8.4 [实践步骤] 播放器增强 + Auth 增强（55min）**
 
 - 播放器：在已有 ExoPlayer 状态机中新增倍速枚举和状态转换（Kotlin）→ 演示 AI 对有限状态机的理解局限
 - Auth：Android SharedPreferences / EncryptedSharedPreferences 持久化 Token + FastAPI JWT 自动刷新逻辑 → 安全逻辑须人工逐行审阅，不能依赖 AI 判断
 
-**8.4 [实践步骤] 迭代 3 集成测试 + CR + 重构（45min）**
+**8.5 [实践步骤] 迭代 3 集成测试 + CR + 重构（45min）**
 
 - 运行 `spec-validate`（重点：现有 AC 覆盖率是否仍然通过）
 - 需求变更引入的技术债 vs 新增功能的技术债——区分"接受"和"立即修复"
@@ -370,7 +377,7 @@
 
 > 目标：系统总结两天实战经验，深入讲解案例未能充分展示的内容
 
-**9.1 AI 编程最佳实践（25min）**
+**9.1 AI 编程最佳实践（15min）**
 
 - 从三轮迭代实战中现场提炼 Top 10 实践
 - 人机协作的"黄金分割线"：哪些交给 AI，哪些必须人工
@@ -378,14 +385,24 @@
 - Vibe Coding vs SDD：两天的对比结论
 - 效率提升的正确度量：不是"代码生成速度"，而是"交付质量 × 速度"
 
-**9.2 Skills 深度设计（25min）**
+**9.2 Skills 深度设计（10min）**
 
 - CLI Skill vs MCP Server 选型：确定性要求高 → Skill；生态集成需求强 → MCP
 - 复杂 Skill 设计模式：**参数最小化**（减少模型出错）/ **结构化反馈**（stdout 让 Agent 自修复）/ **幂等性**（重复调用安全）/ **错误恢复**（降级逻辑）
 - 本课程 3 个 Skills 的设计复盘：哪里设计好了？哪里还可以改进？
 - 企业级 Skill 库：分层（个人 / 项目 / 团队）、版本管理、共享机制
 
-**9.3 存量系统 Agent 友好改造（10min）**
+**9.3 SDD 生态全景与选型指南（25min）**
+
+- 回顾三层 SDD 递进：Prompt SDD（迭代1）→ OpenSpec（迭代2）→ GSD（迭代3）
+- SDD 生态一览：
+  - **Superpowers**（方法论与技能层）：把 TDD、调试、Review 等工程习惯变成默认动作
+  - **OMC / Oh My ClaudeCode**（多代理编排层）：围绕 Claude Code 做 team-first orchestration
+  - **ECC / Everything Claude Code**（增强层）：用 Skills、Instincts、Memory 补全 Harness 能力
+  - **Trellis**（结构层）：用 Specs / Tasks / Workspace 组织跨平台工作流和项目记忆
+- 构建团队自己的 SDD：基于已有框架裁剪或组合，根据项目特点和步骤要求形成团队的开箱即用模板
+
+**9.4 存量系统 Agent 友好改造（10min）**
 
 改造路径（优先级排序）：
 
