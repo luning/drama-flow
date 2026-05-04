@@ -98,11 +98,10 @@ def generate_report(result: dict, output_dir: Union[str, Path] = "assets/reports
         elif a_type == "wait":
             action_detail = f"{action.get('ms', '?')}ms"
 
-        screenshot_rel = Path(screenshot).name if screenshot else ""
-        # Copy screenshot to report directory
+        # Use just the filename with correct relative path from reports/ to screenshots/
         ss_html = ""
-        if screenshot_rel:
-            ss_html = f'<br><a href="../../{screenshot}" target="_blank"><img src="../../{screenshot}" class="screenshot-thumb" alt="Step {step_num}"></a>'
+        if screenshot:
+            ss_html = f'<br><a href="../screenshots/{Path(screenshot).name}" target="_blank"><img src="../screenshots/{Path(screenshot).name}" class="screenshot-thumb" alt="Step {step_num}"></a>'
 
         steps_html += f"""
         <div class="step">

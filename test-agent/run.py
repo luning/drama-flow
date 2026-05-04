@@ -42,9 +42,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import yaml
 
-from agent.device import DeviceController
-from agent.crash_monitor import CrashMonitor
-from agent.recorder import SessionRecorder
+from core.device import DeviceController
+from core.crash_monitor import CrashMonitor
+from core.recorder import SessionRecorder
+from core.element_finder import ElementFinder
+from core.verifier import ActionVerifier
+from core.screen_cache import ScreenCache
 
 
 # --- helpers ----------------------------------------------------------------
@@ -150,12 +153,21 @@ def cmd_screenshot(config: dict, serial: str):
     return path
 
 
-def cmd_tap(config: dict, serial: str, x: int, y: int):
-    """Tap at screen coordinates."""
+def cmd_tap(config: dict, serial: str, x: int, y: int, expect: str = ""):
+    """Tap at screen coordinates and report screen change."""
     device = _make_device(config, serial)
     device.ensure_device()
-    device.tap(x, y)
+
+    verifier = ActionVerifier(device)
+    if expect:
+        result = verifier.verify_tap(x, y, expect_activity=expect, timeout=3.0)
+    else:
+        result = verifier.verify_tap(x, y, timeout=2.0)
     print(f"👆 Tapped ({x}, {y})")
+    if result["success"]:
+        print(f"   ✅ {result['message']}")
+    else:
+        print(f"   ℹ️ {result['message']}")
 
 
 def cmd_text(config: dict, serial: str, text_to_type: str):
@@ -216,14 +228,40 @@ def cmd_init(config: dict, serial: str, mission_path: str):
         name=mission.get("name", mission_path),
         description=mission.get("description", ""),
     )
+
+    # Show cached recipes for expected screens
+    cache = ScreenCache()
+    expected = mission.get("expected_screens", [])
+    if expected:
+        matching = 0
+        for screen in expected:
+            recipes = cache.lookup_by_activity(screen)
+            if not recipes:
+                # Try by activity name substring
+                recipes = [r for r in cache.list_recipes() if screen.lower() in r.get("screen_name", "").lower()]
+            if recipes:
+                if matching == 0:
+                    print(f"\n📦 Cached recipes found for expected screens:")
+                for r in recipes:
+                    print(f"   🎯 {r.get('screen_name', '?')} ({r.get('success_count', 0)} successful runs)")
+                    for step in r.get("steps", [])[:3]:
+                        at = step.get("action_type", "?")
+                        tg = step.get("target_text", "") or step.get("target_id", "")
+                        print(f"       → {at} [{tg}]")
+                matching += 1
+        if matching == 0:
+            print(f"\n📦 No cached recipes for expected screens — first run")
+
     # Also start monitor
     monitor = _make_monitor(config, serial)
     monitor.start()
+    print(f"\n📡 Crash monitor started")
     return recorder, monitor, mission
 
 
-def cmd_record(recorder: SessionRecorder, device: DeviceController, reason: str):
-    """Record a step: take screenshot + note action reason."""
+def cmd_record(recorder: SessionRecorder, device: DeviceController, reason: str,
+               save_as: str = ""):
+    """Record a step: screenshot + action reason. Auto-caches to recipe."""
     ss = device.take_screenshot(f"step_{recorder._step_counter + 1:03d}")
     screen = device.current_activity() or ""
     step = recorder.record_step(
@@ -235,11 +273,152 @@ def cmd_record(recorder: SessionRecorder, device: DeviceController, reason: str)
     print(f"   Screen: {screen}")
     print(f"   Screenshot: {ss}")
 
+    # Auto-cache as recipe
+    if screen:
+        ui_xml = device.dump_ui()
+        signature = ScreenCache.compute_signature(ui_xml or screen)
+        screen_name = save_as or screen.split("/")[-1].split(".")[-1]
+        cache = ScreenCache()
+
+        # Only save if this signature isn't already cached
+        if not cache.lookup(signature):
+            cache.save_recipe(
+                signature=signature,
+                screen_name=screen_name,
+                activity=screen,
+                steps=[{
+                    "action_type": "manual",
+                    "target_text": reason,
+                    "center_x": 0,
+                    "center_y": 0,
+                    "text_value": "",
+                    "swipe_data": {},
+                }],
+                merge=True,
+            )
+            label = f"'{screen_name}'" if save_as else f"auto: '{screen_name}'"
+            print(f"   💾 Cached recipe: {label} ({cache.recipe_count} total)")
+
+    return step
+
 
 def cmd_note(recorder: SessionRecorder, text: str):
     """Save a note."""
     recorder.save_note(text)
     print(f"📌 Note saved: {text}")
+
+
+def cmd_cache_status(config: dict, serial: str):
+    """Show all cached screen recipes."""
+    cache = ScreenCache()
+    print(cache.get_status())
+    recipes = cache.list_recipes()
+
+    if not recipes:
+        print("   (no recipes yet — use `record` to auto-cache steps)")
+        return
+
+    # Also show activity-matching recipes if device is connected
+    device = None
+    try:
+        device = _make_device(config, serial)
+        device.ensure_device()
+        current_activity = device.current_activity() or ""
+        print(f"\n📍 Current screen: {current_activity}")
+        matching = cache.lookup_by_activity(current_activity)
+        if matching:
+            print(f"   🎯 {len(matching)} recipe(s) match current activity:")
+            for r in matching:
+                print(f"      - {r.get('screen_name', '?')} ({r.get('success_count', 0)} successes)")
+        else:
+            print("   (no cached recipe for current activity)")
+    except Exception:
+        pass
+
+    print(f"\n📦 All cached recipes ({len(recipes)}):")
+    for r in recipes:
+        print(f"\n{cache.format_recipe(r.get('signature', ''))}")
+
+
+def cmd_find(config: dict, serial: str, query: str, clickable_only: bool = False, show_tap: bool = False, as_json: bool = False):
+    """Find UI elements by text and display their coordinates."""
+    device = _make_device(config, serial)
+    device.ensure_device()
+    ui_xml = device.dump_ui()
+    if not ui_xml:
+        print("❌ Could not dump UI hierarchy")
+        return
+
+    finder = ElementFinder(ui_xml)
+    results = finder.find_by_text(query, clickable_only=clickable_only)
+    # Also search content-desc
+    if not results:
+        results = finder.find(content_desc_contains=query)
+
+    _display_find_results(results, show_tap, as_json, device)
+
+
+def cmd_find_id(config: dict, serial: str, resource_id: str, show_tap: bool = False):
+    """Find UI element by resource-id."""
+    device = _make_device(config, serial)
+    device.ensure_device()
+    ui_xml = device.dump_ui()
+    if not ui_xml:
+        print("❌ Could not dump UI hierarchy")
+        return
+
+    finder = ElementFinder(ui_xml)
+    results = finder.find_by_id(resource_id)
+    _display_find_results(results, show_tap, False, device)
+
+
+def cmd_find_inputs(config: dict, serial: str, show_tap: bool = False):
+    """Find all text input fields."""
+    device = _make_device(config, serial)
+    device.ensure_device()
+    ui_xml = device.dump_ui()
+    if not ui_xml:
+        print("❌ Could not dump UI hierarchy")
+        return
+
+    finder = ElementFinder(ui_xml)
+    results = finder.find_input_fields()
+    _display_find_results(results, show_tap, False, device)
+
+
+def _display_find_results(results, show_tap, as_json, device):
+    """Display element search results."""
+    if not results:
+        print("🔍 No matching elements found")
+        return
+
+    print(f"🔍 Found {len(results)} matching element(s):\n")
+    for i, el in enumerate(results):
+        print(el.summary(i))
+        print()
+
+    if show_tap and results:
+        el = results[0]
+        cx, cy = el.center
+        print(f"👉 Recommended command:")
+        print(f"   python run.py tap {cx} {cy}")
+        if device:
+            print(f"   python run.py tap {cx} {cy}")
+
+    if as_json:
+        import json
+        data = []
+        for el in results:
+            data.append({
+                "text": el.text,
+                "resource_id": el.resource_id,
+                "class_name": el.class_name,
+                "clickable": el.clickable,
+                "center": list(el.center),
+                "bounds": list(el.bounds),
+            })
+        print("\n--- JSON ---")
+        print(json.dumps(data, indent=2, ensure_ascii=False))
 
 
 def cmd_report(recorder: SessionRecorder, config: dict):
@@ -271,6 +450,8 @@ def main():
     p_tap = sub.add_parser("tap", help="Tap at coordinates")
     p_tap.add_argument("x", type=int)
     p_tap.add_argument("y", type=int)
+    p_tap.add_argument("--expect", type=str, default="",
+                       help="Expected activity after tap (optional)")
     p_text = sub.add_parser("text", help="Type text")
     p_text.add_argument("text", type=str)
     p_swipe = sub.add_parser("swipe", help="Swipe gesture")
@@ -281,15 +462,37 @@ def main():
     sub.add_parser("back", help="Back key")
     sub.add_parser("info", help="Device/app info")
     sub.add_parser("check", help="Check logcat for crashes")
+    p_wait = sub.add_parser("wait", help="Wait for an activity to appear")
+    p_wait.add_argument("--activity", type=str, required=True, help="Activity name to wait for")
+    p_wait.add_argument("--timeout", type=float, default=5.0, help="Max wait time (seconds)")
+
+    # Element finding
+    p_find = sub.add_parser("find", help="Find UI element by text")
+    p_find.add_argument("query", help="Text to search for (substring match)")
+    p_find.add_argument("--clickable", action="store_true", help="Only clickable elements")
+    p_find.add_argument("--tap", action="store_true", help="Print tap command for first result")
+    p_find.add_argument("--json", action="store_true", help="Output as JSON")
+
+    p_find_id = sub.add_parser("find-id", help="Find UI element by resource-id")
+    p_find_id.add_argument("resource_id", help="Resource-id to search for")
+    p_find_id.add_argument("--tap", action="store_true", help="Print tap command for first result")
+
+    p_find_inputs = sub.add_parser("find-inputs", help="Find all text input fields")
+    p_find_inputs.add_argument("--tap", action="store_true", help="Print tap command for first result")
 
     # Recording
     p_init = sub.add_parser("init", help="Start a new mission recording")
     p_init.add_argument("mission", help="Path to mission YAML")
-    p_record = sub.add_parser("record", help="Record current step")
+    p_record = sub.add_parser("record", help="Record current step (auto-caches)")
     p_record.add_argument("reason", type=str, nargs="?", default="")
+    p_record.add_argument("--save-as", type=str, default="",
+                          help="Custom recipe name (optional, defaults to activity name)")
     p_note = sub.add_parser("note", help="Save a note")
     p_note.add_argument("text", type=str)
     sub.add_parser("report", help="Generate HTML report")
+
+    # Screen cache
+    p_cache_status = sub.add_parser("cache-status", help="Show cached screen recipes")
 
     args = parser.parse_args()
 
@@ -318,7 +521,17 @@ def main():
         cmd_screenshot(config, args.serial)
 
     elif args.command == "tap":
-        cmd_tap(config, args.serial, args.x, args.y)
+        cmd_tap(config, args.serial, args.x, args.y, args.expect)
+
+    elif args.command == "wait":
+        device = _make_device(config, args.serial)
+        device.ensure_device()
+        verifier = ActionVerifier(device)
+        found, elapsed = verifier.wait_for_activity(args.activity, args.timeout)
+        if found:
+            print(f"✅ Activity '{args.activity}' detected after {elapsed:.1f}s")
+        else:
+            print(f"⏰ Timed out after {args.timeout}s — '{args.activity}' not detected")
 
     elif args.command == "text":
         cmd_text(config, args.serial, args.text)
@@ -352,7 +565,7 @@ def main():
         sess_path = Path(recorder.screenshot_dir) / "_session.json"
         if sess_path.exists():
             recorder.load_session(sess_path)
-        cmd_record(recorder, device, args.reason or "manual step")
+        cmd_record(recorder, device, args.reason or "manual step", args.save_as)
 
     elif args.command == "note":
         recorder = SessionRecorder(
@@ -362,6 +575,18 @@ def main():
         if sess_path.exists():
             recorder.load_session(sess_path)
         cmd_note(recorder, args.text)
+
+    elif args.command == "find":
+        cmd_find(config, args.serial, args.query, args.clickable, args.tap, args.json)
+
+    elif args.command == "find-id":
+        cmd_find_id(config, args.serial, args.resource_id, args.tap)
+
+    elif args.command == "find-inputs":
+        cmd_find_inputs(config, args.serial, args.tap)
+
+    elif args.command == "cache-status":
+        cmd_cache_status(config, args.serial)
 
     elif args.command == "report":
         recorder = SessionRecorder(

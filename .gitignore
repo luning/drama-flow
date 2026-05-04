@@ -51,5 +51,6 @@ mp4/
 # Training docs output
 *.log
 
-# Test agent screenshots
-test-agent/assets/
+# Test agent generated files
+test-agent/assets/reports/
+test-agent/assets/screenshots/
