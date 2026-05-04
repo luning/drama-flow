@@ -185,7 +185,7 @@
 - 提效演示：让 Claude 从 PRD 草稿自动提取五段式 Spec 骨架，人工确认 AC
 - **HITL 检查点**：AC 的最终确认必须由人完成
 
-**2.3 [实践步骤] HTML 原型生成（20min）**
+**2.3 [实践步骤] HTML 原型生成（25min）**
 
 - 任务：Claude Code / Codex 直接基于 PRD 生成可交互 HTML 原型，浏览器打开确认视觉方向，满意后截图存入 `docs/designs/`
 - **原型 + 可执行 Spec 模式**：原型负责“看得见的流程”，Spec负责“看不见但必须正确的逻辑”。
@@ -197,7 +197,7 @@
 - **写入视觉 AC**：将关键验收标准（如"首页 Banner 使用 Primary #6C5CE7"）写入 SPEC.md，后续开发可逐条自检
 - **产出**：`design_system.md` + `docs/designs/` 参考截图 + SPEC.md 视觉验收 AC
 
-**2.5 [Agent友好架构][HITL] PM 利用 Agent 直接改代码快速试错（20min）**
+**2.5 [Agent友好架构][HITL] PM 利用 Agent 直接改代码快速试错（15min）**
 
 > PM 用自然语言描述产品优化意图，Agent 直接改代码（H5 + 后端），PM 在预览环境验收改动效果，满意后开发接手并参考改动。
 
