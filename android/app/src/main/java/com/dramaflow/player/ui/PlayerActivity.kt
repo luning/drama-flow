@@ -13,6 +13,9 @@ import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.lifecycle.lifecycleScope
 import com.dramaflow.databinding.ActivityPlayerBinding
+import com.dramaflow.data.remote.ApiClient
+import com.dramaflow.data.remote.HomeApi
+import com.dramaflow.data.remote.EpisodeItem
 import com.dramaflow.player.viewmodel.PlayerViewModel
 import com.dramaflow.player.viewmodel.PlaybackSpeed
 import kotlinx.coroutines.*
@@ -24,13 +27,24 @@ class PlayerActivity : AppCompatActivity() {
     private val viewModel: PlayerViewModel by viewModels()
     private var player: ExoPlayer? = null
     private var progressJob: Job? = null
+    private var nextEpisodeJob: Job? = null
+
+    // 连播状态
+    private var dramaId: Int = 0
+    private var currentEpisodeId: Int = 0
+    private var currentEpisodeNumber: Int = 1
+    private var episodeCache: List<EpisodeItem> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        currentEpisodeId = intent.getIntExtra("episode_id", 0)
         val videoUrl = intent.getStringExtra("video_url") ?: ""
+        dramaId = intent.getIntExtra("drama_id", 0)
+        currentEpisodeNumber = intent.getIntExtra("episode_number", 1)
+
         initPlayer(videoUrl)
         setupControls()
         observeViewModel()
@@ -46,24 +60,103 @@ class PlayerActivity : AppCompatActivity() {
                     .build(),
                 /* handleAudioFocus= */ true
             )
-            val mediaItem = MediaItem.fromUri(videoUrl)
-            setMediaItem(mediaItem)
+            setMediaItem(MediaItem.fromUri(videoUrl))
             prepare()
             playWhenReady = true
+            addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_ENDED) {
+                        onCurrentEpisodeEnded()
+                    }
+                }
+
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    Toast.makeText(this@PlayerActivity, "播放出错: ${error.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
+            })
         }
 
         startProgressReporting()
     }
 
     private fun startProgressReporting() {
-        progressJob = lifecycleScope.launch(Dispatchers.IO) {
+        progressJob = lifecycleScope.launch {
             while (isActive) {
                 delay(15_000) // every 15 seconds
                 player?.let { p ->
-                    val episodeId = intent.getIntExtra("episode_id", 0)
-                    viewModel.reportProgress(episodeId, p.currentPosition, p.duration)
+                    viewModel.reportProgress(currentEpisodeId, p.currentPosition, p.duration)
                 }
             }
+        }
+    }
+
+    private fun onCurrentEpisodeEnded() {
+        // 上报当前集完成
+        player?.let { p ->
+            viewModel.reportProgress(currentEpisodeId, p.duration, p.duration)
+        }
+
+        // 单集播放（没有 drama_id），播完即退
+        if (dramaId <= 0) {
+            finish()
+            return
+        }
+
+        // 加载下一集（取消前一次任务避免竞态）
+        nextEpisodeJob?.cancel()
+        nextEpisodeJob = lifecycleScope.launch {
+            try {
+                if (episodeCache.isEmpty()) {
+                    val api = ApiClient.create<HomeApi>()
+                    val response = api.listEpisodes(dramaId)
+                    episodeCache = if (response.isSuccessful) response.body() ?: emptyList()
+                    else emptyList()
+                }
+
+                if (episodeCache.isEmpty()) {
+                    Toast.makeText(this@PlayerActivity, "暂无剧集信息", Toast.LENGTH_SHORT).show()
+                    delay(1200)
+                    finish()
+                    return@launch
+                }
+
+                val currentIndex = episodeCache.indexOfFirst { it.id == currentEpisodeId }
+                if (currentIndex < 0) {
+                    // 当前集未找到，尝试播放第一集
+                    playEpisode(episodeCache.first())
+                    return@launch
+                }
+
+                val nextIndex = currentIndex + 1
+                if (nextIndex < episodeCache.size) {
+                    playEpisode(episodeCache[nextIndex])
+                } else {
+                    Toast.makeText(this@PlayerActivity, "全部剧集已播放完毕", Toast.LENGTH_SHORT).show()
+                    delay(1200)
+                    finish()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@PlayerActivity, "加载下一集失败", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun playEpisode(ep: EpisodeItem) {
+        if (ep.video_url.isBlank()) {
+            Toast.makeText(this, "该集视频地址无效", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        currentEpisodeId = ep.id
+        currentEpisodeNumber = ep.episode_number
+
+        Toast.makeText(this, "正在播放第 ${ep.episode_number} 集", Toast.LENGTH_SHORT).show()
+
+        player?.apply {
+            val mediaItem = MediaItem.fromUri(ep.video_url)
+            setMediaItem(mediaItem)
+            prepare()
+            playWhenReady = true
         }
     }
 
@@ -131,6 +224,7 @@ class PlayerActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         progressJob?.cancel()
+        nextEpisodeJob?.cancel()
         player?.release()
         player = null
     }

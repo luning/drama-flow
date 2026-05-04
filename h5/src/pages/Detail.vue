@@ -76,8 +76,8 @@ function playFirst() {
   }
 }
 
-function playEpisode(ep: { id: number; video_url: string; title: string }) {
-  window.DramaFlowBridge?.playVideo(ep.id, ep.video_url, ep.title)
+function playEpisode(ep: { id: number; episode_number: number; video_url: string; title: string }) {
+  window.DramaFlowBridge?.playVideo(ep.id, ep.video_url, ep.title, store.detail?.id ?? 0, ep.episode_number)
 }
 
 function goBack() {

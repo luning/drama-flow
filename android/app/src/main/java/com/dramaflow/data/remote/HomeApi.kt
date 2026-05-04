@@ -30,4 +30,4 @@ data class DramaItem(val id: Int, val title: String, val rating: Double, val epi
 data class DramaDetail(val id: Int, val title: String, val description: String, val rating: Double, val episode_count: Int)
 data class BannerItem(val drama_id: Int, val title: String, val image_url: String)
 data class CategoryItem(val id: Int, val name: String, val slug: String)
-data class EpisodeItem(val id: Int, val episode_number: Int, val title: String, val duration: String)
+data class EpisodeItem(val id: Int, val episode_number: Int, val title: String, val duration: String, val video_url: String = "")

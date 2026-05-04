@@ -29,7 +29,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         webView.webViewClient = WebViewClient()
 
         // 注入 JSBridge，使 H5 可通过 window.DramaFlowBridge 调用原生功能
-        webView.addJavascriptInterface(JSBridge(), "DramaFlowBridge")
+        webView.addJavascriptInterface(JSBridge(requireActivity()), "DramaFlowBridge")
 
         // WebView 内后退导航（H5 hash 路由）
         webView.setOnKeyListener { _, keyCode, event ->
