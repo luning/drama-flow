@@ -51,6 +51,9 @@ mp4/
 # Training docs output
 *.log
 
+# Claude Code local memory (user-specific, not shared)
+.claude/projects/
+
 # Test agent generated files
 test-agent/assets/reports/
 test-agent/assets/screenshots/

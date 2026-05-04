@@ -47,7 +47,6 @@ from core.crash_monitor import CrashMonitor
 from core.recorder import SessionRecorder
 from core.element_finder import ElementFinder
 from core.verifier import ActionVerifier
-from core.screen_cache import ScreenCache
 
 
 # --- helpers ----------------------------------------------------------------
@@ -229,29 +228,6 @@ def cmd_init(config: dict, serial: str, mission_path: str):
         description=mission.get("description", ""),
     )
 
-    # Show cached recipes for expected screens
-    cache = ScreenCache()
-    expected = mission.get("expected_screens", [])
-    if expected:
-        matching = 0
-        for screen in expected:
-            recipes = cache.lookup_by_activity(screen)
-            if not recipes:
-                # Try by activity name substring
-                recipes = [r for r in cache.list_recipes() if screen.lower() in r.get("screen_name", "").lower()]
-            if recipes:
-                if matching == 0:
-                    print(f"\n📦 Cached recipes found for expected screens:")
-                for r in recipes:
-                    print(f"   🎯 {r.get('screen_name', '?')} ({r.get('success_count', 0)} successful runs)")
-                    for step in r.get("steps", [])[:3]:
-                        at = step.get("action_type", "?")
-                        tg = step.get("target_text", "") or step.get("target_id", "")
-                        print(f"       → {at} [{tg}]")
-                matching += 1
-        if matching == 0:
-            print(f"\n📦 No cached recipes for expected screens — first run")
-
     # Also start monitor
     monitor = _make_monitor(config, serial)
     monitor.start()
@@ -259,9 +235,8 @@ def cmd_init(config: dict, serial: str, mission_path: str):
     return recorder, monitor, mission
 
 
-def cmd_record(recorder: SessionRecorder, device: DeviceController, reason: str,
-               save_as: str = ""):
-    """Record a step: screenshot + action reason. Auto-caches to recipe."""
+def cmd_record(recorder: SessionRecorder, device: DeviceController, reason: str):
+    """Record a step: screenshot + action reason."""
     ss = device.take_screenshot(f"step_{recorder._step_counter + 1:03d}")
     screen = device.current_activity() or ""
     step = recorder.record_step(
@@ -273,32 +248,6 @@ def cmd_record(recorder: SessionRecorder, device: DeviceController, reason: str,
     print(f"   Screen: {screen}")
     print(f"   Screenshot: {ss}")
 
-    # Auto-cache as recipe
-    if screen:
-        ui_xml = device.dump_ui()
-        signature = ScreenCache.compute_signature(ui_xml or screen)
-        screen_name = save_as or screen.split("/")[-1].split(".")[-1]
-        cache = ScreenCache()
-
-        # Only save if this signature isn't already cached
-        if not cache.lookup(signature):
-            cache.save_recipe(
-                signature=signature,
-                screen_name=screen_name,
-                activity=screen,
-                steps=[{
-                    "action_type": "manual",
-                    "target_text": reason,
-                    "center_x": 0,
-                    "center_y": 0,
-                    "text_value": "",
-                    "swipe_data": {},
-                }],
-                merge=True,
-            )
-            label = f"'{screen_name}'" if save_as else f"auto: '{screen_name}'"
-            print(f"   💾 Cached recipe: {label} ({cache.recipe_count} total)")
-
     return step
 
 
@@ -306,38 +255,6 @@ def cmd_note(recorder: SessionRecorder, text: str):
     """Save a note."""
     recorder.save_note(text)
     print(f"📌 Note saved: {text}")
-
-
-def cmd_cache_status(config: dict, serial: str):
-    """Show all cached screen recipes."""
-    cache = ScreenCache()
-    print(cache.get_status())
-    recipes = cache.list_recipes()
-
-    if not recipes:
-        print("   (no recipes yet — use `record` to auto-cache steps)")
-        return
-
-    # Also show activity-matching recipes if device is connected
-    device = None
-    try:
-        device = _make_device(config, serial)
-        device.ensure_device()
-        current_activity = device.current_activity() or ""
-        print(f"\n📍 Current screen: {current_activity}")
-        matching = cache.lookup_by_activity(current_activity)
-        if matching:
-            print(f"   🎯 {len(matching)} recipe(s) match current activity:")
-            for r in matching:
-                print(f"      - {r.get('screen_name', '?')} ({r.get('success_count', 0)} successes)")
-        else:
-            print("   (no cached recipe for current activity)")
-    except Exception:
-        pass
-
-    print(f"\n📦 All cached recipes ({len(recipes)}):")
-    for r in recipes:
-        print(f"\n{cache.format_recipe(r.get('signature', ''))}")
 
 
 def cmd_find(config: dict, serial: str, query: str, clickable_only: bool = False, show_tap: bool = False, as_json: bool = False):
@@ -483,16 +400,11 @@ def main():
     # Recording
     p_init = sub.add_parser("init", help="Start a new mission recording")
     p_init.add_argument("mission", help="Path to mission YAML")
-    p_record = sub.add_parser("record", help="Record current step (auto-caches)")
+    p_record = sub.add_parser("record", help="Record current step")
     p_record.add_argument("reason", type=str, nargs="?", default="")
-    p_record.add_argument("--save-as", type=str, default="",
-                          help="Custom recipe name (optional, defaults to activity name)")
     p_note = sub.add_parser("note", help="Save a note")
     p_note.add_argument("text", type=str)
     sub.add_parser("report", help="Generate HTML report")
-
-    # Screen cache
-    p_cache_status = sub.add_parser("cache-status", help="Show cached screen recipes")
 
     args = parser.parse_args()
 
@@ -565,7 +477,7 @@ def main():
         sess_path = Path(recorder.screenshot_dir) / "_session.json"
         if sess_path.exists():
             recorder.load_session(sess_path)
-        cmd_record(recorder, device, args.reason or "manual step", args.save_as)
+        cmd_record(recorder, device, args.reason or "manual step")
 
     elif args.command == "note":
         recorder = SessionRecorder(
@@ -584,9 +496,6 @@ def main():
 
     elif args.command == "find-inputs":
         cmd_find_inputs(config, args.serial, args.tap)
-
-    elif args.command == "cache-status":
-        cmd_cache_status(config, args.serial)
 
     elif args.command == "report":
         recorder = SessionRecorder(

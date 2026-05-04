@@ -5,7 +5,7 @@ description: Agent 驱动的 Android App 探索性测试——指定测试任务
 
 # exploratory-test
 
-逐步骤探索 App：看截图 → 用 `find` 定位元素 → `tap` 执行（自动验证屏幕变化）→ `record` 记录（自动缓存）→ 循环。
+逐步骤探索 App：看截图 → 用 `find` 定位元素 → `tap` 执行（自动验证屏幕变化）→ `record` 记录 → 循环。
 
 ## 前置条件
 
@@ -17,7 +17,7 @@ description: Agent 驱动的 Android App 探索性测试——指定测试任务
 > **1. 初始化**
 > ```bash
 > python test-agent/run.py setup                          # 检测设备、启动 App、开启崩溃监控
-> python test-agent/run.py init test-agent/missions/smoke_test.yaml  # 加载测试任务（同时显示缓存的 Recipe）
+> python test-agent/run.py init test-agent/missions/smoke_test.yaml  # 加载测试任务
 > ```
 
 > **2. 截图 + 观察**
@@ -41,7 +41,7 @@ description: Agent 驱动的 Android App 探索性测试——指定测试任务
 
 > **4. 记录步骤 + 检查崩溃**
 > ```bash
-> python test-agent/run.py record "登录成功，进入首页"     # 记录步骤（自动缓存到 Recipe）
+> python test-agent/run.py record "登录成功，进入首页"     # 记录步骤
 > python test-agent/run.py check                          # 检查 logcat 是否有崩溃
 > ```
 
@@ -76,7 +76,7 @@ Navigation Component 单 Activity 架构下，Fragment 切换不会触发 Activi
 | 命令 | 作用 | 说明 |
 |------|------|------|
 | `setup` | 初始化设备 + App + 监控 | 只需执行一次 |
-| `init <mission>` | 加载测试任务 | 自动显示已缓存的 Recipe |
+| `init <mission>` | 加载测试任务 | |
 | `screenshot` | 截图 | 保存到 `assets/screenshots/` |
 | `find "文字"` | 按文字搜 UI 元素 | 返回坐标、resource-id、class |
 | `find-id "xxx"` | 按 resource-id 搜 | |
@@ -87,9 +87,6 @@ Navigation Component 单 Activity 架构下，Fragment 切换不会触发 Activi
 | `back` | 返回键 | |
 | `wait --activity "xxx"` | 等待 Activity | 默认超时 5s |
 | `info` | 查看当前 Activity | |
-| `record "说明"` | 记录步骤 | 自动缓存到 Recipe |
+| `record "说明"` | 记录步骤 | |
 | `check` | 检查崩溃 | |
 | `report` | 生成 HTML 报告 | |
-| `cache-status` | 查看已缓存的 Recipe | |
-
-缓存文件：`test-agent/assets/screen_cache.json` — 自动累积，无需手动管理。
