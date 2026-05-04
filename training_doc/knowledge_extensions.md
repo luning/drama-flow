@@ -137,3 +137,129 @@ Skill 消除这种方差——每次结果一致，不管当前上下文是什�
 
 ---
 
+## 4. 探索性验收测试的技术方案
+
+### 架构：AI 决策 + 原子操作执行
+
+```
+┌─────────────────────┐       HTTP (localhost)        ┌──────────────────────┐
+│  Claude Agent       │  ─── POST /tap /type /swipe ─▶│  Android Device      │
+│  (大脑: 看截图、     │  ◀── screenshot / hierarchy ──│  UI Automator 服务   │
+│   决策下一步)        │                               │  (稳定执行层)        │
+└─────────────────────┘                               └──────────────────────┘
+         │                                                       │
+         │  adb forward tcp:8711 tcp:8711                        │
+         │  (端口转发，电脑→手机)                                  │
+```
+
+### 两层分工
+
+| 层 | 职责 | 技术 | 特点 |
+|----|------|------|------|
+| 决策层 | 看截图判断状态、规划操作、验证结果 | Claude 视觉识别 | 灵活，能处理意外弹窗和布局变化 |
+| 执行层 | 找元素、点击、输入、截屏、获取 UI 树 | UI Automator HTTP Server | 稳定，元素级定位不依赖像素坐标 |
+
+### 当前实现（test-agent）
+
+Python CLI 工具集 + Claude 驱动的探索性测试循环：
+
+- **核心模块**：adb_client / device / element_finder / crash_monitor / verifier / reporter
+- **设备交互**：通过 ADB 命令（`input tap`、`screencap`、`uiautomator dump`、`logcat`）
+- **测试任务**：YAML 定义的 mission 文件（smoke_test / login_flow / browse_content / playback_test）
+- **执行流程**：Observe → Plan → Locate → Act → Record
+
+### 从纯 ADB 到 UI Automator 的演进
+
+| | 纯 ADB（当前） | UI Automator Server（推荐） |
+|---|---|---|
+| 找元素 | `uiautomator dump` + 硬解析 XML | `By.res()`、`By.text()` 官方 API |
+| 点击 | `input tap x y`（像素坐标） | `.click()` 元素级点击，自适应位置 |
+| 输入 | `input text`（不支持中文） | `.text = "..."` 原生输入 |
+| 等待 | 轮询 Activity 名 | `device.wait(Until.findObject(...), 5000)` |
+| 延迟 | 每次启动新进程 | 内存常驻服务，毫秒级响应 |
+
+### 与 Espresso 的定位差异
+
+| | Espresso | test-agent (AI 驱动) |
+|---|---|---|
+| 决策者 | 开发者写死脚本 | Claude 运行时决策 |
+| 确定性 | 高，适合 CI 回归防线 | 低，适合探索找 bug |
+| 验证粒度 | 精确到 View 内部状态 | 视觉级验证（布局/渲染/颜色） |
+| 代码耦合 | 需要 View ID、编译测试 APK | 纯黑盒，零耦合 |
+
+核心原则：**两者互补而非替代**。Espresso 做回归守门，AI 驱动方案做验收和探索测试。推荐的改进方向是将执行层从原始 ADB 替换为 UI Automator HTTP Server，以最小的架构变动获得最大的执行稳定性。
+
+---
+
+## 5. Espresso / UI Automator 的传统做法简记
+
+### 定位
+
+| | Espresso | UI Automator |
+|---|---|---|
+| 范围 | **单 App 内**，白盒，需源码 | **跨 App**，黑盒，无需源码 |
+| 执行 | 注入 App 进程运行 | 独立进程，通过 Accessibility 服务 |
+| 典型场景 | 组件/集成测试，回归 | 跨 App 流程、系统级测试 |
+| 编译产物 | 单独的测试 APK | 测试 APK 或 standalone jar |
+
+### 核心 API 模式
+
+**Espresso**——声明式匹配 + 操作 + 断言：
+```kotlin
+onView(withId(R.id.login_button))         // 找控件（声明式 Matcher）
+    .perform(click())                       // 执行操作
+    .check(matches(isDisplayed()))          // 验证结果
+
+// 常用匹配器：withId / withText / withTag / hasDescendant / allOf
+// 常用操作：click / typeText / scrollTo / swipeLeft / closeSoftKeyboard
+// 常用断言：isDisplayed / withText / isEnabled / isSelected / doesNotExist
+// 异步等待：IdlingResource（自动等，不用 sleep）
+```
+
+**UI Automator**——命令式查找 + 操作：
+```kotlin
+val device = UiDevice.getInstance(instrumentation)
+device.findObject(By.text("登录")).click()     // 按文本找
+device.findObject(By.res("com.dramaflow:id/btn")).click()  // 按 ID 找
+device.findObject(By.desc("菜单")).click()      // 按 content-desc 找
+// 常用 By：text / res / desc / clazz / pkg
+// 支持跨 App：device.pressHome() / pressRecentApps() / openQuickSettings()
+// 等待：device.wait(Until.findObject(...), timeout)
+```
+
+### 测试写法对比
+
+**直接录制**（两种工具都支持）：
+```bash
+# 操作手机录制
+adb shell am instrument -e class com.dramaflow.TestRecorder ...
+# 或使用 Android Studio: Run > Record Espresso Test
+# 点击手机操作 → 自动生成 onView().perform().check() 代码
+```
+
+**手动编写**：
+```kotlin
+@RunWith(AndroidJUnit4::class)
+class LoginTest {
+    @Test
+    fun login_success() {
+        onView(withId(R.id.username)).perform(typeText("test@test.com"))
+        onView(withId(R.id.password)).perform(typeText("123456"))
+        onView(withId(R.id.login_btn)).perform(click())
+        onView(withId(R.id.home_title)).check(matches(isDisplayed()))
+    }
+}
+```
+
+### 运行命令
+
+```bash
+# Espresso / UI Automator 统一用 adb instrument 运行
+adb shell am instrument -w com.dramaflow.test/androidx.test.runner.AndroidJUnitRunner
+
+# 指定单个测试类
+adb shell am instrument -w -e class com.dramaflow.LoginTest com.dramaflow.test/...
+```
+
+---
+
