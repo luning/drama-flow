@@ -50,3 +50,6 @@ mp4/
 
 # Training docs output
 *.log
+
+# Test agent screenshots
+test-agent/assets/

@@ -1,0 +1,30 @@
+name: "登录流程测试"
+description: "测试注册、登录、登录态保持、退出等完整的认证流程"
+max_steps: 35
+max_idle_cycles: 5
+
+start_conditions:
+  app_package: "com.dramaflow"
+  app_activity: ".MainActivity"
+
+goals:
+  - "打开 App，确认显示登录页面"
+  - "检查是否有注册入口（注册链接/按钮）"
+  - "点击注册，进入注册页面"
+  - "尝试注册新账号（nickname: testuser, email: newuser@test.com, password: test123456）"
+  - "确认注册成功后返回登录页"
+  - "使用刚注册的账号登录"
+  - "确认登录成功后进入首页 HomeFragment"
+  - "检查首页 WebView 是否正常加载"
+  - "（如果在首页看到退出按钮）尝试退出登录"
+  - "确认退出后回到登录页"
+  - "使用错误的密码登录，验证错误提示"
+
+expected_screens:
+  - "LoginFragment"
+  - "RegisterFragment"
+  - "HomeFragment"
+
+credentials:
+  email: "newuser@test.com"
+  password: "123456ab"

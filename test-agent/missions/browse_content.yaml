@@ -1,0 +1,28 @@
+name: "浏览内容测试"
+description: "测试首页内容加载、分类浏览、剧集详情等浏览流程"
+max_steps: 30
+max_idle_cycles: 5
+
+start_conditions:
+  app_package: "com.dramaflow"
+  app_activity: ".MainActivity"
+
+goals:
+  - "使用测试账号登录（email: test@test.com, password: 123456ab）"
+  - "首页 WebView 完全加载后查看内容展示"
+  - "滑动首页内容列表，查看是否有更多内容"
+  - "观察 Banner 轮播是否能正常切换"
+  - "尝试切换分类/标签"
+  - "尝试点击一个剧集或内容卡片"
+  - "进入剧集详情页面后，查看详情内容"
+  - "尝试查看剧集列表/分集"
+  - "返回首页"
+
+expected_screens:
+  - "LoginFragment"
+  - "HomeFragment"
+  - "detail"
+
+credentials:
+  email: "test@test.com"
+  password: "123456ab"

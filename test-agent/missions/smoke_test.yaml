@@ -1,0 +1,30 @@
+name: "冒烟测试"
+description: "覆盖 App 核心路径：登录 → 浏览首页 H5 → 播放视频"
+max_steps: 40
+max_idle_cycles: 6
+
+start_conditions:
+  app_package: "com.dramaflow"
+  app_activity: ".MainActivity"
+
+goals:
+  - "打开 App，确认显示登录页面（有邮箱/密码输入框和登录按钮）"
+  - "使用测试账号登录（邮箱: test@test.com, 密码: 123456ab）"
+  - "验证登录成功后进入首页 HomeFragment"
+  - "首页 WebView 加载后，观察是否有内容展示"
+  - "尝试浏览首页的推荐内容，滑动查看列表"
+  - "尝试点击一个剧集进入详情"
+  - "尝试播放一个视频（如果有播放按钮）"
+  - "验证播放器界面正常显示"
+  - "返回首页，确认状态正常"
+
+expected_screens:
+  - "LoginFragment"
+  - "RegisterFragment"
+  - "HomeFragment"
+  - "PlayerActivity"
+  - "detail"
+
+credentials:
+  email: "test@test.com"
+  password: "123456ab"

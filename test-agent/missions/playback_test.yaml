@@ -1,0 +1,31 @@
+name: "播放器测试"
+description: "测试视频播放完整流程：首页 → 详情 → 播放 → 播放器控制"
+max_steps: 30
+max_idle_cycles: 5
+
+start_conditions:
+  app_package: "com.dramaflow"
+  app_activity: ".MainActivity"
+
+goals:
+  - "使用测试账号登录（email: test@test.com, password: 123456ab）"
+  - "进入首页后等待 WebView 加载完成"
+  - "滑动首页内容列表"
+  - "尝试点击一个剧集进入详情页"
+  - "在详情页找到播放按钮或剧集列表"
+  - "点击播放/剧集，触发视频播放"
+  - "确认 PlayerActivity 正常启动"
+  - "观察播放器界面：播放/暂停按钮、进度条、标题"
+  - "尝试暂停播放"
+  - "尝试继续播放"
+  - "退出播放器回到详情页或首页"
+
+expected_screens:
+  - "LoginFragment"
+  - "HomeFragment"
+  - "PlayerActivity"
+  - "detail"
+
+credentials:
+  email: "test@test.com"
+  password: "123456ab"

@@ -1,0 +1,24 @@
+# Test Agent Configuration
+device:
+  # Android SDK path (same as CLAUDE.md convention)
+  android_home: "~/Library/Android/sdk"
+  # Serial number (leave empty for single device, or set for specific)
+  serial: ""
+  # App package info
+  app_package: "com.dramaflow"
+  app_activity: ".MainActivity"
+  # Wait time after an action (seconds)
+  post_action_delay: 1.5
+  # Wait time after app launch (seconds)
+  launch_delay: 3.0
+
+crash_monitor:
+  # Logcat buffer size to keep (lines)
+  buffer_size: 1000
+  # Poll interval (seconds)
+  poll_interval: 0.5
+
+recording:
+  # Output directories
+  output_dir: "test-agent/assets/reports"
+  screenshot_dir: "test-agent/assets/screenshots"
