@@ -3,6 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph" app:startDestination="@id/login_fragment">
 
+    <!-- Global action: session expiry redirect — clears entire back stack -->
+    <action android:id="@+id/action_global_to_login"
+        app:destination="@id/login_fragment"
+        app:popUpTo="@id/nav_graph"
+        app:popUpToInclusive="true" />
+
     <fragment android:id="@+id/login_fragment"
         android:name="com.dramaflow.auth.ui.LoginFragment" >
         <action android:id="@+id/action_login_to_register"
