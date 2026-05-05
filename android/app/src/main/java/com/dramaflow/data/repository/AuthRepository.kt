@@ -38,9 +38,13 @@ class AuthRepository(
             throw Exception(detail)
         }
 
-        val token = resp.body()!!
+        val token = resp.body() ?: throw Exception("登录成功但响应体为空")
         currentToken = token
 
+        if (remember) {
+            // Set isRemembered BEFORE token persistence to prevent inconsistent state on crash
+            prefs.isRemembered = true
+        }
         // 根据 remember 标记条件持久化 Token
         TokenProvider.setTokens(
             access = token.access_token,
@@ -48,9 +52,6 @@ class AuthRepository(
             persist = remember,
             prefs = prefs
         )
-        if (remember) {
-            prefs.isRemembered = true
-        }
 
         return token
     }
@@ -63,7 +64,7 @@ class AuthRepository(
             prefs.clearSession()
             return null
         }
-        val token = resp.body()!!
+        val token = resp.body() ?: return null
         TokenProvider.setTokens(
             access = token.access_token,
             refresh = token.refresh_token,
@@ -80,5 +81,8 @@ class AuthRepository(
         prefs.clearSession()
     }
 
-    fun getAccessToken(): String? = currentToken?.access_token ?: prefs.accessToken
+    fun getAccessToken(): String? {
+        val prefs = PreferencesManager(DramaFlowApp.instance)
+        return TokenProvider.getAccessToken(prefs) ?: currentToken?.access_token
+    }
 }

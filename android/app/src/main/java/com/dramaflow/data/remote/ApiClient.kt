@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
  * Thread-safe: MutableSharedFlow.tryEmit is lock-free and can be called from any thread.
  */
 object SessionManager {
-    private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1, replay = 0)
+    private val _sessionExpired = MutableSharedFlow<Unit>(replay = 1, extraBufferCapacity = 1)
     val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
 
     fun notifySessionExpired() {
@@ -63,6 +63,9 @@ object TokenProvider {
         if (persist) {
             prefs.accessToken = access
             prefs.refreshToken = refresh
+        } else {
+            prefs.accessToken = null
+            prefs.refreshToken = null
         }
     }
 
@@ -177,7 +180,7 @@ object ApiClient {
                     TokenProvider.setTokens(
                         access = newAccessToken,
                         refresh = newRefreshToken,
-                        persist = true,
+                        persist = prefs.isRemembered,
                         prefs = prefs
                     )
 
@@ -185,17 +188,16 @@ object ApiClient {
                         .header("Authorization", "Bearer $newAccessToken")
                         .build()
                 } else {
-                    // ---- Failure: clear session, signal UI, give up ----
+                    // ---- Failure: consume body to release connection, clear session, signal UI ----
+                    refreshResponse.close()
                     TokenProvider.clear()
                     prefs.clearSession()
                     SessionManager.notifySessionExpired()
                     return@Authenticator null
                 }
             } catch (e: Exception) {
-                // Network error or parse error: clear session, signal UI, give up
-                TokenProvider.clear()
-                prefs.clearSession()
-                SessionManager.notifySessionExpired()
+                // Network/IO error (timeout, DNS failure) — do NOT destroy session.
+                // Return null to give up on this request; subsequent requests will retry.
                 return@Authenticator null
             }
         }
