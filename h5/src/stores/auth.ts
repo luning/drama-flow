@@ -28,6 +28,30 @@ export const useAuthStore = defineStore('auth', () => {
     isLoggedIn.value = false
   }
 
+  /**
+   * 从 Android JSBridge 同步 Token（EncryptedSharedPreferences → localStorage）。
+   * 用户在 Android 原生页面登录后，Token 存在 EncryptedSharedPreferences 中，
+   * H5 WebView 无法直接读取，需通过 window.DramaFlowBridge 获取。
+   * 返回 true 表示成功从 Android 侧获取到 Token。
+   */
+  function syncTokenFromNative(): boolean {
+    if (typeof window !== 'undefined' && window.DramaFlowBridge) {
+      const accessToken = window.DramaFlowBridge.getAccessToken()
+      if (accessToken) {
+        localStorage.setItem('access_token', accessToken)
+
+        const refreshToken = window.DramaFlowBridge.getRefreshToken() || ''
+        if (refreshToken) {
+          localStorage.setItem('refresh_token', refreshToken)
+        }
+
+        isLoggedIn.value = true
+        return true
+      }
+    }
+    return false
+  }
+
   async function tryRestoreSession() {
     const token = localStorage.getItem('access_token')
     if (token) {
@@ -44,5 +68,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, isLoggedIn, login, register, logout, tryRestoreSession }
+  return { user, isLoggedIn, login, register, logout, syncTokenFromNative, tryRestoreSession }
 })

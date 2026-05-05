@@ -101,6 +101,25 @@ def seed_episodes(db_session, seed_dramas):
 
 
 @pytest.fixture
+def seed_drama_fantasy2(db_session, seed_categories, seed_dramas, seed_episodes):
+    """Add a 6th drama in the fantasy category (same category as drama 1) for same-category-first testing."""
+    drama = Drama(
+        id=6, title="龙族崛起", description="龙族崛起",
+        category_id=4, rating=4.3, cover_url="/covers/drama06.jpg", year=2025, status="ongoing",
+    )
+    db_session.add(drama)
+    for i in range(1, 11):
+        db_session.add(Episode(
+            id=50 + i, drama_id=6, episode_number=i,
+            title=f"第{i}集",
+            duration="20:00",
+            video_url=f"/videos/drama06_ep{i:02d}.mp4",
+        ))
+    db_session.commit()
+    return drama
+
+
+@pytest.fixture
 def user_token(seed_user):
     """创建一个有效的 access token 用于需要认证的测试"""
     return create_token(seed_user.id, "access", settings.jwt_access_expire_minutes)

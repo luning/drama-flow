@@ -5,7 +5,7 @@ description: 幂等导入 DramaFlow 测试数据。当用户说"添加测试数�
 
 # seed-data
 
-幂等导入 DramaFlow 测试数据（5 个分类、5 部剧集、50 集）。
+幂等导入 DramaFlow 测试数据（5 个分类、9 部剧集、90 集）。
 
 ## 执行步骤
 
@@ -20,7 +20,7 @@ description: 幂等导入 DramaFlow 测试数据。当用户说"添加测试数�
 ```json
 {
   "status": "imported | skipped | error",
-  "summary": "导入完成：5 部剧集，50 集" | "数据已存在（{n} 部剧集），跳过导入",
+  "summary": "导入完成：9 部剧集，90 集" | "数据已存在（{n} 部剧集），跳过导入",
   "details": {}
 }
 ```

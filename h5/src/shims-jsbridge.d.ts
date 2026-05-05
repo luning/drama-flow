@@ -4,6 +4,8 @@ interface DramaFlowBridge {
   shareDrama?(id: number, title: string): void
   login?(token: string): void
   logout?(): void
+  getAccessToken(): string
+  getRefreshToken(): string
 }
 
 interface Window {

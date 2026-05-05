@@ -10,6 +10,9 @@ client.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+    console.log(`[client.ts] ${config.method?.toUpperCase()} ${config.url} → Bearer ${token.slice(0, 10)}...`)
+  } else {
+    console.log(`[client.ts] ${config.method?.toUpperCase()} ${config.url} → NO TOKEN`)
   }
   return config
 })

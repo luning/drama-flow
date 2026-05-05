@@ -48,6 +48,12 @@ class JSBridge(activity: Activity) {
         return prefs.accessToken ?: ""
     }
 
+    @JavascriptInterface
+    fun getRefreshToken(): String {
+        val prefs = com.dramaflow.data.local.PreferencesManager(DramaFlowApp.instance)
+        return prefs.refreshToken ?: ""
+    }
+
     @Suppress("UNUSED_PARAMETER")
     @JavascriptInterface
     fun shareDrama(dramaId: Int, title: String) {

@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.db.database import get_db
+from app.middleware.auth_middleware import get_optional_user
+from app.models.user import User
 from app.services import drama_service
 
 router = APIRouter()
@@ -14,8 +16,9 @@ def list_dramas(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_optional_user),
 ):
-    return drama_service.list_dramas(db, category, page, size)
+    return drama_service.list_dramas(db, user, category, page, size)
 
 
 @router.get("/dramas/{drama_id}")

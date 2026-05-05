@@ -14,7 +14,7 @@ def seed():
     db = SessionLocal()
 
     existing = db.query(Drama).count()
-    if existing > 0:
+    if existing >= 9:
         print(f"[seed] 数据已存在（{existing} 部剧集），跳过导入")
         return
 
@@ -49,6 +49,14 @@ def seed():
               category_id=2, rating=4.7, cover_url="videos/andu_chencang/andu_chencang_03_cover.jpg", year=2024, status="completed"),
         Drama(id=5, title="契约婚姻", description="一场契约开始的婚姻，却在不经意间动了真心...",
               category_id=1, rating=4.5, cover_url="videos/andu_chencang/andu_chencang_04_cover.jpg", year=2025, status="ongoing"),
+        Drama(id=6, title="龙族崛起", description="沉睡千年的龙族觉醒，他带着龙族秘术重回都市，守护华夏龙脉。",
+              category_id=4, rating=4.3, cover_url="videos/andu_chencang/andu_chencang_00_cover.jpg", year=2025, status="ongoing"),
+        Drama(id=7, title="星际权谋", description="星际4045年，帝国继承人的权力游戏中，她是最危险的棋子。",
+              category_id=2, rating=4.2, cover_url="videos/andu_chencang/andu_chencang_01_cover.jpg", year=2025, status="ongoing"),
+        Drama(id=8, title="闪婚99天", description="协议闪婚99天，期满离婚。可99天后，他却说：契约作废，我爱你。",
+              category_id=1, rating=4.0, cover_url="videos/andu_chencang/andu_chencang_02_cover.jpg", year=2025, status="ongoing"),
+        Drama(id=9, title="财阀前夫轻点爱", description="离婚后她才发现自己怀孕了。三年后她携天才宝宝归来，前夫跪求复婚。",
+              category_id=5, rating=4.4, cover_url="videos/andu_chencang/andu_chencang_03_cover.jpg", year=2025, status="ongoing"),
     ]
     db.add_all(dramas)
     db.flush()
