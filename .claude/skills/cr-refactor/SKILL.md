@@ -25,41 +25,44 @@ description: 代码审查（Code Review）与重构建议。当用户说"审查�
 | 命名规范 | 是否符合项目命名规范（snake_case / camelCase / PascalCase）|
 | 安全 | Token 硬编码、SQL 注入、敏感信息暴露 |
 | 异常处理 | 是否缺少错误处理、是否暴露技术细节给用户 |
-| 重复 | 是否存在可提取的重复逻辑（3 次以上重复）|
+| 重复代码 | 是否存在可提取的重复逻辑（3 次以上重复）|
+| 死代码 | 未使用的变量/函数/import、注释掉的代码、不可达分支 |
+| 可读性 | 实现是否过于 tricky、命名是否误导、逻辑是否难以理解或过度设计 |
 | 状态管理 | 状态机是否完整（IDLE→BUFFERING→READY→PLAYING↔PAUSED→ERROR/ENDED）|
 | 测试 | 新功能是否有对应测试 |
 
-### 3. 输出结构化报告
+### 3. 输出报告格式
 
-```json
-{
-  "summary": {
-    "files_reviewed": 5,
-    "issues_found": 3,
-    "critical": 0,
-    "major": 1,
-    "minor": 2
-  },
-  "issues": [
-    {
-      "severity": "major",
-      "file": "backend/app/services/drama_service.py",
-      "line": 42,
-      "category": "architecture",
-      "description": "Service 层直接调用了 db.query()，但此处可以提取为 Repository 方法",
-      "suggestion": "将剧集查询提取到 DramaRepository.get_by_category()"
-    }
-  ],
-  "refactoring_candidates": [
-    {
-      "priority": "high",
-      "pattern": "重复逻辑",
-      "description": "list_dramas 和 get_drama_detail 都计算了 episode_count，可提取为公用方法",
-      "estimated_effort": "5min"
-    }
-  ],
-  "test_coverage_note": "当前修改的文件有 {n} 个对应测试"
-}
+按问题分类输出，每个问题包含：
+
+- **严重级别**：Critical / Major / Minor
+- **位置**：`文件路径:行号`
+- **问题描述与改进建议**
+
+示例：
+
+```
+## CR 报告
+
+### Critical
+无
+
+### Major
+- `backend/app/services/drama_service.py:42` — Service 层直接调用 db.query()，应提取到 Repository
+  建议：将剧集查询提取为 DramaRepository.get_by_category()
+
+### Minor
+- `backend/app/services/drama_service.py:55` — 变量命名 `x` 含义不明
+  建议：改为 `episode_count`
+
+## 重构候选
+
+| 优先级 | 模式 | 说明 | 预估工作量 |
+|--------|------|------|-----------|
+| High | 重复逻辑 | list_dramas 和 get_drama_detail 都计算了 episode_count | 5min |
+
+## 测试覆盖
+当前修改的文件有 {n} 个对应测试
 ```
 
 ### 4. 重构建议优先级
