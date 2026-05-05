@@ -196,6 +196,8 @@ Trellis 的切入点是：当你同时在 Claude Code、Cursor、GitHub Copilot 
 
 Superpowers 不做完整的 SDD 流程编排，而是专注于一件事：**把 TDD、Code Review、调试等传统工程习惯编码为 Agent 的默认动作**。它是一组可复用的 Agent Skills，安装后 Claude Code 会在日常开发中自动执行测试驱动、审查代码质量、定位 Bug 根因。适合已经有一套成熟 SDD 工具、希望补充工程纪律的团队。
 
+安装方法：在cli中运行`/plugin install superpowers@claude-plugins-official`，然后重启vs code就可以在claude code插件中使用了。
+
 ---
 
 ## 四、核心维度对比
