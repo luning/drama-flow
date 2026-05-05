@@ -3,6 +3,7 @@ package com.dramaflow.common
 import android.app.Activity
 import android.webkit.JavascriptInterface
 import com.dramaflow.DramaFlowApp
+import com.dramaflow.data.remote.TokenProvider
 import java.lang.ref.WeakReference
 
 /**
@@ -45,13 +46,13 @@ class JSBridge(activity: Activity) {
     @JavascriptInterface
     fun getAccessToken(): String {
         val prefs = com.dramaflow.data.local.PreferencesManager(DramaFlowApp.instance)
-        return prefs.accessToken ?: ""
+        return TokenProvider.getAccessToken(prefs) ?: ""
     }
 
     @JavascriptInterface
     fun getRefreshToken(): String {
         val prefs = com.dramaflow.data.local.PreferencesManager(DramaFlowApp.instance)
-        return prefs.refreshToken ?: ""
+        return TokenProvider.getRefreshToken(prefs) ?: ""
     }
 
     @Suppress("UNUSED_PARAMETER")
