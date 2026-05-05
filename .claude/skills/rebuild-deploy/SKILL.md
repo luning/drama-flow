@@ -99,23 +99,22 @@ cd /Users/ninglu/CodeFromGithub/drama-flow/android
 
 ### 5. 输出部署报告
 
-```json
-{
-  "status": "ok | partial | failed",
-  "steps": {
-    "h5_build": "ok | failed",
-    "backend": "running | started | failed",
-    "emulator": "running | started | not_found",
-    "app_install": "ok | failed"
-  },
-  "backend_log": "/tmp/dramaflow-backend.log",
-  "api_base_url": "http://localhost:8000",
-  "tips": [
-    "App 已安装，在模拟器中打开 DramaFlow 即可查看",
-    "后端 API 文档: http://localhost:8000/docs",
-    "修改 Python 代码后 --reload 会自动热重启，无需重新运行此 skill"
-  ]
-}
+逐项输出各步骤结果：
+
+```
+- H5 Build: ok | failed
+- Backend: running | started | failed
+- Emulator: running | started | not_found
+- App Install: ok | failed
+- Status: ok | partial | failed
+
+Backend log: /tmp/dramaflow-backend.log
+API base URL: http://localhost:8000
+
+Tips:
+- App 已安装，在模拟器中打开 DramaFlow 即可查看
+- 后端 API 文档: http://localhost:8000/docs
+- 修改 Python 代码后 --reload 会自动热重启，无需重新运行此 skill
 ```
 
 ## 注意事项
