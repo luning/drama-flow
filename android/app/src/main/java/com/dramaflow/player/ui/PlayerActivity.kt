@@ -343,6 +343,12 @@ class PlayerActivity : AppCompatActivity() {
                 View.GONE else View.VISIBLE
         }
 
+        // 错误浮层重试按钮
+        binding.btnRetry.setOnClickListener {
+            viewModel.recover()
+            refreshVideoUrl()
+        }
+
         // AC-PLAYER-05: Speed selector - id-based binding for all 6 speed options
         binding.speedMenu.findViewById<Button>(R.id.btn_speed_05)?.setOnClickListener {
             viewModel.setSpeed(PlaybackSpeed.SPEED_0_5X)
@@ -428,6 +434,20 @@ class PlayerActivity : AppCompatActivity() {
         viewModel.currentSpeed.observe(this) { speed ->
             player?.setPlaybackSpeed(speed.value)
             binding.btnSpeed.text = "${speed.value}x"
+            // 高亮 speed menu 中当前选中档，其它恢复灰色
+            val speedButtons = mapOf(
+                R.id.btn_speed_05 to PlaybackSpeed.SPEED_0_5X,
+                R.id.btn_speed_075 to PlaybackSpeed.SPEED_0_75X,
+                R.id.btn_speed_10 to PlaybackSpeed.SPEED_1X,
+                R.id.btn_speed_125 to PlaybackSpeed.SPEED_1_25X,
+                R.id.btn_speed_15 to PlaybackSpeed.SPEED_1_5X,
+                R.id.btn_speed_20 to PlaybackSpeed.SPEED_2X,
+            )
+            for ((id, buttonSpeed) in speedButtons) {
+                binding.speedMenu.findViewById<Button>(id)?.setTextColor(
+                    if (buttonSpeed == speed) 0xFFA29BFE.toInt() else 0xFFB0B0B0.toInt()
+                )
+            }
         }
 
         viewModel.isFullscreen.observe(this) { fullscreen ->
@@ -466,6 +486,9 @@ class PlayerActivity : AppCompatActivity() {
                 controlsVisible = true
                 binding.playerControls.visibility = View.VISIBLE
             }
+
+            // 错误浮层：ERROR 时显示，离开 ERROR 时隐藏
+            binding.playerErrorOverlay.visibility = if (state == PlayerState.ERROR) View.VISIBLE else View.GONE
         }
     }
 

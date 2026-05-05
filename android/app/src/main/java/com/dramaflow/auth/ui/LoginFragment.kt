@@ -20,6 +20,9 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentLoginBinding.bind(view)
 
+        // AC-USER-10: 勾选"记住我"后重启 App 自动登录
+        viewModel.tryAutoLogin()
+
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString()
             val password = binding.etPassword.text.toString()
