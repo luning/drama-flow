@@ -10,7 +10,30 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import okhttp3.Authenticator
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import okhttp3.Route
+import org.json.JSONObject
 import java.util.concurrent.TimeUnit
+
+/**
+ * Global session expiry signal.
+ * Authenticator emits on refresh failure; MainActivity observes and navigates to login.
+ * Thread-safe: MutableSharedFlow.tryEmit is lock-free and can be called from any thread.
+ */
+object SessionManager {
+    private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1, replay = 0)
+    val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
+
+    fun notifySessionExpired() {
+        _sessionExpired.tryEmit(Unit)
+    }
+}
 
 /**
  * Unified token access layer.
@@ -80,6 +103,104 @@ object ApiClient {
         chain.proceed(request)
     }
 
+    private val lock = Any()
+
+    /**
+     * OkHttp Authenticator that intercepts 401 responses and attempts token refresh.
+     *
+     * Flow:
+     * 1. Skip if the failed request was to auth/refresh (prevent recursion)
+     * 2. Read refresh_token from TokenProvider
+     * 3. Synchronized block to prevent thundering herd on concurrent 401s:
+     *    a. Re-check refresh_token (another thread may have already refreshed)
+     *    b. Call POST /api/auth/refresh synchronously
+     *    c. On success: store new tokens via TokenProvider, retry original request with new access_token
+     *    d. On failure: clear session, emit SessionExpired signal, return null (give up)
+     *
+     * OkHttp calls Authenticator from a background thread pool, so blocking is safe here.
+     */
+    private val authenticator = Authenticator { route: Route?, response: Response ->
+        // ---- Guard 1: Never retry the refresh endpoint itself ----
+        val requestPath = response.request.url.encodedPath
+        if (requestPath.contains("auth/refresh")) {
+            return@Authenticator null
+        }
+
+        // ---- Guard 2: Only handle 401 for requests that had Bearer auth ----
+        val failedToken = response.request.header("Authorization")
+        if (failedToken == null || !failedToken.startsWith("Bearer ")) {
+            return@Authenticator null
+        }
+
+        val prefs = PreferencesManager(DramaFlowApp.instance)
+        val originalRefreshToken = TokenProvider.getRefreshToken(prefs)
+            ?: return@Authenticator null
+
+        synchronized(lock) {
+            // ---- Guard 3: Check if another thread already refreshed ----
+            val currentRefreshToken = TokenProvider.getRefreshToken(prefs)
+            if (currentRefreshToken != originalRefreshToken) {
+                // Token already updated by another thread — retry with new access token
+                val newAccessToken = TokenProvider.getAccessToken(prefs)
+                    ?: return@Authenticator null
+                return@Authenticator response.request.newBuilder()
+                    .header("Authorization", "Bearer $newAccessToken")
+                    .build()
+            }
+
+            // ---- Build and execute refresh request synchronously ----
+            try {
+                val refreshBody = JSONObject().apply {
+                    put("refresh_token", currentRefreshToken)
+                }.toString()
+
+                val refreshRequest = Request.Builder()
+                    .url("${BuildConfig.API_BASE_URL}auth/refresh")
+                    .post(refreshBody.toRequestBody("application/json".toMediaType()))
+                    .build()
+
+                // Use a minimal OkHttpClient for the refresh call (no interceptors/authenticator)
+                val refreshClient = OkHttpClient.Builder()
+                    .connectTimeout(15, TimeUnit.SECONDS)
+                    .readTimeout(15, TimeUnit.SECONDS)
+                    .build()
+
+                val refreshResponse = refreshClient.newCall(refreshRequest).execute()
+
+                if (refreshResponse.isSuccessful) {
+                    // ---- Success: parse response, store new tokens, retry ----
+                    val bodyString = refreshResponse.body?.string() ?: return@Authenticator null
+                    val json = JSONObject(bodyString)
+                    val newAccessToken = json.getString("access_token")
+                    val newRefreshToken = json.getString("refresh_token")
+
+                    TokenProvider.setTokens(
+                        access = newAccessToken,
+                        refresh = newRefreshToken,
+                        persist = true,
+                        prefs = prefs
+                    )
+
+                    return@Authenticator response.request.newBuilder()
+                        .header("Authorization", "Bearer $newAccessToken")
+                        .build()
+                } else {
+                    // ---- Failure: clear session, signal UI, give up ----
+                    TokenProvider.clear()
+                    prefs.clearSession()
+                    SessionManager.notifySessionExpired()
+                    return@Authenticator null
+                }
+            } catch (e: Exception) {
+                // Network error or parse error: clear session, signal UI, give up
+                TokenProvider.clear()
+                prefs.clearSession()
+                SessionManager.notifySessionExpired()
+                return@Authenticator null
+            }
+        }
+    }
+
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(loggingInterceptor)
@@ -89,6 +210,7 @@ object ApiClient {
                 .build()
             chain.proceed(request)
         }
+        .authenticator(authenticator)
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
