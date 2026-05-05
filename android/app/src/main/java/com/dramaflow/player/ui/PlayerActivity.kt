@@ -333,18 +333,30 @@ class PlayerActivity : AppCompatActivity() {
                 View.GONE else View.VISIBLE
         }
 
-        for (i in 0 until binding.speedMenu.childCount) {
-            val btn = binding.speedMenu.getChildAt(i) as? Button ?: continue
-            btn.setOnClickListener {
-                val speed = when (btn.text.toString()) {
-                    "0.5x" -> PlaybackSpeed.SPEED_0_5X
-                    "1.5x" -> PlaybackSpeed.SPEED_1_5X
-                    "2.0x" -> PlaybackSpeed.SPEED_2X
-                    else -> PlaybackSpeed.SPEED_1X
-                }
-                viewModel.setSpeed(speed)
-                binding.speedMenu.visibility = View.GONE
-            }
+        // AC-PLAYER-05: Speed selector - id-based binding for all 6 speed options
+        binding.speedMenu.findViewById<Button>(R.id.btn_speed_05)?.setOnClickListener {
+            viewModel.setSpeed(PlaybackSpeed.SPEED_0_5X)
+            binding.speedMenu.visibility = View.GONE
+        }
+        binding.speedMenu.findViewById<Button>(R.id.btn_speed_075)?.setOnClickListener {
+            viewModel.setSpeed(PlaybackSpeed.SPEED_0_75X)
+            binding.speedMenu.visibility = View.GONE
+        }
+        binding.speedMenu.findViewById<Button>(R.id.btn_speed_10)?.setOnClickListener {
+            viewModel.setSpeed(PlaybackSpeed.SPEED_1X)
+            binding.speedMenu.visibility = View.GONE
+        }
+        binding.speedMenu.findViewById<Button>(R.id.btn_speed_125)?.setOnClickListener {
+            viewModel.setSpeed(PlaybackSpeed.SPEED_1_25X)
+            binding.speedMenu.visibility = View.GONE
+        }
+        binding.speedMenu.findViewById<Button>(R.id.btn_speed_15)?.setOnClickListener {
+            viewModel.setSpeed(PlaybackSpeed.SPEED_1_5X)
+            binding.speedMenu.visibility = View.GONE
+        }
+        binding.speedMenu.findViewById<Button>(R.id.btn_speed_20)?.setOnClickListener {
+            viewModel.setSpeed(PlaybackSpeed.SPEED_2X)
+            binding.speedMenu.visibility = View.GONE
         }
 
         binding.btnFullscreen.setOnClickListener {
