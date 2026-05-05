@@ -6,6 +6,7 @@ import com.dramaflow.data.remote.ApiClient
 import com.dramaflow.data.remote.RegisterRequest
 import com.dramaflow.data.remote.LoginRequest
 import com.dramaflow.data.remote.RefreshRequest
+import com.dramaflow.data.remote.TokenProvider
 import com.dramaflow.data.remote.TokenResponse
 
 class AuthRepository(
@@ -40,9 +41,13 @@ class AuthRepository(
         val token = resp.body()!!
         currentToken = token
 
-        // 始终持久化 Token，AuthInterceptor 从 SharedPreferences 读取
-        prefs.accessToken = token.access_token
-        prefs.refreshToken = token.refresh_token
+        // 根据 remember 标记条件持久化 Token
+        TokenProvider.setTokens(
+            access = token.access_token,
+            refresh = token.refresh_token,
+            persist = remember,
+            prefs = prefs
+        )
         if (remember) {
             prefs.isRemembered = true
         }
@@ -59,14 +64,19 @@ class AuthRepository(
             return null
         }
         val token = resp.body()!!
-        prefs.accessToken = token.access_token
-        prefs.refreshToken = token.refresh_token
+        TokenProvider.setTokens(
+            access = token.access_token,
+            refresh = token.refresh_token,
+            persist = true,
+            prefs = prefs
+        )
         currentToken = token
         return token
     }
 
     fun logout() {
         currentToken = null
+        TokenProvider.clear()
         prefs.clearSession()
     }
 
