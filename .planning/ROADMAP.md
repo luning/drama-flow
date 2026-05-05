@@ -37,8 +37,8 @@
 **UI hint**: yes
 
 **Plan list:**
-- [ ] `02-01-PLAN.md` -- Add 0.75x/1.25x speed buttons, refactor click handler to id-based binding (PLAYER-01)
-- [ ] `02-02-PLAN.md` -- Audit AC-PLAYER-10~21 transitions, fix recover() ExoPlayer reset, add IDLE on release (PLAYER-02/03/04)
+- [x] `02-01-PLAN.md` -- Add 0.75x/1.25x speed buttons, refactor click handler to id-based binding (PLAYER-01)
+- [x] `02-02-PLAN.md` -- Audit AC-PLAYER-10~21 transitions, fix recover() ExoPlayer reset, add IDLE on release (PLAYER-02/03/04)
 
 ### Phase 3: Auth Token Refresh Enhancement
 **Goal**: Auth system automatically refreshes expired tokens and handles refresh failure gracefully
@@ -62,7 +62,11 @@
 **Success Criteria** (what must be TRUE):
   1. Backend pytest covers auth refresh flow: normal refresh, refresh token expired, invalid token -- all scenarios pass
   2. Android ViewModel unit tests cover: state machine transitions, speed switching, recover() path -- all tests pass
-**Plans**: TBD
+**Plans**: 2 plans
+
+**Plan list:**
+- [ ] `04-01-PLAN.md` -- Backend pytest for auth refresh flow (normal, expired, invalid) -- TEST-01
+- [ ] `04-02-PLAN.md` -- Android ViewModel unit tests (state machine, speed, recover) -- TEST-02
 
 ## Progress
 
@@ -74,4 +78,4 @@ Phases execute in numeric order: 2 -> 3 -> 4
 | 1. Homepage Recommendation Validation | v1.0 | 2/2 | Complete | 2026-05-05 |
 | 2. Player State Machine Audit | v1.1 | 2/2 | Complete | 2026-05-05 |
 | 3. Auth Token Refresh Enhancement | v1.1 | 2/2 | Complete | 2026-05-05 |
-| 4. Test Coverage | v1.1 | 0/0 | Not started | - |
+| 4. Test Coverage | v1.1 | 0/2 | Planned | - |

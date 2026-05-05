@@ -39,7 +39,7 @@ enum class PlayerState {
 //   AC-19: Speed changes do NOT affect state machine state
 class PlayerViewModel : ViewModel() {
 
-    private val api = ApiClient.create<WatchRecordApi>()
+    private val api by lazy { ApiClient.create<WatchRecordApi>() }
 
     private val _playerState = MutableLiveData(PlayerState.IDLE)
     val playerState: LiveData<PlayerState> = _playerState
