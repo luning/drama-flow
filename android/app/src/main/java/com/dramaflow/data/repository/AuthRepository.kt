@@ -40,9 +40,10 @@ class AuthRepository(
         val token = resp.body()!!
         currentToken = token
 
+        // 始终持久化 Token，AuthInterceptor 从 SharedPreferences 读取
+        prefs.accessToken = token.access_token
+        prefs.refreshToken = token.refresh_token
         if (remember) {
-            prefs.accessToken = token.access_token
-            prefs.refreshToken = token.refresh_token
             prefs.isRemembered = true
         }
 

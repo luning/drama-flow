@@ -38,7 +38,12 @@ def get_record(
 ):
     record = watch_record_service.get_record(db, user.id, episode_id)
     if not record:
-        return {"progress": 0, "last_position": 0, "completed": False}
+        return {
+            "id": 0,
+            "progress": 0.0,
+            "last_position": 0.0,
+            "completed": False,
+        }
     return record
 
 

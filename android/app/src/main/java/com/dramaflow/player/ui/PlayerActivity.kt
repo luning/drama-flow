@@ -38,6 +38,7 @@ class PlayerActivity : AppCompatActivity() {
     private var currentEpisodeId: Int = 0
     private var currentEpisodeNumber: Int = 1
     private var episodeCache: List<EpisodeItem> = emptyList()
+    private var hasResumedFromPosition = false
 
     // 是否正在拖拉进度条
     private var isSeeking = false
@@ -97,6 +98,13 @@ class PlayerActivity : AppCompatActivity() {
                             } else {
                                 viewModel.setState(PlayerState.PAUSED)
                             }
+                            // 首次就绪时续播
+                            if (!hasResumedFromPosition) {
+                                hasResumedFromPosition = true
+                                viewModel.fetchLastPosition(currentEpisodeId) { lastPosition ->
+                                    player?.seekTo(lastPosition)
+                                }
+                            }
                         }
                         Player.STATE_ENDED -> {
                             viewModel.setState(PlayerState.ENDED)
@@ -108,8 +116,14 @@ class PlayerActivity : AppCompatActivity() {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     if (isPlaying) {
                         binding.btnPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+                        viewModel.startPeriodicReporting(currentEpisodeId)
                     } else {
                         binding.btnPlayPause.setImageResource(android.R.drawable.ic_media_play)
+                        viewModel.stopPeriodicReporting()
+                        // 暂停时即时上报进度
+                        player?.let { p ->
+                            viewModel.reportProgress(currentEpisodeId, p.currentPosition, p.duration)
+                        }
                     }
                 }
 
@@ -165,6 +179,7 @@ class PlayerActivity : AppCompatActivity() {
                         val current = p.currentPosition
                         val duration = p.duration
                         updateProgressUi(current, duration)
+                        viewModel.updatePlaybackPosition(current, duration)
                     }
                 }
             }
@@ -258,6 +273,10 @@ class PlayerActivity : AppCompatActivity() {
             Toast.makeText(this, "该集视频地址无效", Toast.LENGTH_SHORT).show()
             return
         }
+
+        // 切换剧集：重置续播标记，下一轮 STATE_READY 会重新拉取
+        hasResumedFromPosition = false
+        viewModel.stopPeriodicReporting()
 
         currentEpisodeId = ep.id
         currentEpisodeNumber = ep.episode_number
@@ -420,6 +439,13 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        // 退出时即时上报进度
+        player?.let { p ->
+            if (p.playbackState == Player.STATE_READY || p.isPlaying) {
+                viewModel.reportProgress(currentEpisodeId, p.currentPosition, p.duration)
+            }
+        }
+        viewModel.stopPeriodicReporting()
         player?.pause()
     }
 
