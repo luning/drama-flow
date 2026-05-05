@@ -450,6 +450,16 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         viewModel.playerState.observe(this) { state ->
+            // AC-PLAYER-17: ERROR→BUFFERING — reset ExoPlayer to resume playback
+            // When recover() sets BUFFERING after an error, ExoPlayer is in STATE_IDLE
+            // and needs prepare() to restart playback
+            if (state == PlayerState.BUFFERING && player?.playbackState == Player.STATE_IDLE) {
+                player?.apply {
+                    prepare()
+                    playWhenReady = true
+                }
+            }
+
             // AC-PLAYER-16/15: Auto-show controls on error or playback end
             if (state == PlayerState.ENDED || state == PlayerState.ERROR) {
                 autoHideJob?.cancel()
@@ -476,6 +486,8 @@ class PlayerActivity : AppCompatActivity() {
         progressJob?.cancel()
         nextEpisodeJob?.cancel()
         player?.release()
+        // AC-PLAYER-18: Reset state to IDLE after player release
+        viewModel.setState(PlayerState.IDLE)
         player = null
     }
 
