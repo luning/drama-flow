@@ -1,7 +1,6 @@
 # DramaFlow 可执行规格说明 (SPEC.md)
 
-> 覆盖范围：迭代 1 + 迭代 2 核心领域模型
-> 迭代 3 的 Spec 将以增量方式补写
+> 覆盖范围：迭代 1 + 迭代 2 核心领域模型，迭代 3 增量更新（标注 [Changed] 的项目为迭代 3 变更）
 
 ---
 
@@ -32,14 +31,14 @@
    - 返回 `201 Created` + 用户基本信息（不含密码）
    - 客户端跳转到登录页
 
-2. **登录**
+2. **登录** [Changed - 迭代3 增强记住我逻辑]
    - 用户输入邮箱 + 密码
    - 客户端提交 POST `/api/auth/login`
    - 服务端校验邮箱是否存在、密码是否匹配
    - 校验通过 → 签发 JWT Access Token + Refresh Token
    - 返回 `200 OK` + `{ access_token, refresh_token, user }`
-   - Android 端将 Token 存入内存（ViewModel）
-   - 如果勾选"记住我"，同步存入 EncryptedSharedPreferences
+   - 如果勾选"记住我"：Token 持久化存入 EncryptedSharedPreferences，下次启动 App 时自动加载并验证有效性
+   - 未勾选"记住我"：Token 仅存内存（ViewModel），App 退出后需重新登录
 
 3. **登出**
    - 客户端调用 POST `/api/auth/logout`（携带 Access Token）
@@ -47,7 +46,7 @@
    - 返回 `200 OK`
    - Android 端清除本地 Token 缓存
 
-4. **Token 刷新**（迭代 3 基础，此处预留接口）
+4. **Token 刷新** [Changed - 迭代3 完整实现]
    - 客户端检测 Access Token 过期
    - 使用 Refresh Token 调用 POST `/api/auth/refresh`
    - 服务端验证 Refresh Token 有效性
@@ -77,6 +76,9 @@
 | AC-USER-07 | 用户可以成功登出，登出后 Token 不可再用 | 登出流程 |
 | AC-USER-08 | 所有认证接口返回符合 OpenAPI 规范的错误格式 | 通用 |
 | AC-USER-09 | Token 中包含用户 ID 和角色信息，可解码验证 | JWT |
+| AC-USER-10 | 登录勾选"记住我"后，Token 持久化存入 EncryptedSharedPreferences，重启 App 后自动加载并保持登录状态 | 迭代3 新增 |
+| AC-USER-11 | Access Token 过期时自动使用 Refresh Token 续期，用户无感知 | 迭代3 新增 |
+| AC-USER-12 | Refresh Token 失效后静默跳转登录页，不产生白屏或崩溃 | 迭代3 新增 |
 
 ---
 
@@ -99,9 +101,10 @@
 
 ### 主流程
 
-1. **获取剧集列表**
+1. **获取剧集列表** [Changed - 迭代3 新增个性化推荐]
    - 客户端 GET `/api/dramas?category={cat}&page={n}&size={m}`
-   - 服务端按分类筛选，按更新时间降序排列
+   - 未登录用户或无分类参数时：按分类筛选（不传分类返回全量），按更新时间降序排列
+   - 已登录用户且未指定分类时：基于用户观看历史（WatchRecord）进行个性化排序，同类优先、已看完降权
    - 支持分页：`page` 从 1 开始，`size` 默认 20
    - 返回 `200 OK` + `{ items: [...], total, page, size }`
 
@@ -132,12 +135,15 @@
 
 | AC-ID | 描述 | 关联 |
 |-------|------|------|
-| AC-DRAMA-01 | 首页按分类展示剧集列表，支持分页 | 列表接口 |
-| AC-DRAMA-02 | 不传分类参数时返回全量剧集 | 列表接口 |
+| AC-DRAMA-01 | 首页按分类展示剧集列表，支持分页；已登录用户未指定分类时返回个性化推荐 | 列表接口 [Changed] |
+| AC-DRAMA-02 | 不传分类参数时：未登录用户返回全量剧集，已登录用户返回个性化推荐 | 列表接口 [Changed] |
 | AC-DRAMA-03 | Banner 返回 3-5 部推荐剧集 | Banner |
 | AC-DRAMA-04 | 剧集详情接口返回完整信息（标题/描述/封面/分类/评分/集数） | 详情接口 |
 | AC-DRAMA-05 | 请求不存在的剧集返回 404 | 异常处理 |
 | AC-DRAMA-06 | 剧集按照更新时间降序排列 | 排序 |
+| AC-DRAMA-07 | 已登录用户访问首页时，剧集列表基于观看历史进行个性化排序（同类优先） | 迭代3 新增 |
+| AC-DRAMA-08 | 用户已看完的剧集在推荐列表中权重降低，避免重复推荐 | 迭代3 新增 |
+| AC-DRAMA-09 | 未登录用户不受个性化推荐影响，按默认排序展示全量剧集 | 迭代3 新增 |
 
 ---
 
@@ -366,9 +372,11 @@
    - 用户拖动 SeekBar 跳转到指定位置，拖动时实时显示时间
    - SeekBar 和当前时间/总时长每 250ms 更新一次
 
-3. **倍速切换**
+3. **倍速切换** [Changed - 迭代3 状态机集成]
    - 用户点击倍速按钮展开速度选择浮层（0.5x / 0.75x / 1.0x / 1.25x / 1.5x / 2.0x）
    - 选择后播放器调整播放速度，按钮文案同步更新
+   - 倍速切换不改变播放状态机当前状态（PLAYING 仍为 PLAYING，PAUSED 仍为 PAUSED）
+   - 倍速值由 PlayerViewModel 管理，作为状态机的一个独立属性
 
 4. **全屏切换**
    - 用户点击全屏按钮进入全屏模式（隐藏状态栏，横屏显示）
@@ -387,10 +395,11 @@
    - 检测到 401/403 错误时自动请求 `GET /api/episodes/{episode_id}/video-url` 刷新签名
    - 获取新签名后更新 MediaItem 继续播放
 
-7. **状态机同步**
+7. **状态机同步** [Changed - 迭代3 新增倍速属性]
    - ExoPlayer 回调 `onPlaybackStateChanged` 驱动 PlayerViewModel 状态机
    - IDLE → BUFFERING → READY (PLAYING/PAUSED) → ENDED
    - 播放出错时切换到 ERROR 状态
+   - 倍速（speed）作为 PlayerViewModel 的独立属性，默认 1.0x，切换倍速不影响主状态机流转
 
 ### 异常处理
 
@@ -424,6 +433,9 @@
 | AC-PLAYER-16 | 播放出错时状态切换到 ERROR，控制条自动显示 | 状态机出错 |
 | AC-PLAYER-17 | ERROR 状态下 recover() 方法将状态从 ERROR 切换回 BUFFERING 并重新播放 | 状态机恢复 |
 | AC-PLAYER-18 | player release 后状态回到 IDLE | 状态机释放 |
+| AC-PLAYER-19 | 倍速切换不改变播放状态机当前状态（PLAYING 仍为 PLAYING，PAUSED 仍为 PAUSED） | 迭代3 新增 |
+| AC-PLAYER-20 | PlayerViewModel 维护当前倍速属性，支持 0.5x~2.0x 共 6 档枚举值，默认 1.0x | 迭代3 新增 |
+| AC-PLAYER-21 | 倍速切换后播放速度即时生效，SeekBar 时间显示不受倍速影响（按实际播放时间） | 迭代3 新增 |
 
 ---
 
@@ -449,4 +461,4 @@
 
 ---
 
-*本文档覆盖迭代 1 + 迭代 2。迭代 3（个性化推荐、倍速控制、Auth 增强）的 Spec 将以增量方式补写。*
+*本文档覆盖迭代 1 + 迭代 2 + 迭代 3 增量更新。标注 `[Changed]` 的项为迭代 3 变更内容，完整历史记录在 git 中。*
