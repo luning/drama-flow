@@ -26,6 +26,17 @@ enum class PlayerState {
     IDLE, BUFFERING, READY, PLAYING, PAUSED, ERROR, ENDED
 }
 
+// Player State Machine — AC-PLAYER-10~21
+// States: IDLE, BUFFERING, READY, PLAYING, PAUSED, ENDED, ERROR
+// Transitions:
+//   AC-12: IDLE → BUFFERING → READY (initial prepare)
+//   AC-13: READY → PLAYING (playWhenReady=true) / PAUSED (playWhenReady=false)
+//   AC-14: PLAYING/PAUSED → BUFFERING → PLAYING/PAUSED (seek)
+//   AC-15: PLAYING → ENDED (playback completes)
+//   AC-16: PLAYING/PAUSED/BUFFERING → ERROR (playback error)
+//   AC-17: ERROR → BUFFERING → READY (recover)
+//   AC-18: PLAYING/PAUSED/ENDED/ERROR → IDLE (release)
+//   AC-19: Speed changes do NOT affect state machine state
 class PlayerViewModel : ViewModel() {
 
     private val api = ApiClient.create<WatchRecordApi>()
@@ -56,6 +67,7 @@ class PlayerViewModel : ViewModel() {
         _currentSpeed.value = speed
     }
 
+    // AC-PLAYER-17: recover triggers BUFFERING state; ExoPlayer reset handled in PlayerActivity observer
     fun recover() {
         setState(PlayerState.BUFFERING)
     }
