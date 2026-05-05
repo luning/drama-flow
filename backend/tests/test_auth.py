@@ -149,3 +149,20 @@ class TestAuth:
             "refresh_token": "invalid_token_here"
         })
         assert response.status_code == 401
+
+    def test_refresh_token_expired(self, client):
+        """Refresh 接口使用过期的 refresh token 返回 401"""
+        import jwt
+        from app.config import settings
+
+        expired_token = jwt.encode(
+            {"sub": "1", "type": "refresh", "exp": 0},
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm,
+        )
+        response = client.post("/api/auth/refresh", json={
+            "refresh_token": expired_token,
+        })
+        assert response.status_code == 401
+        data = response.json()
+        assert "detail" in data
