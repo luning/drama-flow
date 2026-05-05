@@ -486,6 +486,8 @@ class PlayerActivity : AppCompatActivity() {
         progressJob?.cancel()
         nextEpisodeJob?.cancel()
         player?.release()
+        // AC-PLAYER-18: Reset state to IDLE after player release
+        viewModel.setState(PlayerState.IDLE)
         player = null
     }
 
