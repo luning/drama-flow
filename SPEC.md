@@ -415,8 +415,15 @@
 | AC-PLAYER-07 | 剧集模式下显示上/下一集按钮，首末集置灰提示 | 剧集导航 |
 | AC-PLAYER-08 | 当前集播放结束后自动加载下一集并提示 | 自动连播 |
 | AC-PLAYER-09 | 签名 URL 过期时自动刷新并恢复播放 | URL 过期处理 |
-| AC-PLAYER-10 | 播放器状态机正确同步（IDLE→BUFFERING→READY→PLAYING/PAUSED→ENDED/ERROR）| 状态机 |
+| AC-PLAYER-10 | 播放器状态机覆盖7个状态（IDLE/BUFFERING/READY/PLAYING/PAUSED/ENDED/ERROR）及合法转换，状态仅由 onPlaybackStateChanged 驱动 | 状态机 |
 | AC-PLAYER-11 | 横屏旋转不重启 Activity，播放状态不丢失 | 配置变更 |
+| AC-PLAYER-12 | 初始状态为 IDLE，prepare 后进入 BUFFERING，缓冲完成后进入 READY | 状态机初始化 |
+| AC-PLAYER-13 | READY 时根据 playWhenReady 决定进入 PLAYING 或 PAUSED | 状态机播放控制 |
+| AC-PLAYER-14 | seek 拖动时状态从 PLAYING/PAUSED 进入 BUFFERING，缓冲完成后恢复到原状态 | 状态机 seek |
+| AC-PLAYER-15 | 播放完成后状态切换到 ENDED | 状态机结束 |
+| AC-PLAYER-16 | 播放出错时状态切换到 ERROR，控制条自动显示 | 状态机出错 |
+| AC-PLAYER-17 | ERROR 状态下 recover() 方法将状态从 ERROR 切换回 BUFFERING 并重新播放 | 状态机恢复 |
+| AC-PLAYER-18 | player release 后状态回到 IDLE | 状态机释放 |
 
 ---
 

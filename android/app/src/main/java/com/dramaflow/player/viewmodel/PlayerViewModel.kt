@@ -1,5 +1,6 @@
 package com.dramaflow.player.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -36,11 +37,19 @@ class PlayerViewModel : ViewModel() {
     val isFullscreen: LiveData<Boolean> = _isFullscreen
 
     fun setState(state: PlayerState) {
-        _playerState.value = state
+        val previous = _playerState.value
+        if (previous != state) {
+            Log.d("PlayerStateMachine", "${previous} → ${state}")
+            _playerState.value = state
+        }
     }
 
     fun setSpeed(speed: PlaybackSpeed) {
         _currentSpeed.value = speed
+    }
+
+    fun recover() {
+        setState(PlayerState.BUFFERING)
     }
 
     fun toggleFullscreen() {

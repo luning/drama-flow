@@ -88,8 +88,10 @@ class PlayerActivity : AppCompatActivity() {
             addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     when (playbackState) {
+                        Player.STATE_IDLE -> viewModel.setState(PlayerState.IDLE)
                         Player.STATE_BUFFERING -> viewModel.setState(PlayerState.BUFFERING)
                         Player.STATE_READY -> {
+                            viewModel.setState(PlayerState.READY)
                             if (playWhenReady) {
                                 viewModel.setState(PlayerState.PLAYING)
                             } else {
@@ -105,13 +107,8 @@ class PlayerActivity : AppCompatActivity() {
 
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     if (isPlaying) {
-                        viewModel.setState(PlayerState.PLAYING)
                         binding.btnPlayPause.setImageResource(android.R.drawable.ic_media_pause)
                     } else {
-                        val state = player?.playbackState
-                        if (state != Player.STATE_ENDED && state != Player.STATE_BUFFERING) {
-                            viewModel.setState(PlayerState.PAUSED)
-                        }
                         binding.btnPlayPause.setImageResource(android.R.drawable.ic_media_play)
                     }
                 }
@@ -134,6 +131,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun refreshVideoUrl() {
+        viewModel.recover()
         lifecycleScope.launch {
             try {
                 val api = ApiClient.create<HomeApi>()
