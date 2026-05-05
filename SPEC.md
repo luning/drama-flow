@@ -44,7 +44,8 @@
    - 客户端调用 POST `/api/auth/logout`（携带 Access Token）
    - 服务端将 Token 加入黑名单（可选：Redis / 内存 Set）
    - 返回 `200 OK`
-   - Android 端清除本地 Token 缓存
+   - Android 端清除本地 Token 缓存，跳转登录页
+   - 主页提供退出登录入口（`popUpToInclusive=true` 清除回退栈）
 
 4. **Token 刷新** [Changed - 迭代3 完整实现]
    - 客户端检测 Access Token 过期
