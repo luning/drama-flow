@@ -12,6 +12,43 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
+/**
+ * Unified token access layer.
+ * Readers get in-memory token first, fall back to EncryptedSharedPreferences.
+ * Writers control persistence via `persist` flag (for remember-me).
+ *
+ * Thread safety: memoryAccessToken and memoryRefreshToken are @Volatile,
+ * making reads visible across OkHttp's background threads and coroutine dispatchers.
+ */
+object TokenProvider {
+    @Volatile
+    private var memoryAccessToken: String? = null
+    @Volatile
+    private var memoryRefreshToken: String? = null
+
+    fun getAccessToken(prefs: PreferencesManager): String? {
+        return memoryAccessToken ?: prefs.accessToken
+    }
+
+    fun getRefreshToken(prefs: PreferencesManager): String? {
+        return memoryRefreshToken ?: prefs.refreshToken
+    }
+
+    fun setTokens(access: String, refresh: String, persist: Boolean, prefs: PreferencesManager) {
+        memoryAccessToken = access
+        memoryRefreshToken = refresh
+        if (persist) {
+            prefs.accessToken = access
+            prefs.refreshToken = refresh
+        }
+    }
+
+    fun clear() {
+        memoryAccessToken = null
+        memoryRefreshToken = null
+    }
+}
+
 object ApiClient {
 
     private val moshi = Moshi.Builder()
@@ -30,7 +67,7 @@ object ApiClient {
     private val authInterceptor = Interceptor { chain ->
         val original = chain.request()
         val prefs = PreferencesManager(DramaFlowApp.instance)
-        val token = prefs.accessToken
+        val token = TokenProvider.getAccessToken(prefs)
 
         val request = if (token != null) {
             original.newBuilder()
