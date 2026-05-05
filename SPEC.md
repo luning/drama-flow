@@ -333,6 +333,93 @@
 
 ---
 
+## 六、Player 播放器领域
+
+### 领域名词
+
+| 术语 | 定义 |
+|------|------|
+| PlayerActivity | Android 原生播放器 Activity，使用 ExoPlayer (Media3) 播放视频 |
+| 控制条 | 播放器控制栏，包含播放/暂停、进度条、时间显示、倍速、全屏、上/下一集、返回按钮 |
+| PlayerViewModel | 播放器状态管理，维护播放状态机（IDLE/BUFFERING/READY/PLAYING/PAUSED/ERROR/ENDED）|
+| 签名 URL | 火山引擎 TOS 预签名 URL，有时效性（默认 6h）|
+| 全屏模式 | 播放器横屏全屏显示，隐藏状态栏和控制条（3s 无操作后自动隐藏）|
+| 剧集模式 | drama_id > 0 时，播放器显示上/下一集按钮并支持自动连播 |
+
+### 前置条件
+
+- Android ExoPlayer (Media3) 依赖已集成
+- 后端 `/api/episodes/{id}/video-url` 接口可用
+- 火山引擎 TOS 密钥已配置（否则返回 503 降级提示）
+- 播放器 Activity 已在 AndroidManifest 中注册，含 `configChanges` 配置防止横屏重启
+
+### 主流程
+
+1. **进入播放器**
+   - H5 详情页通过 JSBridge `window.DramaFlowBridge.openPlayer(episodeId, dramaId, episodeNumber)` 调用
+   - 或通过 `window.DramaFlowBridge.playVideo(episodeId, videoUrl, title, dramaId, episodeNumber)` 直接传入 URL
+   - PlayerActivity 通过 Intent 接收参数并初始化 ExoPlayer
+   - 播放器启动后自动缓冲并播放视频
+
+2. **播放控制**
+   - 用户点击播放/暂停按钮切换播放状态，图标同步切换
+   - 用户拖动 SeekBar 跳转到指定位置，拖动时实时显示时间
+   - SeekBar 和当前时间/总时长每 250ms 更新一次
+
+3. **倍速切换**
+   - 用户点击倍速按钮展开速度选择浮层（0.5x / 0.75x / 1.0x / 1.25x / 1.5x / 2.0x）
+   - 选择后播放器调整播放速度，按钮文案同步更新
+
+4. **全屏切换**
+   - 用户点击全屏按钮进入全屏模式（隐藏状态栏，横屏显示）
+   - 3 秒无操作后控制条自动隐藏
+   - 用户点击视频画面切换控制条显示/隐藏
+   - 再次点击退出全屏按钮恢复竖屏模式，控制条保持可见
+
+5. **剧集导航（剧集模式下）**
+   - 用户点击上一集/下一集按钮切换到对应剧集
+   - 首集时上一集按钮置灰，末集时下一集按钮置灰
+   - 当前集播放结束后自动加载并播放下一集
+   - 全部剧集播放完毕后提示并返回
+
+6. **签名 URL 过期处理**
+   - 播放器监听 ExoPlayer 错误事件
+   - 检测到 401/403 错误时自动请求 `GET /api/episodes/{episode_id}/video-url` 刷新签名
+   - 获取新签名后更新 MediaItem 继续播放
+
+7. **状态机同步**
+   - ExoPlayer 回调 `onPlaybackStateChanged` 驱动 PlayerViewModel 状态机
+   - IDLE → BUFFERING → READY (PLAYING/PAUSED) → ENDED
+   - 播放出错时切换到 ERROR 状态
+
+### 异常处理
+
+| 异常场景 | 错误响应 | 处理方式 |
+|---------|---------|---------|
+| 视频 URL 过期 | ExoPlayer 401/403 错误 | 自动刷新签名 URL 后重试 |
+| TOS 服务不可用 | 后端 503 | 显示"视频服务暂不可用" |
+| 剧集 ID 无效 | 后端 404 | 提示"单集不存在" |
+| 网络异常 | ExoPlayer 连接错误 | 显示 Toast 错误提示 |
+| 视频地址为空 | 播放器初始化失败 | 提示"该集视频地址无效" |
+
+### 验收标准 (AC)
+
+| AC-ID | 描述 | 关联 |
+|-------|------|------|
+| AC-PLAYER-01 | 从 H5 详情页点击播放可跳转到 PlayerActivity 并开始播放 | 进入播放 |
+| AC-PLAYER-02 | 播放/暂停按钮可切换播放状态，图标同步变化 | 播放控制 |
+| AC-PLAYER-03 | SeekBar 实时反映播放进度，拖动可跳转 | 进度控制 |
+| AC-PLAYER-04 | 控制条显示当前播放时间和视频总时长（mm:ss 格式） | 时间显示 |
+| AC-PLAYER-05 | 倍速切换浮层含 0.5x~2.0x 选项，选择后正常生效 | 倍速控制 |
+| AC-PLAYER-06 | 全屏模式隐藏状态栏，控制条 3 秒后自动隐藏，点击画面切换 | 全屏 |
+| AC-PLAYER-07 | 剧集模式下显示上/下一集按钮，首末集置灰提示 | 剧集导航 |
+| AC-PLAYER-08 | 当前集播放结束后自动加载下一集并提示 | 自动连播 |
+| AC-PLAYER-09 | 签名 URL 过期时自动刷新并恢复播放 | URL 过期处理 |
+| AC-PLAYER-10 | 播放器状态机正确同步（IDLE→BUFFERING→READY→PLAYING/PAUSED→ENDED/ERROR）| 状态机 |
+| AC-PLAYER-11 | 横屏旋转不重启 Activity，播放状态不丢失 | 配置变更 |
+
+---
+
 ## 附录：API 接口总览
 
 | 方法 | 路径 | 模块 | 认证 |

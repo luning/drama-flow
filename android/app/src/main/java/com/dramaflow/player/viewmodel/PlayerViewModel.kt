@@ -35,6 +35,10 @@ class PlayerViewModel : ViewModel() {
     private val _isFullscreen = MutableLiveData(false)
     val isFullscreen: LiveData<Boolean> = _isFullscreen
 
+    fun setState(state: PlayerState) {
+        _playerState.value = state
+    }
+
     fun setSpeed(speed: PlaybackSpeed) {
         _currentSpeed.value = speed
     }

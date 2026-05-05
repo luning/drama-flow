@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.services import episode_service
+from app.services.tos_service import tos_service
 
 router = APIRouter()
 
@@ -19,3 +20,13 @@ def episode_detail(episode_id: int, db: Session = Depends(get_db)):
     if not ep:
         raise HTTPException(status_code=404, detail="单集不存在")
     return ep
+
+
+@router.get("/episodes/{episode_id}/video-url")
+def episode_video_url(episode_id: int, db: Session = Depends(get_db)):
+    if not tos_service.is_available():
+        raise HTTPException(status_code=503, detail="视频服务暂不可用")
+    url, expires_at = episode_service.get_video_url(db, episode_id)
+    if not url:
+        raise HTTPException(status_code=404, detail="单集不存在")
+    return {"url": url, "expires_at": expires_at}

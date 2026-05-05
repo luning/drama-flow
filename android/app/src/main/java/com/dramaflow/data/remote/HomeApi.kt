@@ -23,6 +23,9 @@ interface HomeApi {
 
     @GET("dramas/{dramaId}/episodes")
     suspend fun listEpisodes(@Path("dramaId") dramaId: Int): Response<List<EpisodeItem>>
+
+    @GET("episodes/{episodeId}/video-url")
+    suspend fun getVideoUrl(@Path("episodeId") episodeId: Int): Response<VideoUrlResponse>
 }
 
 data class PaginatedDramas(val items: List<DramaItem>, val total: Int, val page: Int, val size: Int)
@@ -31,3 +34,4 @@ data class DramaDetail(val id: Int, val title: String, val description: String, 
 data class BannerItem(val drama_id: Int, val title: String, val image_url: String)
 data class CategoryItem(val id: Int, val name: String, val slug: String)
 data class EpisodeItem(val id: Int, val episode_number: Int, val title: String, val duration: String, val video_url: String = "")
+data class VideoUrlResponse(val url: String, val expires_at: String)

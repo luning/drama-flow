@@ -30,6 +30,19 @@ class JSBridge(activity: Activity) {
     }
 
     @JavascriptInterface
+    fun openPlayer(episodeId: Int, dramaId: Int, episodeNumber: Int) {
+        val act = activityRef.get() ?: return
+        val intent = android.content.Intent(act, Class.forName("com.dramaflow.player.ui.PlayerActivity")).apply {
+            putExtra("episode_id", episodeId)
+            putExtra("video_url", "")
+            putExtra("title", "")
+            putExtra("drama_id", dramaId)
+            putExtra("episode_number", episodeNumber)
+        }
+        act.startActivity(intent)
+    }
+
+    @JavascriptInterface
     fun getAccessToken(): String {
         val prefs = com.dramaflow.data.local.PreferencesManager(DramaFlowApp.instance)
         return prefs.accessToken ?: ""
