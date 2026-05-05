@@ -54,10 +54,12 @@ mp4/
 # Claude Code
 .claude/projects/
 
+# GSD planning artifacts (auto-generated, project-agnostic)
+.planning/
+
 # SDD tooling runtime files (auto-installed, not project source)
 .claude/agents/
-.claude/commands/gsd/
-.claude/commands/opsx/
+.claude/commands/
 .claude/get-shit-done/
 .claude/gsd-file-manifest.json
 .claude/hooks/
