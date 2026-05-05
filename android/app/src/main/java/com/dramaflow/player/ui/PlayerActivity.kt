@@ -139,13 +139,19 @@ class PlayerActivity : AppCompatActivity() {
                 override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                     // AC-PLAYER-16: Playback error → ERROR state
                     viewModel.setState(PlayerState.ERROR)
-                    // 401/403 — 签名 URL 过期，尝试重新获取
-                    if (error.errorCode == androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED
-                        || error.errorCode == androidx.media3.common.PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS) {
-                        Toast.makeText(this@PlayerActivity, "视频地址已过期，正在重新获取…", Toast.LENGTH_SHORT).show()
-                        refreshVideoUrl()
-                    } else {
-                        Toast.makeText(this@PlayerActivity, "播放出错: ${error.localizedMessage}", Toast.LENGTH_SHORT).show()
+                    when (error.errorCode) {
+                        androidx.media3.common.PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> {
+                            // 401/403 — 可能是签名 URL 过期，尝试自动刷新
+                            Toast.makeText(this@PlayerActivity, "视频地址已过期，正在重新获取…", Toast.LENGTH_SHORT).show()
+                            refreshVideoUrl()
+                        }
+                        androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> {
+                            // 断网 — 不自动恢复，显示错误浮层让用户手动重试
+                            Toast.makeText(this@PlayerActivity, "网络连接失败", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> {
+                            Toast.makeText(this@PlayerActivity, "播放出错: ${error.localizedMessage}", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             })
@@ -155,7 +161,6 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun refreshVideoUrl() {
-        viewModel.recover()
         lifecycleScope.launch {
             try {
                 val api = ApiClient.create<HomeApi>()
@@ -164,6 +169,7 @@ class PlayerActivity : AppCompatActivity() {
                     val body = resp.body()
                     val url = body?.url
                     if (!url.isNullOrBlank()) {
+                        viewModel.recover()
                         player?.apply {
                             val mediaItem = MediaItem.fromUri(url)
                             setMediaItem(mediaItem)

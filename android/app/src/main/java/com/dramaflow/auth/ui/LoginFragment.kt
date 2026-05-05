@@ -36,7 +36,14 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
 
         viewModel.loginState.observe(viewLifecycleOwner) { state ->
             when (state) {
+                AuthState.Checking -> {
+                    binding.loginForm.visibility = View.GONE
+                    binding.loginLoading.visibility = View.VISIBLE
+                    binding.tvError.visibility = View.GONE
+                }
                 is AuthState.Loading -> {
+                    binding.loginForm.visibility = View.VISIBLE
+                    binding.loginLoading.visibility = View.GONE
                     binding.btnLogin.isEnabled = false
                     binding.tvError.visibility = View.GONE
                 }
@@ -45,11 +52,15 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                     findNavController().navigate(R.id.action_login_to_home)
                 }
                 is AuthState.Error -> {
+                    binding.loginForm.visibility = View.VISIBLE
+                    binding.loginLoading.visibility = View.GONE
                     binding.btnLogin.isEnabled = true
                     binding.tvError.text = state.message
                     binding.tvError.visibility = View.VISIBLE
                 }
-                else -> {
+                AuthState.Idle -> {
+                    binding.loginForm.visibility = View.VISIBLE
+                    binding.loginLoading.visibility = View.GONE
                     binding.btnLogin.isEnabled = true
                     binding.tvError.visibility = View.GONE
                 }

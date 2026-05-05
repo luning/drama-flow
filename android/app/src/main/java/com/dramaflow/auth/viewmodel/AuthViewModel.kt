@@ -10,6 +10,7 @@ import com.dramaflow.DramaFlowApp
 import kotlinx.coroutines.launch
 
 sealed class AuthState {
+    object Checking : AuthState()
     object Idle : AuthState()
     object Loading : AuthState()
     data class Success(val token: String) : AuthState()
@@ -21,7 +22,7 @@ class AuthViewModel : ViewModel() {
     private val prefs = PreferencesManager(DramaFlowApp.instance)
     private val repository = AuthRepository(prefs = prefs)
 
-    private val _loginState = MutableLiveData<AuthState>(AuthState.Idle)
+    private val _loginState = MutableLiveData<AuthState>(AuthState.Checking)
     val loginState: LiveData<AuthState> = _loginState
 
     private val _registerState = MutableLiveData<AuthState>(AuthState.Idle)
@@ -61,6 +62,8 @@ class AuthViewModel : ViewModel() {
             val token = repository.tryRestoreSession()
             if (token != null) {
                 _loginState.value = AuthState.Success(token.access_token)
+            } else {
+                _loginState.value = AuthState.Idle
             }
         }
     }
