@@ -301,24 +301,27 @@
 
 - 任务：Python 后端 `/api/dramas/{id}` 接口 + **Vue3 H5** 详情页（简介 / 集数列表 / 评分）+ Android WebView 加载
 - **演示重点**：Agent 如何通过 Project Context 自动发现关联的 Pydantic 模型（跨文件定位）；Android WebView 与 H5 的通信机制（JSBridge）
+- 根据 AC 补充 API 测试
 
 **6.3 [实践步骤] 视频播放器集成（35min）**
 
 - 任务：Python 后端七牛云（Qiniu）签名 URL 接口 + Android **ExoPlayer** 集成 + 自定义控制条（Kotlin）
+- 根据 AC 补充 API 测试
 
 **6.4 [实践步骤] 播放器状态机（20min）**
 
 - 任务：实现最基础的状态记忆
 - 留意状态机缺陷（缓冲/错误状态遗漏），识别"必须人工接手"的信号
+- 根据 AC 补充 API 测试
 
-**6.5 [实践步骤] 播放进度持久化（20min）**
+**6.5 [实践步骤] 播放进度持久化（25min）**
 
 - SQLite WatchRecord 模型 + 播放记录读写接口 + Android 写入调用
-
-**6.6 [实践步骤] 迭代 2 集成测试 + CR + 重构（25min）**
-
-- 通过 `spec-validate` skill 补充API测试
+- 根据 AC 补充 API 测试
 - Bug 注入演练——让 Agent 读取 Python / Android 错误日志自动修复；如何写出"不脆弱"的集成测试
+
+**6.6 [实践步骤] 迭代 2 CR + 重构（20min）**
+
 - 两轮代码积累后的系统性重构——跨模块重复模式识别；重构 vs 重写的判断标准；保持行为不变的重构提示词
 - Architecture as Code——演示将架构规则嵌入 ruff / pylint（Python）/ Android Lint 自定义规则，阻止 AI 生成违规代码；ADR 写法示例
 
@@ -358,26 +361,27 @@
 - 存量改造最大的挑战不是"改哪里"，而是"让 Agent 理解上下文不丢失"（context rot）
 - GSD 核心理念：执行优先的上下文工程——用新鲜上下文隔离将复杂改造拆为上下文独立的原子波（Wave），并行编排、按阶段推进、每阶段可验证
 - 安装与演示：修改首页推荐前，先用 GSD 思路输出"当前行为分析"→ 按阶段分解 → 逐阶段执行，适用长任务、跨模块改造、重构。
-- 建议尝试 Superpowers（与GSD同作者），并使用其中的 `systematic-debugging`，`requesting-code-review` 等实用技能。
+- 建议安装 Superpowers（与GSD同作者），并使用其中的 `systematic-debugging`，`requesting-code-review` 等实用技能。
 
-**8.3 [实践步骤] 首页推荐改版（40min）**
+**8.3 [实践步骤] 首页推荐改版（45min）**
 
 - 任务：修改后端推荐 API（从按分类查询改为基于 WatchRecord 的个性化排序）+ 更新 Vue3 H5 首页数据绑定
-- 用 `gsd` 相关命令，先理解现有首页逻辑 → 再生成改造方案，对比"直接改"的 AI 响应
+- 用 `gsd` 相关命令开发，project → milestone → phases，重流程，对比"直接改"的 AI 响应
 - 在变更的 AC 旁用注释标注变更版本以便追溯（可选），或直接依赖 git 记录。
+- 根据 AC 补充 API 测试
+- 遇到 Bug 尝试用 RCA(Root Cause Analysis) 框架走一遍，现象 → 证据 → 假设 → 验证 → 根因
 
 **8.4 [实践步骤] 播放器增强 + Auth 增强（45min）**
 
 - 播放器：在已有 ExoPlayer 状态机中新增倍速枚举和状态转换（Kotlin）→ 演示 AI 对有限状态机的理解局限
 - Auth：Android SharedPreferences / EncryptedSharedPreferences 持久化 Token + FastAPI JWT 自动刷新逻辑 → 安全逻辑须人工逐行审阅，不能依赖 AI 判断
+- 根据 AC 补充 API 测试
 
-**8.5 [实践步骤] 迭代 3 集成测试 + CR + 重构（40min）**
+**8.5 [实践步骤] 迭代 3 CR + 重构（25min）**
 
-- 运行 `spec-validate`（重点：现有 AC 覆盖率是否仍然通过）
 - 需求变更引入的技术债 vs 新增功能的技术债——区分"接受"和"立即修复"
-- RCA 框架走一遍（现象 → 证据 → 假设 → 验证 → 根因）——以播放器回归失败为案例
-- `cr-refactor` vs `gsd:code-review N` vs `requesting-code-review`：前者是快速扫描影响范围，适合"先看看再改"；后两者是系统化的阶段化执行框架，适合"知道要改什么但步骤复杂"。它们是替代选择，按场景选用。
-- SDD 闭环回顾——Spec 变更 → 代码变更 → 测试验收的完整链条
+- `cr-refactor` vs `gsd:code-review` vs `requesting-code-review`：前者是快速扫描影响范围，适合"先看看再改"；后两者是系统化的阶段化执行框架，适合"知道要改什么但步骤复杂"。它们是替代选择，按场景选用。
+- SDD 闭环回顾 —— Spec 变更 → 代码变更 → 测试验收 - CR重构 的完整链条
 
 ---
 
@@ -397,17 +401,18 @@
 
 - CLI Skill vs MCP Server 选型：确定性要求高 → Skill；生态集成需求强 → MCP
 - 复杂 Skill 设计模式：**参数最小化**（减少模型出错）/ **结构化反馈**（stdout 让 Agent 自修复）/ **幂等性**（重复调用安全）/ **错误恢复**（降级逻辑）
-- 本课程 3 个 Skills 的设计复盘：哪里设计好了？哪里还可以改进？
+- 本课程中多个 Skills 的设计复盘：哪里设计好了？哪里还可以改进？
 - 企业级 Skill 库：分层（个人 / 项目 / 团队）、版本管理、共享机制
 
 **9.3 SDD 生态全景与选型指南（25min）**
 
 - 回顾三层 SDD 递进：Prompt SDD（迭代1）→ OpenSpec（迭代2）→ GSD（迭代3）
 - SDD 生态一览：
-  - **Superpowers**（方法论与技能层）：把 TDD、调试、Review 等工程习惯变成默认动作
-  - **OMC / Oh My ClaudeCode**（多代理编排层）：围绕 Claude Code 做 team-first orchestration
-  - **ECC / Everything Claude Code**（增强层）：用 Skills、Instincts、Memory 补全 Harness 能力
-  - **Trellis**（结构层）：用 Specs / Tasks / Workspace 组织跨平台工作流和项目记忆
+  - **GSD**（上下文工程层）：新鲜上下文隔离 + 波级并行编排，解决长任务上下文衰减
+  - **OpenSpec**（变更隔离层）：棕地优先，变更目录防串扰 + 完整审计追踪
+  - **Spec Kit**（企业治理层）：规格即契约，宪法机制统一团队规范
+  - **Kiro**（代理 IDE 层）：意图即代码，最低摩擦的独立加速器
+  - **Trellis**（跨平台工作流层）：工具无关的 Spec/Task，多 Agent 无缝切换
 - 构建团队自己的 SDD：基于已有框架裁剪或组合，根据项目特点和步骤要求形成团队的开箱即用模板
 
 **9.4 存量系统 Agent 友好改造（10min）**
