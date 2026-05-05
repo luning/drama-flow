@@ -51,8 +51,18 @@ mp4/
 # Training docs output
 *.log
 
-# Claude Code local memory (user-specific, not shared)
+# Claude Code
 .claude/projects/
+
+# SDD tooling runtime files (auto-installed, not project source)
+.claude/agents/
+.claude/commands/gsd/
+.claude/commands/opsx/
+.claude/get-shit-done/
+.claude/gsd-file-manifest.json
+.claude/hooks/
+.claude/package.json
+.claude/skills/openspec-*/
 
 # Test agent generated files
 test-agent/assets/reports/
