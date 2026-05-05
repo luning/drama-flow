@@ -317,6 +317,7 @@
 
 **6.6 [实践步骤] 迭代 2 集成测试 + CR + 重构（25min）**
 
+- 通过 `spec-validate` skill 补充API测试
 - Bug 注入演练——让 Agent 读取 Python / Android 错误日志自动修复；如何写出"不脆弱"的集成测试
 - 两轮代码积累后的系统性重构——跨模块重复模式识别；重构 vs 重写的判断标准；保持行为不变的重构提示词
 - Architecture as Code——演示将架构规则嵌入 ruff / pylint（Python）/ Android Lint 自定义规则，阻止 AI 生成违规代码；ADR 写法示例
