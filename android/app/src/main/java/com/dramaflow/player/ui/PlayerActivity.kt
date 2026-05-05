@@ -89,10 +89,18 @@ class PlayerActivity : AppCompatActivity() {
             addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     when (playbackState) {
-                        Player.STATE_IDLE -> viewModel.setState(PlayerState.IDLE)
-                        Player.STATE_BUFFERING -> viewModel.setState(PlayerState.BUFFERING)
+                        Player.STATE_IDLE -> {
+                            // AC-PLAYER-12: Initial IDLE (after ViewModel init) / AC-PLAYER-18: Release → IDLE
+                            viewModel.setState(PlayerState.IDLE)
+                        }
+                        Player.STATE_BUFFERING -> {
+                            // AC-PLAYER-12/14: IDLE→BUFFERING (initial load) or PLAYING/PAUSED→BUFFERING (seek)
+                            viewModel.setState(PlayerState.BUFFERING)
+                        }
                         Player.STATE_READY -> {
+                            // AC-PLAYER-12/14: BUFFERING → READY
                             viewModel.setState(PlayerState.READY)
+                            // AC-PLAYER-13: READY → PLAYING or PAUSED based on playWhenReady
                             if (playWhenReady) {
                                 viewModel.setState(PlayerState.PLAYING)
                             } else {
@@ -107,6 +115,7 @@ class PlayerActivity : AppCompatActivity() {
                             }
                         }
                         Player.STATE_ENDED -> {
+                            // AC-PLAYER-15: Playback complete → ENDED
                             viewModel.setState(PlayerState.ENDED)
                             onCurrentEpisodeEnded()
                         }
@@ -128,6 +137,7 @@ class PlayerActivity : AppCompatActivity() {
                 }
 
                 override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    // AC-PLAYER-16: Playback error → ERROR state
                     viewModel.setState(PlayerState.ERROR)
                     // 401/403 — 签名 URL 过期，尝试重新获取
                     if (error.errorCode == androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED
@@ -440,7 +450,7 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         viewModel.playerState.observe(this) { state ->
-            // 播放结束或出错时取消自动隐藏
+            // AC-PLAYER-16/15: Auto-show controls on error or playback end
             if (state == PlayerState.ENDED || state == PlayerState.ERROR) {
                 autoHideJob?.cancel()
                 controlsVisible = true
