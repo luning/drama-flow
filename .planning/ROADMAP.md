@@ -20,8 +20,12 @@ This roadmap covers the validation and verification of the homepage recommendati
   3. Unauthenticated user receives default-sorted drama list (unchanged behavior)
   4. User with no watch history (or insufficient history) receives default-sorted drama list as fallback
   5. Backend sorting logic and H5 data binding are verified by automated tests (pytest for API, Cypress/Playwright for H5)
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 01-01-PLAN.md — Implement personalized recommendation backend logic (service + route)
+- [ ] 01-02-PLAN.md — Add automated tests for AC-DRAMA-07/08/09 and fallback behavior
 
 ## Progress
 
@@ -30,4 +34,4 @@ Phases execute in numeric order: 1
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Homepage Recommendation Validation | 0/TBD | Not started | - |
+| 1. Homepage Recommendation Validation | 0/2 | Not started | - |
