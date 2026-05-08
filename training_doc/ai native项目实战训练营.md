@@ -69,8 +69,6 @@
 - [ ] **Python 3.10+**，并提前创建好 venv
 - [ ] **Node.js 20 LTS**
 - [ ] **GLM / DeepSeek API Key**（二选一）
-- [ ] **七牛云**：注册后创建 Bucket，记录 AccessKey + SecretKey（测试域名无需备案）
-- [ ] **环境变量**：`JAVA_HOME`、`ANDROID_HOME`、adb/emulator 加入 PATH
 
 ---
 
@@ -159,7 +157,7 @@
 
 **1.3 工具链说明（15min）**
 
-- 工具与模型选择：Agent介绍，GLM / DeepSeek选择
+- 工具与模型选择：Agent介绍，为什么选择Claude Code，GLM / DeepSeek的选择
 - Claude Code实用技巧：上下文超 50% 时主动 /compact 并指明保留方向；走偏了 Esc Esc 回滚，不硬扛；复杂任务先 Shift+Tab 进入 Plan Mode 规划再执行；小任务一句话完成，别上全套流程。
 
 ---
