@@ -131,31 +131,22 @@
 
 ### 6.1 Skills（技能）
 
-Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包成可复用的模块。本课程中的 `rebuild-deploy`、`spec-validate`、`cr-refactor` 等就是 Skill。
+Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包成可复用的模块。本课程中的 `rebuild-deploy`、`spec-validate`、`cr-refactor` 等就是 Skill。调用方式：对话中输入 `/skill-name`。
 
-**目录结构规范**：
+**目录结构**：
 ```
-skills/
-  api-design/
-    SKILL.md          # 主文件：核心规则和索引，Claude 优先读取
-    references/        # 语料库、参考资料（渐进式披露，需要时才读子目录）
-    scripts/           # 辅助脚本（Shell/Python 等）
-    examples/          # 示例代码（供 Claude 参考模式）
+.claude/commands/skill-name/
+  SKILL.md       # 主文件（Claude 优先读取）
+  references/    # 参考资料（渐进式披露，按需读取）
+  scripts/       # 辅助脚本（固定逻辑，无需 AI 推理的部分）
+  examples/      # 示例代码
 ```
 
-**结构说明**：
-| 目录/文件 | 作用 | 说明 |
-|-----------|------|------|
-| `SKILL.md` | 主文件 | 核心规则和索引，Claude 优先读取的内容 |
-| `references/` | 参考资料 | 语料库、检查表等，Claude 需要时才读 |
-| `scripts/` | 辅助脚本 | 可被 Skill 调用的 Shell/Python 脚本 |
-| `examples/` | 示例代码 | 供 Claude 参考的实现模式 |
-
-**设计原则**：
-- **SKILL.md 只放核心规则**，详细内容放子目录，Claude 按需读取（渐进式披露）
+**核心设计原则**（详见 [Skills设计.md](Skills设计.md)）：
+- **参数最小化**：让 Skill 自己从上下文推断，减少调用者出错
 - **幂等性**：可重复调用，不产生副作用
-- **参数最小化**：减少模型理解出错的可能
 - **结构化反馈**：stdout 输出让 Agent 可自修复
+- **固定逻辑剥离**：无需推理的流程用脚本实现，Skill 聚焦推理判断
 
 ### 6.2 常用内置 Commands
 
@@ -169,7 +160,7 @@ skills/
 
 ### 6.3 自定义 Skill 与 Command 的区别
 
-- **Skill**：领域知识包（目录结构），适用于需要专业知识和上下文的场景，如代码审查、部署
+- **Skill**：领域知识包（目录结构），适用于需要专业知识和上下文的场景，如代码审查、部署；CLI Skill vs MCP Server 的选型见 [Skills设计.md](Skills设计.md)
 - **Command**：内置快捷操作，适用于通用控制操作，如压缩、回滚
 
 ---
