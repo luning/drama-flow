@@ -25,7 +25,7 @@ description: Agent 驱动的 Android App 探索性测试——指定测试任务
 > python test-agent/run.py screenshot                     # 截图，用 Read 工具打开 current.png
 > python test-agent/run.py info                           # 查看当前 Activity
 > ```
-> 拿到 Activity/Fragment 名称后，检查 `test-agent/assets/screen_knowledge/` 下是否有对应的 `.md` 文件。
+> 拿到 Activity/Fragment 名称后，检查 `test-agent/screen_knowledge/` 下是否有对应的 `.md` 文件。
 > 如果有，**先读文件再继续操作**，避免重复踩坑。
 
 > **3. 定位元素 + 执行操作**
