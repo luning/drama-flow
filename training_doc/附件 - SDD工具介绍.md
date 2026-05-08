@@ -1,4 +1,4 @@
-# SDD 工具全景 —— 从 Prompt SDD 到工具化 Spec-Driven Development
+# SDD 工具全景
 
 ## 一、为什么需要 SDD 工具？
 
