@@ -243,7 +243,7 @@ pytest backend/tests/ -v
 
 ```
 团队重构节奏建议：
-  每迭代结束    → CR + 局部重构（30min）
+  每迭代结束    → CR + 局部重构
   每里程碑结束  → 系统性重构 + Architecture as Code 检查
   技术债警戒线  → 当 cr-refactor 输出超过 10 条高优问题时，
                    下一个功能点之前先重构再开发
