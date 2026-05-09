@@ -187,8 +187,9 @@
 - **v0.dev**（React 技术栈首选）：输入 PRD 片段，直接生成可用 React 组件原型，适合快速验证页面结构与交互
 - **Claude Design**（[claude.ai/design](https://claude.ai/design)）：描述需求直接生成交互原型，支持导出代码，零工具学习成本
 - **Claude Code 生成 HTML 原型**：从 PRD 直接生成可交互 HTML，浏览器即可预览；WebView 页面可直接演进为 Vue3 组件
-- 三种工具各尝试一种场景，对比生成质量；满意后截图存入 `docs/designs/`
+- **引入已有 HTML 作为参考模板**：v0.dev 可直接导入，Agent 类工具放入参考目录自动取用；跨工具延续既有设计风格
 - **原型 + Spec 模式**：原型负责”看得见的流程”，Spec 负责”看不见但必须正确的逻辑”
+- 产出：`prototype/` 可交互原型
 
 **2.4 [实践步骤] 视觉验收（15min）**
 
