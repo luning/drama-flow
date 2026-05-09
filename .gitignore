@@ -50,6 +50,7 @@ mp4/
 
 # Training docs output
 *.log
+training_doc/*.png
 
 # Claude Code
 .claude/projects/
