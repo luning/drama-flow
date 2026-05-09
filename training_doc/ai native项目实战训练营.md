@@ -23,10 +23,12 @@
 ## 课程收益
 
 - 亲手完成三端独立架构（Python FastAPI 后端 + Kotlin 原生 Android + Vue3 H5）短剧 APP 的三轮迭代，获得从产品设计到上线的完整 AI Native 开发经验
-- 掌握轻量 SDD 工作流（SPEC.md + CLAUDE.md + Skills），可直接带回团队落地
 - 建立 AI 编程的人机边界认知：什么能做好、什么做不好、哪些卡点必须人工决策
-- 掌握 AI 辅助 CR + 重构的方法论：如何寻找重构线索，如何在不破坏测试的前提下安全改造
+- 掌握 SDD 工作流，可直接带回团队落地
+- 掌握 AI Skills 的设计与实现方法
+- 理解 MCP（Model Context Protocol）的适用场景，能判断何时引入 MCP 工具层
 - 理解 Agent 友好型架构：学会用文档约束 Agent 行为，可迁移至企业存量系统改造
+- 掌握 AI 辅助 CR + 重构的方法论：如何寻找重构线索，如何在不破坏测试的前提下安全改造
 
 ---
 
@@ -59,8 +61,8 @@
 | 设计工具 | HTML/CSS 原型（浏览器预览）| 由 Claude Code 从 PRD 直接生成，作为视觉验收基准；WebView 页面可直接演进为 Vue3 组件 |
 | IDE | Android Studio（移动端）/ VS Code（H5 + Python）/ IntelliJ（Java）| |
 | AI 工具 | Claude Code + GLM / DeepSeek | 核心 Agent 及模型 |
-| 后端测试 | Thunder Client（VS Code）/ pytest 集成测试 | |
-| 前端测试 | Android Espresso（行为级）/ Vue3 Cypress（H5 E2E）| |
+| 后端测试 | pytest 集成测试 / FastAPI `/docs` Swagger UI | |
+| 前端测试 | Android Espresso（行为级）/ ADB | |
 
 ### 学员课前准备
 
@@ -117,9 +119,9 @@
 | 主线 | 对应知识点 |
 |------|-----------|
 | **规格驱动** | PRD→Spec、增量 Spec、SDD、OpenSpec等工具 |
-| **Agent友好架构** | CLAUDE.md、模块 README、Architecture as Code |
-| **技能设计** | Skill实践、参数设计、管理、幂等性 |
-| **测试自愈** | 行为级测试、Bug 注入、RCA |
+| **Agent 友好架构** | 架构、文档、经验、约束层设计 |
+| **技能设计** | Skill 设计、MCP 设计 |
+| **测试自愈** | Spec驱动测试，行为级测试、RCA |
 | **HITL** | CR 触发时机、人工审阅节点、重构判断标准 |
 
 ---
@@ -260,7 +262,7 @@
 **4.5 [测试自愈] 怎么做测试（25min）**
 
 - 选择API级测试：单元测试绑定实现，AI 加速后技术债积累更快，维护成本高于价值。后端用 pytest 测 API 行为，不测实现。
-- 选择行为级测试：Android 用 Espresso / ADB / UI Automator 测用户操作流程，Vue3 H5 用 Cypress 测端到端，可以设计为利用 Claude Code 等 Agent 调度测试流程
+- 选择行为级测试：Android 用 Espresso / ADB / UI Automator 测用户操作流程，可以设计为利用 Claude Code 等 Agent 调度测试流程
 - 用 AI 生成测试场景矩阵（正常 / 异常 / 边界），人工筛选关键场景
 - **实现 `spec-validate` Skill**：以 Spec 为唯一来源，AC 覆盖检查，补充 API 测试，作为 SDD 的验收门
 
@@ -387,7 +389,7 @@
 
 > 目标：系统总结两天实战经验，深入讲解案例未能充分展示的内容
 
-**9.1 AI 编程最佳实践（15min）**
+**9.1 AI 编程最佳实践回顾（10min）**
 
 - 从三轮迭代实战中现场提炼 Top 5 实践
 - 人机协作的"黄金分割线"：哪些交给 AI，哪些必须人工
@@ -395,12 +397,12 @@
 - Vibe Coding vs SDD：两天的对比结论
 - 效率提升的正确度量：不是"代码生成速度"，而是"交付质量 × 速度"
 
-**9.2 Skills 深度设计（10min）**
+**9.2 Skills 与 MCP 设计（20min）**
 
-- CLI Skill vs MCP Server 选型：确定性要求高 → Skill；生态集成需求强 → MCP
-- 复杂 Skill 设计模式：**参数最小化**（减少模型出错）/ **结构化反馈**（stdout 让 Agent 自修复）/ **幂等性**（重复调用安全）/ **错误恢复**（降级逻辑）
-- 本课程中多个 Skills 的设计复盘：哪里设计好了？哪里还可以改进？
+- 本课程中多个 Skills 的设计复盘：哪里设计好了，哪里还可以改进
 - 企业级 Skill 库：分层（个人 / 项目 / 团队）、版本管理、共享机制
+- MCP 三大能力的分工：Tools（可调用函数，AI 决定调用时机）/ Resources（只读上下文注入，给 Claude 补充背景）/ Prompts（固化高频诊断流程模板）——三者各司其职，不要把所有东西都塞进 Tool
+- Skill + MCP 可组合：两者不互斥——Skill 编排高层流程，MCP Tool 负责具体数据访问；复杂场景下组合使用比单独使用更强
 
 **9.3 SDD 生态全景与选型指南（25min）**
 
