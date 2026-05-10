@@ -1,0 +1,124 @@
+/*
+ * DramaFlow Design System — CSS Tokens
+ * 单一真相源（Single Source of Truth）
+ *
+ * 用法：所有颜色、间距、动画均通过 CSS 变量引用，禁止在业务代码中硬编码色值。
+ * 与 tokens.ts 保持同步，Figma 通过 Tokens Studio 插件双向同步本文件。
+ *
+ * 引用示例：
+ *   color: var(--color-primary);
+ *   background: var(--bg-card);
+ *   transition: background var(--transition-default);
+ */
+
+:root {
+
+  /* ─── 品牌色 Brand Colors ──────────────────────────────────────────── */
+  --color-primary:       #6C5CE7;  /* 主色 / 按钮 / 选中态 */
+  --color-primary-light: #A29BFE;  /* 渐变辅助色 / 链接 */
+  --color-accent:        #FD79A8;  /* 强调色 / 收藏 / Logo */
+
+  /* 主色 Alpha 变体（用于蒙层、徽标、标签背景等） */
+  --color-primary-90:      rgba(108, 92, 231, 0.9);   /* 徽标背景 */
+  --color-primary-85:      rgba(108, 92, 231, 0.85);  /* 详情页播放按钮 */
+  --color-primary-80:      rgba(108, 92, 231, 0.8);   /* 播放器中心按钮 */
+  --color-primary-tint:    rgba(108, 92, 231, 0.15);  /* 标签 / 卡片边框 */
+  --color-primary-tint-md: rgba(108, 92, 231, 0.2);   /* 已观看集数背景 */
+
+  /* ─── 语义色 Semantic Colors ─────────────────────────────────────── */
+  --color-rating:  #FFC048;  /* 评分星级 */
+  --color-success: #00B894;  /* 成功 / 完成状态 */
+  --color-danger:  #E17055;  /* 错误 / 退出 / 警告 */
+  --color-info:    #0984E3;  /* 信息 / 悬疑分类 */
+
+  /* ─── 背景色 Backgrounds ─────────────────────────────────────────── */
+  --bg-outer:          #1A1A2E;            /* 手机壳外框背景 */
+  --bg-primary:        #0F0F23;            /* 页面主背景 */
+  --bg-card:           #16163A;            /* 卡片 / 列表项背景 */
+  --bg-hover:          #1C1C44;            /* 悬停 / 按压态 */
+  --bg-elevated:       rgba(20,20,50,0.95);/* 弹窗 / 下拉菜单（毛玻璃）*/
+  --bg-skeleton:       #1A1A3A;            /* 骨架屏底色 */
+  --bg-skeleton-shine: #222244;            /* 骨架屏高光 */
+  --bg-deep:           #2D1B4E;            /* Banner 渐变深端 */
+  --bg-card-deep:      #1A1A3E;            /* 卡片渐变深端 */
+  --bg-video:          #000000;            /* 视频播放器背景（绝对黑）*/
+
+  /* ─── 边框与表面 Borders & Surfaces ─────────────────────────────── */
+  --surface-subtle: rgba(255, 255, 255, 0.04);  /* 极淡背景 */
+  --border-subtle:  rgba(255, 255, 255, 0.06);  /* 分割线 / 细边框 */
+  --border:         rgba(255, 255, 255, 0.08);  /* 默认边框 / 按钮背景 */
+  --surface-mid:    rgba(255, 255, 255, 0.10);  /* 输入框聚焦背景 */
+  --surface-hover:  rgba(255, 255, 255, 0.14);  /* 按钮 hover 背景 */
+
+  /* ─── 文字色 Text ────────────────────────────────────────────────── */
+  --text-primary:   #FFFFFF;  /* 标题 / 正文 */
+  --text-secondary: #DDDDDD;  /* 次要信息 */
+  --text-label:     #AAAAAA;  /* 表单 label / 轻量描述 */
+  --text-tertiary:  #888888;  /* 辅助文字 */
+  --text-caption:   #666666;  /* 紧凑型元数据 / nav 未选中态 */
+  --text-muted:     #555555;  /* 禁用态 / 占位符 */
+  --text-link:      #A29BFE;  /* 链接 / 操作文字 */
+
+  /* ─── 间距 Spacing（基于 4px 基准）────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ─── 圆角 Border Radius ─────────────────────────────────────────── */
+  --radius-xs:   4px;   /* 角标 */
+  --radius-sm:   6px;   /* 小标签 / 缩略图 */
+  --radius-md:   8px;   /* 小按钮 */
+  --radius-btn: 12px;   /* 按钮 / 输入框 */
+  --radius-card:14px;   /* 卡片 */
+  --radius-xl:  20px;   /* Banner / 大图 */
+  --radius-2xl: 24px;   /* 品牌图标 */
+  --radius-full: 50%;   /* 头像 / 圆形按钮 */
+
+  /* ─── 阴影 Shadows ───────────────────────────────────────────────── */
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.2);          /* 卡片默认 */
+  --shadow-md:   0 4px 20px rgba(108, 92, 231, 0.3);     /* 按钮 hover */
+  --shadow-lg:   0 8px 25px rgba(0, 0, 0, 0.3);          /* 卡片 hover */
+  --shadow-glow: 0 0 6px rgba(108, 92, 231, 0.5);        /* 进度条拖拽圆点 */
+  --shadow-phone:0 0 60px rgba(108, 92, 231, 0.15), 0 0 0 2px #2a2a4a;  /* 手机壳 */
+
+  /* ─── 层级 Z-index ───────────────────────────────────────────────── */
+  --z-overlay: 10;
+  --z-nav:    100;
+  --z-toast: 1000;
+
+  /* ─── 动画 Animation ─────────────────────────────────────────────── */
+  --transition-fast:    0.15s ease;
+  --transition-default: 0.2s ease;
+  --transition-page:    0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-banner:  0.5s ease;
+  --duration-skeleton:  1.5s;
+
+  /* ─── 字体 Typography ───────────────────────────────────────────── */
+  --font-family:           -apple-system, 'Noto Sans SC', 'Roboto', sans-serif;
+  --font-size-xs:    10px;   /* 角标 / 时长标签 */
+  --font-size-sm:    12px;   /* 辅助信息 / 元数据 */
+  --font-size-base:  14px;   /* 正文 / 卡片描述 */
+  --font-size-md:    15px;   /* 卡片标题 / 按钮文字 */
+  --font-size-lg:    17px;   /* Banner 标题 / App Bar */
+  --font-size-xl:    20px;   /* 详情页标题 */
+  --font-size-2xl:   24px;   /* 大标题 */
+  --font-size-3xl:   28px;   /* 品牌名称 */
+
+  --font-weight-normal:    400;
+  --font-weight-medium:    500;
+  --font-weight-semibold:  600;
+  --font-weight-bold:      700;
+  --font-weight-extrabold: 800;
+
+  /* ─── 设备尺寸 Device ────────────────────────────────────────────── */
+  --phone-width:         390px;
+  --phone-height:        844px;
+  --phone-radius:         44px;
+  --status-bar-height:    44px;
+  --bottom-nav-height:    56px;
+}

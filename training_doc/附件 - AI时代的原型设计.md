@@ -245,19 +245,15 @@ export function HomePage() {
 
 ```
 design-system/
-├── tokens.ts              # Design Token（单一真相源）
-├── constraints.md         # 业务约束（给 AI 和团队看）
-├── components/            # Component Runtime
-│   ├── Button/
-│   │   ├── Button.tsx
-│   │   └── Button.stories.tsx   # Storybook 文档
-│   ├── Card/
-│   └── Modal/
-└── ai-context/
-    └── design-rules.md    # AI 生成规则（引用 tokens + constraints）
+├── tokens.css             # CSS 变量（HTML 原型直接引用）
+├── tokens.ts              # TypeScript 版本（Vue/React 组件引用）
+├── constraints.md         # 业务约束与尺寸规范（给 AI 和团队看）
+├── design-rules.md        # AI 生成规则（引用 tokens + constraints）
+└── components/            # Component Runtime
+    └── index.html         # 组件 Gallery（可视化验证所有组件渲染效果）
 
-pages/                     # AI 生成的页面落在这里
-src/                       # 业务逻辑
+prototype/                 # HTML 可交互原型（直接引用 tokens.css）
+scripts/                   # 工具脚本（check_design_tokens.py 等）
 ```
 
 `tokens.ts` 是整个系统的起点：Figma 用它渲染，组件用它驱动样式，AI 用它约束生成。改一个 Token，整个系统同步更新。
@@ -271,9 +267,9 @@ Skill 的工作流大致如下：
 ```
 用户："帮我生成剧集详情页"
     ↓ Skill 自动执行
-1. 读取 design-system/tokens.ts           ← 获取可用 Token
+1. 读取 design-system/tokens.css          ← 获取可用 Token
 2. 读取 design-system/constraints.md      ← 获取业务约束
-3. 读取 design-system/ai-context/design-rules.md  ← 获取 AI 生成规则
+3. 读取 design-system/design-rules.md     ← 获取 AI 生成规则
 4. 将三份文件作为上下文注入 Prompt
     ↓
 AI 生成的页面代码：
