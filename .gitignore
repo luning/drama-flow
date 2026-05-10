@@ -55,6 +55,10 @@ training_doc/*.png
 # Claude Code
 .claude/projects/
 
+# Other AI tooling (auto-generated, not project source)
+.agents/
+.codex/
+
 # GSD planning artifacts (auto-generated, project-agnostic)
 .planning/
 

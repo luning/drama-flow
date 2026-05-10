@@ -55,19 +55,18 @@
 | 后端 API（辅）| Java 17 + Spring Boot 3 | 关键 API 片段演示，覆盖企业 Java 技术栈，不维护完整项目 |
 | 数据库 | MySQL 8.0（或 PostgreSQL 16）| 企业主流选型；本机安装即可 |
 | 版本管理 | Git（GitHub / Gitee）| 预设分支，学员掉队时可一键同步代码进度 |
-| 原型工具 | **v0.dev**（React 组件原型）/ Claude Design / Claude Code 生成可交互 HTML | |
+| 原型工具 | **v0.dev**（免费额度有限）/ Claude Design / Claude Code 生成可交互 HTML | |
 | AI 工具 | Claude Code + GLM / DeepSeek | 核心 Agent 及国内可用模型 |
 | 测试 | pytest + FastAPI `/docs`（后端）/ Android Espresso + ADB（移动端）| |
 
 ### 学员课前准备
 
-- [ ] **Java 17** + **Android Studio** + API 34 SDK + **模拟器 AVD**（Pixel 6 推荐）
+- [ ] **Java 17** + **Android Studio** + API 34 SDK + **模拟器 AVD**
 - [ ] **VS Code** 安装 **Claude Code 插件**
 - [ ] **Python 3.10+**，并提前创建好 venv；安装 `fastapi uvicorn sqlalchemy pymysql pydantic alembic`
 - [ ] **Node.js 20 LTS**（React + Vite 环境）
 - [ ] **MySQL 8.0**
 - [ ] **GLM / DeepSeek API Key**（二选一）
-- [ ] 注册 **v0.dev** 账号（免费额度足够课程使用）
 
 ---
 
@@ -172,14 +171,14 @@
 - 提效演示：让 Claude 从 PRD 草稿自动提取五段式 Spec 骨架，人工确认 AC
 - **HITL 检查点**：AC 的最终确认必须由人完成，尤其是积分扣减的边界条件
 
-**2.3 [实践步骤] 原型生成（25min）**
+**2.3 [实践步骤] 建可执行设计系统并创作原型（25min）**
 
-- **v0.dev**（React 技术栈首选）：输入 PRD 片段，直接生成可用 React 组件原型
-- **Claude Design**（[claude.ai/design](https://claude.ai/design)）：描述需求直接生成交互原型，支持导出 React 代码
-- **Claude Code 生成 HTML 原型**：零工具学习成本，从 PRD 直接生成，可快速浏览器预览
-- **引入已有 HTML 作为参考模板**：v0.dev 可直接导入，Agent 类工具放入参考目录自动取用；跨工具延续既有设计风格
-- **原型 + Spec 模式**：原型负责"看得见的流程"，Spec 负责"看不见但必须正确的逻辑"
-- 产出：`prototype/` 可交互原型
+- **原型设计的演进**：从说明书（Axure）到可复用组件（Figma）到可执行产品（v0/Bolt），AI 越能生成，设计系统的约束越重要
+- **创建第一版可执行设计系统**：`tokens` + `constraints` + `design-rules`，也可从已有 HTML 提取
+- **利用 Claude Code 做原型设计**：可利用 `CLAUDE.md` 或封装 Prototype Skill 确保生成复合约束
+- **其他工具推荐**：v0.dev（React 原型）、Claude Design（交互原型）
+- **Spec + 可执行设计系统 + 原型**：三者分工——逻辑正确性、视觉一致性、流程可见性
+- 产出：`design-system/` + `prototype/` 可交互原型
 
 ---
 

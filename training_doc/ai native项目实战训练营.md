@@ -55,14 +55,14 @@
 | 数据库 | SQLite | 零维护成本 |
 | 视频分发 | 七牛云（Qiniu）签名 URL | 测试域名绕过备案，实现短视频"秒开" |
 | 状态管理 | Android: ViewModel + LiveData / Vue3: Pinia | |
-| 原型工具 | v0.dev / Claude Design / Claude Code HTML | |
+| 原型工具 | v0.dev（免费额度有限）/ Claude Design / Claude Code HTML | |
 | AI 工具 | Claude Code + GLM / DeepSeek | |
 | 版本管理 | Git（GitHub / Gitee）| 预设分支，掉队学员可一键同步进度 |
 | 测试 | pytest（后端）/ Android Espresso + ADB（移动端）| |
 
 ### 学员课前准备
 
-- [ ] **Java 17** + **Android Studio** + API 34 SDK + **模拟器 AVD**（arm64-v8a 镜像，Pixel 6 Pro 推荐）
+- [ ] **Java 17** + **Android Studio** + API 34 SDK + **模拟器 AVD**
 - [ ] **VS Code**（H5 + Python）或 **IntelliJ IDEA**（Android）安装 **Claude Code 插件**
 - [ ] **Python 3.10+**，并提前创建好 venv
 - [ ] **Node.js 20 LTS**
@@ -182,21 +182,22 @@
 - 提效演示：让 Claude 从 PRD 草稿自动提取五段式 Spec 骨架，人工确认 AC
 - **HITL 检查点**：AC 的最终确认必须由人完成
 
-**2.3 [实践步骤] 原型生成（30min）**
+**2.3 [实践步骤] 建可执行设计系统并创作原型（30min）**
 
-- **v0.dev**（React 技术栈首选）：输入 PRD 片段，直接生成可用 React 组件原型，适合快速验证页面结构与交互
-- **Claude Design**（[claude.ai/design](https://claude.ai/design)）：描述需求直接生成交互原型，支持导出代码，零工具学习成本
-- **Claude Code 生成 HTML 原型**：从 PRD 直接生成可交互 HTML，浏览器即可预览；WebView 页面可直接演进为 Vue3 组件
-- **引入已有 HTML 作为参考模板**：v0.dev 可直接导入，Agent 类工具放入参考目录自动取用；跨工具延续既有设计风格
-- **原型 + Spec 模式**：原型负责”看得见的流程”，Spec 负责”看不见但必须正确的逻辑”
-- 产出：`prototype/` 可交互原型
+- **原型设计的演进**：从说明书（Axure）到可复用组件（Figma）到可执行产品（v0/Bolt），AI 越能生成，设计系统的约束越重要
+- **创建第一版可执行设计系统**：`tokens` + `constraints` + `design-rules`，也可从已有 HTML 提取
+- **利用 Claude Code 做原型设计**：可利用 `CLAUDE.md` 或封装 Prototype Skill 确保生成复合约束
+- **其他工具推荐**：v0.dev（React 原型）、Claude Design（交互原型）
+- **Spec + 可执行设计系统 + 原型**：三者分工——逻辑正确性、视觉一致性、流程可见性
+- 产出：`design-system/` + `prototype/` 可交互原型
 
-**2.4 [实践步骤] 视觉验收（15min）**
+**2.4 [实践步骤] 可执行设计系统下的视觉验收（15min）**
 
-- **用工具提取设计 Token**：让 Claude Code 直接从原型 HTML/CSS 中提取颜色、字体、间距，生成 `design_system.md`，无需手动翻阅
-- **利用工具从多个维度提升验收效率**：分层验证逻辑，主流工具，自研工具方案，利用验收自动化串联流程
-- **写入视觉 AC**：将关键验收标准（如"首页 Banner 使用 Primary #6C5CE7"）写入 SPEC.md，后续开发可逐条自检
-- **产出**：`design_system.md` + `docs/designs/` 参考截图 + SPEC.md 视觉验收 AC
+- **代码合规（自动）**：Skill 生成时扫描 hardcoded 色值，ESLint / CI 提交时拦截——这层不过，后两层保障失效
+- **渲染正确（工具辅助）**：代码正确 ≠ 渲染正确；H5 用 Playwright 截图建基准快照，移动端靠布局树 + ROI 像素检查分层叠加
+- **渲染验收的核心挑战**：动态内容、CDN 图片、跨设备渲染差异造成大量噪音——难点不是"怎么对比"，而是"怎么区分真正的回归和正常差异"；多 baseline 消噪 + AI 看图兜底是推荐应对
+- **体验质量（人工）**：视觉节奏、信息层级、交互情绪感无法自动化；前两层卸掉合规负担，人工走查才能专注这里
+- **写入视觉 AC**：将可测量标准（如"卡片标题最多 2 行截断"）写入 SPEC.md，开发逐条自检
 
 **2.5 [Agent友好架构][HITL] PM 利用 Agent 直接改代码快速试错（10min）**
 
