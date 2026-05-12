@@ -1,6 +1,33 @@
 # MCP 深度设计
 
-## 一、什么是 MCP？
+## 目录
+
+1. [什么是 MCP？](#什么是-mcp)
+2. [MCP 的三大能力](#mcp-的三大能力)
+   - [Tools（工具）](#tools工具)
+   - [Resources（资源）](#resources资源)
+   - [Prompts（提示模板）](#prompts提示模板)
+3. [MCP Server 项目结构](#mcp-server-项目结构)
+4. [在 Claude Code 中配置与调用](#在-claude-code-中配置与调用)
+   - [配置 MCP Server](#配置-mcp-server)
+   - [调用效果演示](#调用效果演示)
+   - [本地调试](#本地调试)
+5. [四大设计原则](#四大设计原则)
+   - [权限最小化](#权限最小化)
+   - [返回值可解析](#返回值可解析)
+   - [错误信息面向 AI](#错误信息面向-ai)
+   - [幂等性与无副作用（只读 Tool）](#幂等性与无副作用只读-tool)
+6. [课程案例：积分商城 MCP 复盘](#课程案例积分商城-mcp-复盘)
+   - [`pointshub-mcp` Server](#pointshubmcp-server)
+7. [CLI Skill vs MCP Server 选型（扩展版）](#cli-skill-vs-mcp-server-选型扩展版)
+8. [企业级 MCP 体系](#企业级-mcp-体系)
+   - [三层分级](#三层分级)
+   - [版本管理建议](#版本管理建议)
+   - [安全运营建议](#安全运营建议)
+
+---
+
+## 什么是 MCP？
 
 MCP（Model Context Protocol）是 Anthropic 提出的开放标准协议，让 AI Agent 以统一接口访问外部工具和数据源——无论后端是数据库、内部 API、文件系统还是第三方服务。
 
@@ -29,9 +56,9 @@ MCP（Model Context Protocol）是 Anthropic 提出的开放标准协议，让 A
 
 ---
 
-## 二、MCP 的三大能力
+## MCP 的三大能力
 
-### 2.1 Tools（工具）
+### Tools（工具）
 
 AI 可以调用、有副作用的函数。这是 MCP 最核心的能力。
 
@@ -49,7 +76,7 @@ Tool 的设计原则：
 - **返回值结构化**：返回 JSON 或固定格式文本，让 Claude 能可靠解析
 - **读写分离**：只读 Tool（查询）和写入 Tool（修改数据）分开，便于权限控制
 
-### 2.2 Resources（资源）
+### Resources（资源）
 
 AI 可以读取但不能修改的数据，用于给 Claude 注入上下文。
 
@@ -65,7 +92,7 @@ Resources 适合将以下内容暴露给 Claude：
 - 业务规则手册（积分规则、活动配置）
 - 系统状态快照（当前环境配置、部署版本）
 
-### 2.3 Prompts（提示模板）
+### Prompts（提示模板）
 
 预定义的提示词模板，让 Claude 进入特定工作模式。
 
@@ -85,7 +112,7 @@ Prompts 适合将高频诊断 / 分析流程固化，让非技术人员也能触
 
 ---
 
-## 三、MCP Server 项目结构
+## MCP Server 项目结构
 
 ```
 mcp/
@@ -104,9 +131,9 @@ mcp/
 
 ---
 
-## 四、在 Claude Code 中配置与调用
+## 在 Claude Code 中配置与调用
 
-### 4.1 配置 MCP Server
+### 配置 MCP Server
 
 在项目根目录的 `.claude/settings.json` 中添加：
 
@@ -126,7 +153,7 @@ mcp/
 
 配置生效后，Claude 在对话中可以直接调用 MCP 暴露的 Tools，无需用户显式指令。
 
-### 4.2 调用效果演示
+### 调用效果演示
 
 **场景：运营人员查询用户积分问题**
 
@@ -147,7 +174,7 @@ Claude：我来帮您查一下。
 建议：核实用户是否混淆了不同账号，或查看是否有未同步的离线操作。
 ```
 
-### 4.3 本地调试
+### 本地调试
 
 ```bash
 # 启动 MCP Server（保持后台运行）
@@ -159,9 +186,9 @@ npx @modelcontextprotocol/inspector python mcp/server.py
 
 ---
 
-## 五、四大设计原则
+## 四大设计原则
 
-### 5.1 权限最小化
+### 权限最小化
 
 MCP Server 是 AI 访问生产系统的入口，必须严格控制暴露范围：
 
@@ -177,7 +204,7 @@ async def query_db(sql: str) -> str: ...
 async def get_user_points(user_id: int) -> str: ...
 ```
 
-### 5.2 返回值可解析
+### 返回值可解析
 
 Claude 需要根据 Tool 返回值做决策，返回值必须语义清晰：
 
@@ -194,7 +221,7 @@ return json.dumps({
 })
 ```
 
-### 5.3 错误信息面向 AI
+### 错误信息面向 AI
 
 Tool 抛出异常时，错误信息要让 Claude 能判断下一步：
 
@@ -206,7 +233,7 @@ raise Exception("mysql.connector.errors.DatabaseError: ...")
 return {"error": "USER_NOT_FOUND", "message": f"用户 {user_id} 不存在，请确认 ID 是否正确"}
 ```
 
-### 5.4 幂等性与无副作用（只读 Tool）
+### 幂等性与无副作用（只读 Tool）
 
 只读 Tool 必须保证：
 - 同一参数多次调用，结果相同（无缓存不一致问题）
@@ -215,7 +242,7 @@ return {"error": "USER_NOT_FOUND", "message": f"用户 {user_id} 不存在，请
 
 ---
 
-## 六、课程案例：积分商城 MCP 复盘
+## 课程案例：积分商城 MCP 复盘
 
 ### `pointshub-mcp` Server
 
@@ -247,7 +274,7 @@ return {"error": "USER_NOT_FOUND", "message": f"用户 {user_id} 不存在，请
 
 ---
 
-## 七、CLI Skill vs MCP Server 选型（扩展版）
+## CLI Skill vs MCP Server 选型（扩展版）
 
 | 维度 | CLI Skill | MCP Server |
 |------|-----------|------------|
@@ -267,7 +294,7 @@ return {"error": "USER_NOT_FOUND", "message": f"用户 {user_id} 不存在，请
 
 ---
 
-## 八、企业级 MCP 体系
+## 企业级 MCP 体系
 
 ### 三层分级
 

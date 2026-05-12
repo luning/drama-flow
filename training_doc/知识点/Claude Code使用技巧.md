@@ -1,6 +1,38 @@
 # Claude Code 使用技巧
 
-## 零、工作原理
+## 目录
+
+1. [工作原理](#工作原理)
+2. [CLAUDE.md 配置原则](#claudemd-配置原则)
+3. [高效工作流](#高效工作流)
+   - [复杂任务用 Plan Mode](#复杂任务用-plan-mode)
+   - [让 Claude 先采访你](#让-claude-先采访你)
+   - [分阶段工作流](#分阶段工作流)
+   - [小任务别用复杂工作流](#小任务别用复杂工作流)
+4. [调试与纠错](#调试与纠错)
+5. [上下文管理](#上下文管理)
+   - [50% 时考虑手动压缩](#50-时考虑手动压缩)
+   - [指定压缩策略](#指定压缩策略)
+   - [Checkpoints（检查点）](#checkpoints检查点)
+6. [Subagents（子智能体）](#subagents子智能体)
+7. [Skills 与 Commands](#skills-与-commands)
+   - [Skills（技能）](#skills技能)
+   - [常用内置 Commands](#常用内置-commands)
+   - [自定义 Skill 与 Command 的区别](#自定义-skill-与-command-的区别)
+8. [权限与安全](#权限与安全)
+   - [Hooks vs CLAUDE.md 选型](#hooks-vs-claudemd-选型)
+   - [Allowlist 减少审批疲劳](#allowlist-减少审批疲劳)
+   - [deny 比 Hooks 更安全](#deny-比-hooks-更安全)
+9. [常见陷阱（Gotchas）](#常见陷阱gotchas)
+10. [核心原则](#核心原则)
+11. [拓展阅读：更多进阶内容](#拓展阅读更多进阶内容)
+   - [Claude Code + OpenSpec（规格驱动开发）](#claude-code-openspec规格驱动开发)
+   - [Superpowers（工程纪律框架）](#superpowers工程纪律框架)
+12. [参考资料](#参考资料)
+
+---
+
+## 工作原理
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -32,7 +64,7 @@
 
 ---
 
-## 一、CLAUDE.md 配置原则
+## CLAUDE.md 配置原则
 
 - **保持简短**：控制在 60 行以内，硬上限 300 行
 - **只放 Claude 可能忽略的信息**：构建命令、测试命令、分支规范、架构决策
@@ -53,29 +85,29 @@
 
 ---
 
-## 二、高效工作流
+## 高效工作流
 
-### 2.1 复杂任务用 Plan Mode
+### 复杂任务用 Plan Mode
 - 按 Shift+Tab 两次进入计划模式 → Claude 只研究不写代码
 - 确认计划后再切换回正常模式执行
 - 推荐流程：探索 → 规划 → 实现 → 提交
 
-### 2.2 让 Claude 先采访你
+### 让 Claude 先采访你
 - 给出简单需求，让 Claude 用 AskUserQuestion 采访你
 - 它能发现你忽略的边缘情况
 - 采访后建议开新会话执行（采访对话会污染上下文）
 
-### 2.3 分阶段工作流
+### 分阶段工作流
 - 理解代码库 → 修改；先规划 → 再实现；生成 → 验证
 - 不要把所有步骤压缩到一个大提示词里
 
-### 2.4 小任务别用复杂工作流
+### 小任务别用复杂工作流
 - 3-5 分钟能完成的事，直接说
 - 重命名变量这种小事，一句话就行
 
 ---
 
-## 三、调试与纠错
+## 调试与纠错
 
 1. **粘贴 bug，说 "fix"**
    - 把错误信息粘贴给 Claude，说一个字："fix"
@@ -97,27 +129,27 @@
 
 ---
 
-## 四、上下文管理
+## 上下文管理
 
-### 4.1 50% 时考虑手动压缩
+### 50% 时考虑手动压缩
 - 上下文使用超过 60-70% 时，性能明显下降
 - **在 50% 时考虑手动执行 `/compact`**，不要等自动压缩
 - 用 `/statusline` 实时监控使用情况
 
-### 4.2 指定压缩策略
+### 指定压缩策略
 ```
 /compact focusing on API changes     # 聚焦 API 变更
 /compact keep test-related history   # 保留测试相关
 /compact keep error resolution       # 保留错误解决
 ```
 
-### 4.3 Checkpoints（检查点）
+### Checkpoints（检查点）
 - 每次 Claude 操作自动创建，可独立回滚对话或代码
 - 跨会话持久化，但不是 git 的替代品
 
 ---
 
-## 五、Subagents（子智能体）
+## Subagents（子智能体）
 
 - **提示词中加 "use subagents"** —— Claude 自动拆分任务并行处理
 - **专用子智能体 > 通用 mega-agent**：功能越具体，上下文越精准
@@ -127,9 +159,9 @@
 
 ---
 
-## 六、Skills 与 Commands
+## Skills 与 Commands
 
-### 6.1 Skills（技能）
+### Skills（技能）
 
 Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包成可复用的模块。本课程中的 `rebuild-deploy`、`spec-validate`、`cr-refactor` 等就是 Skill。调用方式：对话中输入 `/skill-name`。
 
@@ -148,7 +180,7 @@ Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包
 - **结构化反馈**：stdout 输出让 Agent 可自修复
 - **固定逻辑剥离**：无需推理的流程用脚本实现，Skill 聚焦推理判断
 
-### 6.2 常用内置 Commands
+### 常用内置 Commands
 
 | 命令 | 作用 | 使用时机 |
 |------|------|---------|
@@ -158,16 +190,16 @@ Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包
 | `/status` | 查看当前状态 | 随时检查上下文和文件状态 |
 | `/plan` (Shift+Tab x2) | 进入计划模式 | 复杂任务先规划后执行 |
 
-### 6.3 自定义 Skill 与 Command 的区别
+### 自定义 Skill 与 Command 的区别
 
 - **Skill**：领域知识包（目录结构），适用于需要专业知识和上下文的场景，如代码审查、部署；CLI Skill vs MCP Server 的选型见 [Skills设计.md](Skills设计.md)
 - **Command**：内置快捷操作，适用于通用控制操作，如压缩、回滚
 
 ---
 
-## 七、权限与安全
+## 权限与安全
 
-### 7.1 Hooks vs CLAUDE.md 选型
+### Hooks vs CLAUDE.md 选型
 
 | 需求 | 推荐 | 原因 |
 |------|------|------|
@@ -176,7 +208,7 @@ Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包
 | 代码规范遵循 | CLAUDE.md | 需要情境判断 |
 | API 命名规则 | CLAUDE.md | 存在例外模式 |
 
-### 7.2 Allowlist 减少审批疲劳
+### Allowlist 减少审批疲劳
 ```json
 {
   "permissions": {
@@ -192,7 +224,7 @@ Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包
 }
 ```
 
-### 7.3 deny 比 Hooks 更安全
+### deny 比 Hooks 更安全
 ```json
 {
   "permissions": {
@@ -209,7 +241,7 @@ Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包
 
 ---
 
-## 八、常见陷阱（Gotchas）
+## 常见陷阱（Gotchas）
 
 | # | 陷阱 | 表现 | 缓解方法 |
 |---|------|------|---------|
@@ -224,7 +256,7 @@ Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包
 
 ---
 
-## 九、核心原则
+## 核心原则
 
 - **上下文是宝贵资源**：保持简洁、及时压缩、污染就重置
 - **系统约束 > 提示词约束**：用 Hooks 和权限配置代替"希望 Claude 记住"
@@ -234,7 +266,7 @@ Skills 是 Claude Code 的功能扩展，将特定领域的规则和工具打包
 
 ---
 
-## 十、拓展阅读：更多进阶内容
+## 拓展阅读：更多进阶内容
 
 以下内容在培训课程中另有详细讲解，此处列出供查阅参考。
 

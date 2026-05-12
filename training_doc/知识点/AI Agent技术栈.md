@@ -1,5 +1,25 @@
 # AI Agent 技术栈：从 LLM 到 Agent 的分层架构
 
+## 目录
+
+1. [我们感知到的 Agent](#我们感知到的-agent)
+2. [为什么需要分层？](#为什么需要分层)
+3. [一张图看清全貌](#一张图看清全貌)
+4. [重要前提：同一架构，两种实现形态](#重要前提同一架构两种实现形态)
+5. [Context OS（上下文操作系统）](#context-os上下文操作系统)
+   - [Agent 怎么调用 Context OS？](#agent-怎么调用-context-os)
+   - [三类 context，三个最合适的主体来管](#三类-context三个最合适的主体来管)
+   - [三层分工总结](#三层分工总结)
+6. [Execution Runtime（执行运行时）](#execution-runtime执行运行时)
+   - [个人场景：确实不需要独立 Runtime](#个人场景确实不需要独立-runtime)
+   - [组织场景：核心基础设施](#组织场景核心基础设施)
+   - [Agent 怎么调用 Execution Runtime？](#agent-怎么调用-execution-runtime)
+7. [Model Router（模型路由）](#model-router模型路由)
+8. [LLM Provider（推理引擎）](#llm-provider推理引擎)
+9. [关键结论](#关键结论)
+
+---
+
 ## 我们感知到的 Agent
 
 Claude Code、Cursor、Cline——这些是大多数人第一次真正"使用" Agent 的方式。它不只是一个聊天窗口，而是能够多步骤规划、自主调用工具、反思纠错、持续执行，直到任务完成。
