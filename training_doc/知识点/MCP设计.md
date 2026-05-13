@@ -3,24 +3,26 @@
 ## 目录
 
 1. [什么是 MCP？](#什么是-mcp)
-2. [MCP 的三大能力](#mcp-的三大能力)
+2. [MCP 的协议本质：JSON-RPC 2.0 over stdio](#mcp-的协议本质json-rpc-20-over-stdio)
+   - [Agent 与 MCP Server 的交互流程](#agent-与-mcp-server-的交互流程)
+3. [MCP 的三大能力](#mcp-的三大能力)
    - [Tools（工具）](#tools工具)
    - [Resources（资源）](#resources资源)
    - [Prompts（提示模板）](#prompts提示模板)
-3. [MCP Server 项目结构](#mcp-server-项目结构)
-4. [在 Claude Code 中配置与调用](#在-claude-code-中配置与调用)
+4. [MCP Server 项目结构](#mcp-server-项目结构)
+5. [在 Claude Code 中配置与调用](#在-claude-code-中配置与调用)
    - [配置 MCP Server](#配置-mcp-server)
    - [调用效果演示](#调用效果演示)
    - [本地调试](#本地调试)
-5. [四大设计原则](#四大设计原则)
+6. [四大设计原则](#四大设计原则)
    - [权限最小化](#权限最小化)
    - [返回值可解析](#返回值可解析)
    - [错误信息面向 AI](#错误信息面向-ai)
    - [幂等性与无副作用（只读 Tool）](#幂等性与无副作用只读-tool)
-6. [课程案例：积分商城 MCP 复盘](#课程案例积分商城-mcp-复盘)
+7. [课程案例：积分商城 MCP 复盘](#课程案例积分商城-mcp-复盘)
    - [`pointshub-mcp` Server](#pointshubmcp-server)
-7. [CLI Skill vs MCP Server 选型（扩展版）](#cli-skill-vs-mcp-server-选型扩展版)
-8. [企业级 MCP 体系](#企业级-mcp-体系)
+8. [CLI Skill vs MCP Server 选型（扩展版）](#cli-skill-vs-mcp-server-选型扩展版)
+9. [企业级 MCP 体系](#企业级-mcp-体系)
    - [三层分级](#三层分级)
    - [版本管理建议](#版本管理建议)
    - [安全运营建议](#安全运营建议)
@@ -31,7 +33,7 @@
 
 MCP（Model Context Protocol）是 Anthropic 提出的开放标准协议，让 AI Agent 以统一接口访问外部工具和数据源——无论后端是数据库、内部 API、文件系统还是第三方服务。
 
-调用方式：在 `settings.json` 中配置 MCP Server 后，Claude 在对话中可以像调用内置工具一样调用 MCP 暴露的 Tools，无需用户显式触发。
+调用方式：在项目根目录的 `.mcp.json` 中声明 MCP Server 后，Claude Code 启动时自动发现并注册。Claude 在对话中可以像调用内置工具一样调用 MCP 暴露的 Tools，无需用户显式触发。
 
 **MCP 与 Skill 的本质区别**：Skill 是给 Claude 的"指令书"（提示词 + 规则），Claude 读完后自己决定怎么做；MCP 是给 Claude 的"工具箱"（确定性 API），Claude 决定什么时候调、调哪个，工具本身不含推理逻辑。
 
@@ -53,6 +55,66 @@ MCP（Model Context Protocol）是 Anthropic 提出的开放标准协议，让 A
 | 工具需要运营 / 客服 / PM 等非开发角色使用 | MCP 更合适 |
 | 同一工具要在多个 AI 平台上使用 | MCP |
 | 需要限制 AI 只能访问特定数据视图 | MCP |
+
+---
+
+## MCP 的协议本质：JSON-RPC 2.0 over stdio
+
+MCP 不是黑盒魔法。拆到底层，它就是一个轻量级的远程过程调用协议：
+
+> **MCP = JSON-RPC 2.0 消息格式 + stdio（标准输入/输出）传输层**
+
+这意味着：
+- **不走网络**：Agent 和 MCP Server 之间通过 stdin/stdout 管道通信，没有 HTTP 端口、不需要处理 CORS
+- **不限定语言**：只要能读写 stdin/stdout、能解析 JSON 的程序，都可以实现 MCP Server（Python、Node.js、Go、Rust……）
+- **不依赖特定框架**：`mcp` Python 包只是帮你省掉协议的样板代码，本质上做的事情就是一个 JSON-RPC 循环
+
+### Agent 与 MCP Server 的交互流程
+
+整个交互分为三个阶段，Agent（Claude Code）发起请求，MCP Server 返回响应。每次交互都是 **Agent 通过 MCP Server 的 stdin 发一行 JSON → Server 通过 stdout 回一行 JSON**：
+
+**阶段一：握手（Handshake）**
+
+```
+Agent  → MCP Server 的 stdin（启动进程）
+Agent  → {"jsonrpc":"2.0", "id":1, "method":"initialize", "params":{}}
+Server → {"jsonrpc":"2.0", "id":1, "result":{
+            "protocolVersion":"2024-11-05",
+            "capabilities":{"tools":{}},
+            "serverInfo":{"name":"pointshub","version":"1.0.0"}
+          }}
+Agent  → {"jsonrpc":"2.0", "method":"notifications/initialized"}
+```
+
+Agent 启动 MCP Server 进程，发送 `initialize` 请求。Server 回复自己支持的能力（如 `tools` 表示"我可以提供工具调用"）。Agent 收到后再发 `initialized` 通知确认握手完成。
+
+**阶段二：发现（Discovery）**
+
+```
+Agent  → {"jsonrpc":"2.0", "id":2, "method":"tools/list", "params":{}}
+Server → {"jsonrpc":"2.0", "id":2, "result":{"tools":[
+            {"name":"get_user_points", "description":"查询用户积分余额",
+             "inputSchema":{"type":"object","properties":{"user_id":{"type":"integer"}},"required":["user_id"]}},
+            {"name":"get_points_history", "description":"查询积分明细",
+             "inputSchema":{"type":"object","properties":{"user_id":{"type":"integer"},"limit":{"type":"integer"}},"required":["user_id"]}}
+          ]}}
+```
+
+Agent 通过 `tools/list` 发现 MCP Server 有哪些工具可用，每个工具的 inputSchema 告诉 Agent 需要什么参数、参数类型是什么。
+
+**阶段三：调用（Invocation）**
+
+```
+Agent  → {"jsonrpc":"2.0", "id":3, "method":"tools/call",
+           "params":{"name":"get_user_points", "arguments":{"user_id":1023}}}
+Server → {"jsonrpc":"2.0", "id":3, "result":{"content":[
+            {"type":"text", "text":"{\"user_id\":1023,\"balance\":2350,\"status\":\"normal\"}"}
+          ]}}
+```
+
+Agent 决定调用某个 Tool，传入参数。Server 执行业务逻辑，返回结构化结果。Agent 拿到结果后继续推理。
+
+**核心要点**：MCP Server 不需要理解 AI 的意图——它就是一个"输入参数 → 返回结果"的纯函数。Agent 负责决定"什么时候调、调什么、调完后怎么用"，Server 只负责"执行并返回"。这个分工是 MCP 设计的精妙之处。
 
 ---
 
@@ -115,8 +177,8 @@ Prompts 适合将高频诊断 / 分析流程固化，让非技术人员也能触
 ## MCP Server 项目结构
 
 ```
-mcp/
-  server.py          # MCP Server 主文件：注册 Tools / Resources / Prompts
+src/mcp/
+  server.py          # MCP Server 入口：JSON-RPC 循环 + Tool 注册
   tools/
     points.py        # 积分相关 Tools（查余额、查明细）
     products.py      # 商品相关 Tools（查库存、查详情）
@@ -124,8 +186,10 @@ mcp/
   resources/
     spec.py          # 暴露 SPEC.md 等文档资源
   db.py              # 数据库连接池（与业务后端共享连接配置）
-  requirements.txt   # mcp, sqlalchemy, pymysql 等
+  requirements.txt   # 如需外部依赖（mcp 包等），如果纯 stdlib 实现则不需要
 ```
+```
+项目根目录的 `.mcp.json` 声明该 Server 的位置和启动方式；`src/mcp/` 存放具体实现。声明与实现分离，声明让 Agent 知道"有什么能力可用"，实现则是普通源码。
 
 **渐进式披露原则**：从最常用的 1–2 个 Tool 开始，验证集成效果后再扩展。不要一次性暴露所有数据表。
 
@@ -135,14 +199,15 @@ mcp/
 
 ### 配置 MCP Server
 
-在项目根目录的 `.claude/settings.json` 中添加：
+在**项目根目录**创建 `.mcp.json`（注意：不是 `.claude/settings.json`，后者管理 Claude Code 自身行为，`.mcp.json` 管理 MCP Server 注册）：
 
 ```json
 {
   "mcpServers": {
     "pointshub": {
+      "type": "stdio",
       "command": "python",
-      "args": ["./mcp/server.py"],
+      "args": ["./src/mcp/server.py"],
       "env": {
         "DATABASE_URL": "mysql+pymysql://user:pass@localhost/pointshub"
       }
@@ -150,6 +215,8 @@ mcp/
   }
 }
 ```
+
+配置文件中 `type: "stdio"` 表示通过 stdin/stdout 管道通信（MCP 协议本身不依赖 HTTP）。Claude Code 启动时扫描根目录的 `.mcp.json`，自动启动配置的 Server 进程并完成握手，不需要手动运行 Server。
 
 配置生效后，Claude 在对话中可以直接调用 MCP 暴露的 Tools，无需用户显式指令。
 
@@ -177,11 +244,11 @@ Claude：我来帮您查一下。
 ### 本地调试
 
 ```bash
-# 启动 MCP Server（保持后台运行）
-python mcp/server.py
+# 手动测试 MCP Server 的 JSON-RPC 协议（发送 initialize 请求）
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | python src/mcp/server.py
 
-# 验证 Tool 可调用（使用 MCP Inspector）
-npx @modelcontextprotocol/inspector python mcp/server.py
+# 验证 Tool 可调用（使用 MCP Inspector，提供 UI 界面调试）
+npx @modelcontextprotocol/inspector python src/mcp/server.py
 ```
 
 ---

@@ -39,6 +39,7 @@ my-project/
 ├── CLAUDE.md                          # ① System Prompt — 全局行为规则与架构约束
 ├── README.md                          #    项目总览
 ├── SPEC.md                            #    可执行规格（AC 验收标准，Agent 自检依据）
+├── .mcp.json                          # ⑦ MCP 注册 — Agent 启动时自动发现 MCP 工具
 │
 ├── api/
 │   └── openapi.yaml                   #    接口契约（强类型 Schema，Agent 不猜参数）
@@ -57,6 +58,9 @@ my-project/
 │   │   └── notification/              #    限界上下文：通知
 │   │       ├── README.md
 │   │       └── ...
+│   ├── mcp/                            # ⑦ MCP 工具实现 — Agent 通过 .mcp.json 自动发现
+│   │   └── server.py
+│   │
 │   └── shared/
 │       └── types.py
 │
@@ -82,14 +86,11 @@ my-project/
 │   │   ├── secret-scanner.js          #    阻止密钥泄露
 │   │   └── dangerous-cmd-guard.js     #    拦截危险命令
 │   │
-│   ├── skills/                        # ④ Skills — 按需注入的工作流
+│   │── skills/                        # ④ Skills — 按需注入的工作流
 │   │   ├── code-review/
 │   │   ├── debug/
 │   │   ├── test-run/
 │   │   └── deploy/
-│   │
-│   │── mcp/                            # ⑦ MCP 扩展工具
-│   │   └── slack-server.py
 │   │
 │   ├── agents/                        # ⑤ Sub-Agents — 隔离执行的委派单元
 │   │   ├── code-reviewer.md
@@ -121,7 +122,7 @@ my-project/
 | **文档层** | CLAUDE.md、模块 README、ADR、SPEC、PRD、design-system | ★★☆☆☆ | Markdown，渐进披露，按需下钻 |
 | **经验层** | 模块 EXPERIENCE.md、.claude/experience/INDEX.md | ★★☆☆☆ | 结构化经验文件，随代码 colocate |
 | **约束层** | import-linter、pyproject.toml、CI、Hooks | ★★★★☆ | 可执行规则 + 管线拦截 |
-| **执行层** | Skills、Sub-Agents、settings.json 权限、MCP、scripts | ★★★★☆ | 注入 Prompt + 隔离执行 + allowlist |
+| **执行层** | Skills、Sub-Agents、settings.json 权限、MCP（.mcp.json + src/mcp/）、scripts | ★★★★☆ | 注入 Prompt + 隔离执行 + allowlist |
 
 ### 1. 架构层 — 让 Agent "看到"边界
 
@@ -163,7 +164,7 @@ my-project/
 - **Skills**：按需注入的工作流（如 code-review、debug、deploy），Agent 识别意图后自动加载对应 Skill
 - **Sub-Agents**：隔离执行的委派单元——子代理拥有独立上下文，用于并行执行或保护主会话不受污染
 - **settings.json 权限**：Tool 的白名单/黑名单，控制 Agent 能调用哪些系统命令
-- **MCP**：扩展工具协议，让 Agent 连接外部系统（Slack、Jira、数据库等）
+- **MCP**（`.mcp.json` + `src/mcp/`）：`.mcp.json` 在项目根目录声明 MCP Server（命令、参数、环境变量），Claude Code 启动时自动发现并注册；`src/mcp/` 存放 Server 的实现代码。两者分离：声明让 Agent 知道"有什么能力可用"，实现则是普通源码
 - **Scripts**：支撑脚本（数据库重置、种子数据导入），Agent 通过 Tool 调用而非自己手写
 
 这五个层级的核心规律是：**越往上层，约束越"软"（靠 Agent 自觉）；越往下层，约束越"硬"（靠工具和规则强制执行）。** 一个成熟的 Harness 不会只依赖某一层，而是在五层之间形成纵深防御。
