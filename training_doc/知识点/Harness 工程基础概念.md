@@ -126,46 +126,56 @@ my-project/
 
 ### 1. 架构层 — 让 Agent "看到"边界
 
-架构层不靠文档说教，而是靠目录和类型系统让 Agent **客观上无法越界**。
+架构层与其他四层有本质区别：**文档、经验、约束、执行都是可以"外挂"到项目上的 Harness 组件，而架构层就是项目源码本身**——目录怎么切、模块怎么拆、类型怎么定义。
 
-- **模块目录结构**：DDD 限界上下文通过目录隔离，Agent 在修改 `auth/` 时不会误入 `profile/` 的实现细节
-- **OpenAPI / 接口契约**：强类型 Schema 消除了 Agent 对参数格式的猜测，API 边界一目了然
-- **Type Hints**：Python 类型标注 = 代码级的微型文档，Agent 无需跳转即可理解数据结构
+正因如此，项目架构的设计质量直接决定了 Agent 的工作效果。一套对人类工程师友好的架构，往往也对 Agent 友好——两者的核心诉求一致：**快速定位"改哪里"、清晰识别"边界在哪"**。
+
+推荐基于 **DDD（领域驱动设计）** 来组织代码架构，它和 LLM 的运作方式天然契合：
+
+- **限界上下文 → 模块边界**：DDD 按业务领域拆分限界上下文，每个上下文映射为一个模块目录（`auth/`、`profile/`、`notification/`），Agent 修改某一个时不会误入其他上下文的实现细节
+- **通用语言（Ubiquitous Language）→ 命名体系**：DDD 要求每个限界上下文内建立统一的术语，目录名、类名、字段名共享同一套词汇——这与 LLM 基于语义匹配的推理模式高度一致，Agent 的"理解"和"生成"都更精准
+- **聚合根 → 类型约束**：DDD 的聚合根通过类型系统（OpenAPI Schema、Pydantic 模型、Type Hints）固化为代码级约束，Agent 无需跳转即可理解数据结构的边界和校验规则
+
+具体落地到目录树：
+
+- 模块目录结构（DDD 限界上下文）：目录即边界
+- `api/openapi.yaml` → 接口契约，强类型 Schema，Agent 不猜参数
+- Type Hints（`src/modules/*/auth_service.py`）+ Pydantic（`src/modules/*/auth_schema.py`）→ 代码级文档 + 强类型校验
+- `src/shared/types.py` → 跨模块共享类型
 
 ### 2. 文档层 — 渐进披露，按需下钻
 
 文档层回答"为什么要这么做"。Agent 不会一次性吞下所有文档，而是按任务范围按需查阅。
 
-- **CLAUDE.md**：全局行为准则与架构约束，Agent 启动即加载
-- **SPEC.md**：可执行规格，定义验收标准。Agent 完成任务后以此为自检清单
-- **ADR**：记录历史决策（如"为什么选 SQLite 而不是 PostgreSQL"），防止 Agent 在未来的 PR 中走回头路
-- **模块 README**：每个模块维护自己的 Purpose / Interfaces / Constraints，Agent 只需读当前模块
+- `CLAUDE.md` / `SPEC.md` → 全局行为规则与可执行规格，Agent 启动即加载，完成后以此为自检清单
+- `src/modules/*/README.md` → 模块级 Purpose / Interfaces / Constraints，Agent 只需读当前模块
+- `docs/adr/` → 架构决策记录（如"为什么选 SQLite"），防止 Agent 走回头路
+- `design-system/` → 设计 Token 与约束，被 Skills 和 System Prompt 引用
 
 ### 3. 经验层 — 让 Agent 不踩同样的坑
 
 经验层是团队与 Agent 之间的"错题本"。某段代码出过什么 Bug、踩过什么坑，沉淀为结构化经验文件。
 
-- **EXPERIENCE.md**：与模块代码 colocate，记录该模块的历史陷阱和反模式
-- **INDEX.md**：经验索引入口，让 Agent 按关键词快速定位相关经验
+- `src/modules/*/EXPERIENCE.md` → 与模块代码 colocate，记录该模块的历史陷阱和反模式
+- `.claude/experience/INDEX.md` → 跨模块经验的索引入口，让 Agent 按关键词快速定位
 
 ### 4. 约束层 — 可执行规则，而不是口头约定
 
 约束层与文档层的区别在于：文档层靠 Agent 自觉遵守，约束层**编译时或运行时强制拦截**。
 
-- **import-linter**：架构即代码，模块间依赖关系由工具检查，违规即 CI 红灯
-- **pyproject.toml / ruff / mypy**：Lint 和类型检查在提交前运行，不规范的代码无法合入
-- **CI Pipeline**：提交即验证，Agent 的每一次改动都必须通过全量测试
-- **Hooks**：PreToolUse / PostToolUse 管线，在 Agent 调工具之前拦截危险操作（如扫描密钥、阻止 `rm -rf`）
+- `.importlinter` → 模块依赖规则，Architecture as Code，违规即 CI 红灯
+- `pyproject.toml` / `.github/workflows/ci.yml` → Lint + Type Check + 测试，提交即验证，不规范的代码无法合入
+- `.claude/hooks/` → PreToolUse / PostToolUse 管线拦截（扫描密钥、阻止 `rm -rf` 等危险命令）
 
 ### 5. 执行层 — Agent 的"手"和"工具箱"
 
 执行层定义 Agent 能做什么、怎么委派任务、如何调用外部系统。
 
-- **Skills**：按需注入的工作流（如 code-review、debug、deploy），Agent 识别意图后自动加载对应 Skill
-- **Sub-Agents**：隔离执行的委派单元——子代理拥有独立上下文，用于并行执行或保护主会话不受污染
-- **settings.json 权限**：Tool 的白名单/黑名单，控制 Agent 能调用哪些系统命令
-- **MCP**（`.mcp.json` + `src/mcp/`）：`.mcp.json` 在项目根目录声明 MCP Server（命令、参数、环境变量），Claude Code 启动时自动发现并注册；`src/mcp/` 存放 Server 的实现代码。两者分离：声明让 Agent 知道"有什么能力可用"，实现则是普通源码
-- **Scripts**：支撑脚本（数据库重置、种子数据导入），Agent 通过 Tool 调用而非自己手写
+- `.mcp.json` + `src/mcp/` → MCP 工具声明与实现，启动时自动发现。`.mcp.json` 声明 Server（命令、环境变量），`src/mcp/` 存放实现代码
+- `.claude/settings.json` → Tool 权限 allowlist / deny list，控制 Agent 能调用哪些系统命令
+- `.claude/skills/` → 按需注入的工作流（CR、debug、deploy），Agent 识别意图后自动加载
+- `.claude/agents/` → 隔离执行的委派单元（子代理），独立上下文，并行执行，保护主会话不受污染
+- `scripts/` → 工具支撑脚本（数据库重置、种子数据导入），Agent 直接调用而非手写
 
 这五个层级的核心规律是：**越往上层，约束越"软"（靠 Agent 自觉）；越往下层，约束越"硬"（靠工具和规则强制执行）。** 一个成熟的 Harness 不会只依赖某一层，而是在五层之间形成纵深防御。
 
@@ -178,7 +188,7 @@ Memory 与上面五个层级有本质区别：
 > **五个层是人写的、注入给 Agent 的；Memory 是 Agent 自己写的、自己维护的。**
 
 - 架构、文档、经验、约束、执行 —— 都是**人主动编写的工程制品**，回答"我们希望 Agent 遵守什么"
-- Memory（`.claude/memory/`）—— 是 **Agent 在对话中自动提取并持久化的**，回答"Agent 从这次会话中学到了什么"
+- `.claude/memory/`（`user.md` / `project.md` / `feedback.md` / `reference.md`）→ Agent 在对话中自动提取并持久化的跨会话记忆，回答"Agent 从这次会话中学到了什么"
 
 Memory 不是第六层，而是**横切所有层的持久化机制**。Agent 可以在任何一层学到东西并写入 memory：
 
