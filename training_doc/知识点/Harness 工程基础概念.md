@@ -53,7 +53,7 @@ my-project/
 │   ├── modules/
 │   │   ├── auth/                      #    DDD 限界上下文：认证
 │   │   │   ├── README.md              #       模块级 Purpose / Interfaces / Constraints
-│   │   │   ├── EXPERIENCE.md          #       本模块的经验陷阱（从 Git History 提炼）
+│   │   │   ├── EXPERIENCE.md          #       本模块的经验陷阱（可从 Git History 提炼）
 │   │   │   ├── auth_service.py        #       Type Hints = 代码级文档
 │   │   │   └── auth_schema.py         #       Pydantic → Agent 的"强类型提示"
 │   │   ├── profile/                   #    限界上下文：用户画像
@@ -67,7 +67,7 @@ my-project/
 │   │   └── server.py
 │   │
 │   └── shared/
-│       └── types.py
+│       └── types.py                   # 跨模块共享类型的集中定义点
 │
 ├── docs/
 │   └── adr/                           #    架构决策记录
@@ -75,8 +75,13 @@ my-project/
 │       └── 002-jwt-session.md         #       认证方案选型
 │
 ├── design-system/                     #    设计约束（被 Skills 和 System Prompt 引用）
-│   ├── tokens.css
-│   └── constraints.md
+│   ├── tokens.css                    #       CSS 变量 — 颜色/间距/阴影/动画/字体（单一真相源）
+│   ├── tokens.ts                     #       TypeScript 版本 — Vue/React 组件引用
+│   ├── constraints.md                #       业务约束与尺寸规范（UX 规则，Agent 生成 UI 必读）
+│   ├── design-rules.md               #       AI 生成规则（Prototype Skill 自动注入此文件）
+│   ├── components/
+│   │   └── index.html                #       组件 Gallery — 可视化验证所有组件在 Token 下的渲染效果
+│   └── README.md                     #       设计系统总览与变更流程
 │
 ├── .importlinter                       # Architecture as Code — 模块依赖规则
 ├── pyproject.toml                      # Lint / Type Check（mypy, ruff）
@@ -97,7 +102,7 @@ my-project/
 │   │   ├── test-run/
 │   │   └── deploy/
 │   │
-│   ├── agents/                        # ⑤ Sub-Agents — 隔离执行的委派单元
+│   ├── agents/                        # ⑤ Sub-Agents — 隔离执行的委派单元，隔离上下文膨胀
 │   │   ├── code-reviewer.md
 │   │   ├── debugger.md
 │   │   └── planner.md
