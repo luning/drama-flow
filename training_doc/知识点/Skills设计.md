@@ -1,4 +1,4 @@
-# Skills 深度设计
+# Skills 设计
 
 ## 目录
 

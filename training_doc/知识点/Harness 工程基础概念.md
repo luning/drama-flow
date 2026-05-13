@@ -10,7 +10,12 @@
    - [3. 经验层 — 让 Agent 不踩同样的坑](#3-经验层-让-agent-不踩同样的坑)
    - [4. 约束层 — 可执行规则，而不是口头约定](#4-约束层-可执行规则而不是口头约定)
    - [5. 执行层 — Agent 的"手"和"工具箱"](#5-执行层-agent-的手和工具箱)
-4. [Memory：Agent 自管理的跨会话持久化](#memoryagent-自管理的跨会话持久化)
+4. [Harness 的团队治理与 Git 管理](#harness-的团队治理与-git-管理)
+   - [Git 提交边界](#git-提交边界)
+   - [Code Review 策略](#code-review-策略)
+   - [个人偏好管理："分层覆盖"模型](#个人偏好管理分层覆盖模型)
+   - [经验文件的质量管控](#经验文件的质量管控)
+5. [Memory：Agent 自管理的跨会话持久化](#memoryagent-自管理的跨会话持久化)
 
 ---
 
@@ -178,6 +183,71 @@ my-project/
 - `scripts/` → 工具支撑脚本（数据库重置、种子数据导入），Agent 直接调用而非手写
 
 这五个层级的核心规律是：**越往上层，约束越"软"（靠 Agent 自觉）；越往下层，约束越"硬"（靠工具和规则强制执行）。** 一个成熟的 Harness 不会只依赖某一层，而是在五层之间形成纵深防御。
+
+---
+
+## Harness 的团队治理与 Git 管理
+
+### Git 提交边界
+
+核心原则：**代表团队共识的 → 提交；Agent 自动生成或纯个人偏好的 → .gitignore。**
+
+绝大多数 Harness 文件都是团队共识的产物，应当提交。真正不该提交的只有两类：
+
+| 文件 | 不提交的原因 |
+|------|-------------|
+| `.claude/settings.local.json` | 个人对工具权限的微调，`.claude/settings.json` 已提供团队默认值 |
+| `.claude/memory/` | Agent 自动生成的个人记忆，每个开发者有自己的一份 |
+
+其余目录树中出现的所有 Harness 文件——`CLAUDE.md`、`SPEC.md`、`.mcp.json`、`hooks/`、`skills/`、`agents/`、`experience/INDEX.md`、`design-system/`、`docs/adr/`、`scripts/`、模块级 `README.md` 和 `EXPERIENCE.md`——全部提交。
+
+### Code Review 策略
+
+**一个错误的 CLAUDE.md 比一行错误的代码破坏力更大**——代码出错是单点 Bug，提示词出错会让 Agent 系统性地产出有问题的代码。
+
+| 级别 | 文件类型 | Review 要求 | 理由 |
+|------|---------|------------|------|
+| **严格 Review** | `CLAUDE.md`、`.claude/hooks/`、`.claude/skills/`、`.claude/agents/`、`.claude/settings.json` | 必须 PR + 至少一人 Approve | 直接影响 Agent 行为模式和安全边界 |
+| **正常 Review** | `SPEC.md`、`EXPERIENCE.md`、`docs/adr/`、`design-system/` | 建议 PR Review | 影响团队知识对齐，但不直接改变 Agent 执行路径 |
+| **低门槛** | `scripts/`、`.claude/experience/INDEX.md` | 变更通知即可 | 影响面可控 |
+
+关键判断标准：**这个改动会让 Agent 在不知情的情况下做出不同的决策吗？** 如果是，就必须 Review。
+
+### 个人偏好管理："分层覆盖"模型
+
+团队成员风格差异是现实——有人爱用 SDD，有人嫌繁琐；有人加自约束，有人嫌别人的经验文件"污染"自己的 Agent。硬性统一引发抵触，完全放任导致 Harness 失效。
+
+解决思路：**分层覆盖**——每一层有明确的权威范围和冲突解决规则。
+
+```
+个人层（.claude/settings.local.json, memory/）
+  ↓ 覆盖
+项目层（.claude/settings.json, CLAUDE.md, hooks/, skills/）
+  ↓ 引用
+模块层（src/modules/*/EXPERIENCE.md, README.md）
+  ↓ 被约束
+执行层（CI, import-linter, pyproject.toml）
+```
+
+| 层 | 修改方式 | 补充说明 |
+|----|---------|---------|
+| **执行层** | 不可绕过 | CI、import-linter、pyproject.toml 是硬约束，代码合入的必要条件 |
+| **项目层** | PR 博弈 | `CLAUDE.md`、`hooks/` 等团队级 Harness，增删改都要走 PR 并有理由 |
+| **模块层** | PR 博弈 | `EXPERIENCE.md` 属于文档层（约束强度 ★★），本质是建议。觉得某条过时或误导 → 提 PR 删除并附理由（如"该 Bug 已在 v2.3 修复"）。经验条目建议**标注日期**，超过 6 个月标记待审查 |
+| **个人层** | 自由调整 | `.claude/settings.local.json` 覆盖团队默认权限；不喜欢的 Skill 可以不调用。但**不能移除项目层的强制性约束**（hooks、CI） |
+
+### 经验文件的质量管控
+
+`EXPERIENCE.md` 最容易引发"洁癖 vs 实用"的争议。几条质量原则：
+
+- **写"陷阱条件"，不写"个人偏好"**：`"当 token 为 None 时 refresh_token() 会抛未捕获异常"` ✅；`"不要用 async/await"` ❌
+- **标日期**：过时经验不如没有经验
+- **少而精**：5 条验证过的陷阱 > 50 条未经检验的"注意事项"
+- **实验性经验走 Memory 先验证**：不确定是否普适 → 写入 `.claude/memory/`（个人、不提交），验证有效后再提炼到 `EXPERIENCE.md`（团队共享）
+
+---
+
+**总结**：Harness 治理的核心不是统一所有人的风格，而是建立清晰的**分层架构**——硬约束强制执行，软建议 PR 讨论，个人偏好有逃生舱。
 
 ---
 

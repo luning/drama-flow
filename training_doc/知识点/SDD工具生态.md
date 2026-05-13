@@ -1,4 +1,4 @@
-# SDD 工具全景
+# SDD 工具生态
 
 ## 目录
 
@@ -17,11 +17,12 @@
    - [Taskmaster AI](#taskmaster-ai)
    - [SDD 生态中的其他代表性工具](#sdd-生态中的其他代表性工具)
    - [快速上手指南对比](#快速上手指南对比)
-4. [核心维度对比](#核心维度对比)
-   - [执行哲学对比](#执行哲学对比)
-5. [各工具适用场景](#各工具适用场景)
-6. [总结](#总结)
-7. [参考资料](#参考资料)
+   - [选型速查](#选型速查)
+4. [SDD 的定制与扩展](#sdd-的定制与扩展)
+   - [先认清一件事](#先认清一件事)
+   - [什么时候需要扩展](#什么时候需要扩展)
+   - [三种扩展方式](#三种扩展方式)
+   - [极少数情况：真的需要自建完整框架](#极少数情况真的需要自建完整框架)
 
 ---
 
@@ -252,58 +253,57 @@ Superpowers 不做完整的 SDD 流程编排，而是专注于一件事：**把 
 | **Trellis** | `npm install -g @trellis/cli` | `trellis init` | `trellis spec create` |
 | **Superpowers** | `/plugin install superpowers@claude-plugins-official` | 重启 VS Code 后生效 | 无需显式触发，自动生效 |
 
----
+### 选型速查
 
-## 核心维度对比
-
-### 执行哲学对比
-
-| 工具 | 哲学 | 名句 |
-|------|------|------|
-| **GSD** | 编排执行 | "上下文管理比提示词工程更重要" |
-| **OpenSpec** | 变更隔离 | "不改坏现有功能比实现新功能更重要" |
-| **Spec Kit** | 规格即契约 | "代码服务于规格，而非反过来" |
-| **Kiro** | 意图即代码 | "不要让开发者离开 IDE" |
-| **Taskmaster AI** | AI 是 PM | "好的架构来自好的任务分解" |
-| **Trellis** | 工具无关 | "Spec 和 Task 应在任何 Agent 中可执行" |
-| **Superpowers** | 习惯编码化 | "把 TDD 和 CR 变成 Agent 的肌肉记忆" |
+| 工具 | 最适合 | 不适合 |
+|------|--------|--------|
+| **GSD** | 长任务跨模块重构（3+ 模块） | 深度审计追踪 |
+| **OpenSpec** | 存量系统迭代，怕改 A 坏 B | — |
+| **Spec Kit** | 大型企业，需向上汇报和审计 | 快速原型迭代 |
+| **Kiro** | 从零绿地 MVP，速度优先 | CLI / CI 集成场景 |
+| **Taskmaster AI** | Cursor 为主、PRD 驱动开发 | 编排执行场景 |
+| **Trellis** | 多 AI 工具切换，统一工作流 | — |
+| **Superpowers** | 配合其他 SDD 工具，强化工程纪律 | 单独使用 |
 
 ---
 
-## 各工具适用场景
+## SDD 的定制与扩展
 
-下表用"适合/不适合"双向约束帮助决策——不适合列往往比适合列更有筛选价值。
+### 先认清一件事
 
-| 场景 | 首选工具 | 不适合 |
-|------|----------|--------|
-| 存量系统迭代，怕改 A 坏 B | **OpenSpec** | Kiro（无 CLI/CI 集成，规格追踪弱） |
-| 从零绿地 MVP，速度优先 | **Kiro** | Spec Kit（8 步流程在原型期过重） |
-| 长任务跨模块重构（3+ 模块） | **GSD** | Taskmaster AI（委托型，不编排执行） |
-| 大型企业，需要向上汇报和审计 | **Spec Kit** | GSD（审计追踪能力相对弱） |
-| 以 Cursor 为主、从 PRD 驱动 | **Taskmaster AI** | GSD（不深度集成 Cursor） |
-| 多 AI 工具切换，需统一工作流 | **Trellis** | Kiro（锁定 IDE，工具无关性差） |
-| 已有 SDD 工具，强化工程纪律 | **Superpowers** | 单独使用（需配合其他 SDD 工具）|
+SDD 工具本质上是**编码环节的效率外挂**——省掉工程师对 AI 的重复提醒、防止 Agent 在长对话中遗忘约束、让 spec 工件和外部系统自动对接。它不是开发流程本身：PRD 评审 → 技术方案 → 开发 → CR → 测试 → 上线，有没有 SDD 都要执行。
 
----
+在这个定位下来看"自建"：GSD、OpenSpec、Spec Kit 每一个都是完整的软件项目——上下文工程、多代理编排、工件生命周期管理、验证闭环。一个 AC 检查脚本跟这些不是一个量级。**绝大多数团队不需要自建完整 SDD 框架**，需要的是在现有工具上**扩展和定制**——少了一个检查项、格式对不上 Jira、AI 工具不是 Claude Code / Cursor。
 
-## 总结
+动工之前，两条快速排除：
+- **能用 Prompt 解决的，不写代码**：在 CLAUDE.md 加一段约束就够了
+- **能装现成工具的，不做扩展**：一个 `openspec init` 就解决的问题，不需要自己动手
 
-SDD 工具的涌现是 AI 辅助编程走向成熟化的必然结果。当"让 AI 写出代码"不再是问题时，行业的下一个核心挑战变成了**"如何确保 AI 写出的代码是正确、一致、可维护的"**。
+### 什么时候需要扩展
 
-从 Prompt SDD 到工具化 SDD，本质上是**把规范和约束从人脑/文字中提取出来，编码为可执行的系统**。这个过程与软件工程过去几十年走过的路如出一辙：从个人手艺→口头约定→文档规范→代码化/自动化。
+| 你遇到的 | 你想省掉什么 | 用什么方式 |
+|------|---------|------|
+| 每次让 AI 改代码，都要手工打字"先读 spec、改完自检 AC" | **省一个重复动作** | Prompt 级或 Skill 级 |
+| AI 改 A 模块时忘了 B 模块的约束，每次都要重新提醒 | **防一类常见遗漏** | Prompt 级 + 宪法文件 |
+| 现成工具的工件格式和 Jira / GitLab 对接不上 | **省手工搬运** | 适配器级 |
+| AC 验证缺少团队特有的检查项（如性能回归） | **补一个检查点** | Skill 级，挂在 verify 流程上 |
+| 只需要 SDD 循环中一个动作，不想引入整套框架 | **只用一个零件** | Skill 级单点脚本 |
 
-值得注意的是，所有主流 SDD 工具在 **Spec → Plan → Execute → Verify** 的核心循环上已经趋同——这个基本模式已被验证，工具之间的真正差异在于上下文策略、执行深度和平台集成方式。
+### 三种扩展方式
 
-SDD 工具没有普适的最优解。了解每款工具核心解决的问题，从一个命令开始试，遇到实际痛点再深入——工具适不适合，用过才知道。
+**Prompt 级（零成本）**：在 CLAUDE.md 中加入团队特有的 SDD 约束。第 1 节已展开。
 
----
+**Skill 级**：把 SDD 循环中一个重复动作封装为 Skill——spec 模板生成、AC 覆盖检查、变更日志写回。一个 Skill 只做一个动作，不尝试做编排。注意：一个 AC 检查 Skill ≠ 一个 SDD 系统，它只是嵌入在现有工具流程中省掉一个步骤的手段。
 
-## 参考资料
+**适配器级**：对接外部系统时，写一个轻量适配器做格式转换或事件触发。本质是单向管道：Jira 事件 → spec 工件，或 spec 工件 → GitLab issue。适配器不做编排，只做搬运。
 
-- [GSD - Get Shit Done](https://github.com/gsd-build/get-shit-done)
-- [OpenSpec - Fission AI](https://github.com/fission-ai/openspec)
-- [Spec Kit - GitHub](https://github.com/github/spec-kit)
-- [Kiro - AWS](https://aws.amazon.com/cn/campaigns/kiro/)
-- [Taskmaster AI](https://github.com/bmadcode/taskmaster-ai)
-- Martin Fowler: [Understanding Spec-Driven-Development: Kiro, spec-kit, and Tessl](https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html)
-- Thoughtworks: [Spec-Driven Development Technology Radar](https://www.thoughtworks.com/en-sg/radar/techniques/spec-driven-development)
+### 极少数情况：真的需要自建完整框架
+
+以下三个条件**同时满足**时，才值得考虑：
+
+1. **所有现成工具都无法在团队的 AI 编码环境中运行**（不是"不好用"，是"跑不起来"）
+2. **团队规模足够大（≥20 人）**，以至于 Prompt + Skill 的组合仍导致一致性失控
+3. **有专门的工具团队**来持续维护——SDD 框架是持续工程投入，不是一次性脚本
+
+即使满足，也强烈建议从现成工具借设计模式：变更隔离从 OpenSpec 借、上下文管理从 GSD 借、宪法机制从 Spec Kit 借。
+

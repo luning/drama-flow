@@ -1,9 +1,9 @@
-# MCP 深度设计
+# MCP 设计
 
 ## 目录
 
 1. [什么是 MCP？](#什么是-mcp)
-2. [MCP 的协议本质：JSON-RPC 2.0 over stdio](#mcp-的协议本质json-rpc-20-over-stdio)
+2. [MCP 的协议本质：JSON-RPC 2.0 over stdio](#mcp-的协议本质jsonrpc-20-over-stdio)
    - [Agent 与 MCP Server 的交互流程](#agent-与-mcp-server-的交互流程)
 3. [MCP 的三大能力](#mcp-的三大能力)
    - [Tools（工具）](#tools工具)
@@ -187,7 +187,6 @@ src/mcp/
     spec.py          # 暴露 SPEC.md 等文档资源
   db.py              # 数据库连接池（与业务后端共享连接配置）
   requirements.txt   # 如需外部依赖（mcp 包等），如果纯 stdlib 实现则不需要
-```
 ```
 项目根目录的 `.mcp.json` 声明该 Server 的位置和启动方式；`src/mcp/` 存放具体实现。声明与实现分离，声明让 Agent 知道"有什么能力可用"，实现则是普通源码。
 
