@@ -24,6 +24,11 @@ def slugify(text: str) -> str:
     return text.lower()
 
 
+def count_fences(lines: list[str]) -> int:
+    """统计代码围栏行数，用于配对检查"""
+    return sum(1 for line in lines if line.strip().startswith("```"))
+
+
 def extract_headings(lines: list[str]) -> list[tuple[int, str, str]]:
     """提取所有 h2 / h3 标题（跳过代码块内的）"""
     headings = []
@@ -95,6 +100,11 @@ def insert_toc(filepath: str):
         content = f.read()
 
     original_lines = content.split("\n")
+
+    # 检查代码围栏是否成对，奇数则报错跳过，等待人工修复
+    if count_fences(original_lines) % 2 != 0:
+        print(f"  [ERROR] {os.path.basename(filepath)} — 代码围栏（```）不成对，请先修复")
+        return False
 
     # 先删除已有目录
     lines = remove_existing_toc(original_lines)
