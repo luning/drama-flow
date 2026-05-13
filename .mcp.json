@@ -2,10 +2,10 @@
   "mcpServers": {
     "dramaflow-stats": {
       "type": "stdio",
-      "command": "/Users/ninglu/CodeFromGithub/drama-flow/backend/drama-flow/bin/python",
-      "args": ["/Users/ninglu/CodeFromGithub/drama-flow/backend/mcp_server.py"],
+      "command": "backend/drama-flow/bin/python",
+      "args": ["backend/mcp_server.py"],
       "env": {
-        "DRAMAFLOW_DB": "/Users/ninglu/CodeFromGithub/drama-flow/backend/dramaflow.db"
+        "DRAMAFLOW_DB": "backend/dramaflow.db"
       }
     }
   }

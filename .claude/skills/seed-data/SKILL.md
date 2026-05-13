@@ -9,7 +9,7 @@ description: 幂等导入 DramaFlow 测试数据。当用户说"添加测试数�
 
 ## 执行步骤
 
-1. 确认当前在 `/Users/ninglu/CodeFromGithub/drama-flow/backend/` 目录，激活虚拟环境 `drama-flow`
+1. 确认当前在 `backend/` 目录，激活虚拟环境 `drama-flow`
 2. 执行 `python -m app.db.seed`
 3. 解析输出并报告结果
 

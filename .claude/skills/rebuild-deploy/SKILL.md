@@ -31,7 +31,7 @@ description: 重新编译 H5 和 Android App 并部署到模拟器——编译 H
 ### 1. 编译 H5 前端
 
 ```bash
-cd /Users/ninglu/CodeFromGithub/drama-flow/h5 && npm run build
+cd h5 && npm run build
 ```
 
 ### 2. 确保后端服务运行
@@ -41,7 +41,7 @@ cd /Users/ninglu/CodeFromGithub/drama-flow/h5 && npm run build
 如果传入 `--restart` 参数，则先杀端口再启动（适合改动了 uvicorn 配置、依赖版本或需要清理状态时使用）。
 
 ```bash
-source /Users/ninglu/CodeFromGithub/drama-flow/backend/drama-flow/bin/activate
+source backend/drama-flow/bin/activate
 
 # 如果指定了重启标志，先杀进程
 if [ "$RESTART" = "true" ]; then
@@ -54,7 +54,7 @@ if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
   echo "Backend already running"
 else
   echo "Starting backend server..."
-  cd /Users/ninglu/CodeFromGithub/drama-flow/backend && \
+  cd backend && \
   nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload > /tmp/dramaflow-backend.log 2>&1 &
   sleep 2
   curl -sf http://localhost:8000/health > /dev/null 2>&1 && echo "Backend started" || echo "Backend may not be ready yet"
@@ -93,7 +93,7 @@ fi
 
 ```bash
 export ANDROID_HOME="$HOME/Library/Android/sdk"
-cd /Users/ninglu/CodeFromGithub/drama-flow/android
+cd android
 ./gradlew installDebug
 ```
 
