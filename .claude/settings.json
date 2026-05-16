@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(source */drama-flow/bin/activate *)",
-      "Bash(python -m pytest *)"
+      "Bash(python -m pytest *)",
+      "Bash(python test-agent/run.py *)",
+      "Bash(adb shell uiautomator dump *)",
+      "Bash(adb pull /sdcard/ui.xml *)",
+      "Bash(adb shell dumpsys activity *)",
+      "Bash(adb -s emulator-5554 shell *)"
     ]
   },
   "hooks": {
