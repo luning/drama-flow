@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>剧集详情 — DramaFlow Prototype</title>
+<link rel="stylesheet" href="../../design-system/tokens/tokens.css">
+<link rel="stylesheet" href="../../design-system/components/components.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg-outer);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: var(--font-family);
+  }
+  .phone {
+    width: var(--phone-width);
+    min-height: var(--phone-height);
+    background: var(--bg-primary);
+    border-radius: var(--phone-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-phone);
+    display: flex;
+    flex-direction: column;
+  }
+  .page-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-y: auto;
+  }
+  .page-content::-webkit-scrollbar { display: none; }
+
+  /* Page-specific layout helpers */
+  .drama-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4) var(--space-5);
+  }
+  .section-title {
+    padding: 0 var(--space-4);
+    margin-top: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  .section-title h3 {
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+  }
+
+  /* App Bar */
+  .app-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    height: 44px;
+  }
+  .app-bar h1 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-extrabold);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .app-bar .search-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  /* Detail Page */
+  .detail-header {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: linear-gradient(135deg, var(--color-primary), var(--bg-deep));
+    position: relative;
+  }
+  .detail-header .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(transparent 40%, var(--bg-primary));
+  }
+  .detail-header .back {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.4);
+    border: none;
+    color: var(--text-primary);
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .detail-body {
+    padding: var(--space-4);
+  }
+  .detail-body h1 {
+    color: var(--text-primary);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+  }
+  .detail-body .sub-info {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: 6px;
+    color: var(--text-tertiary);
+    font-size: 13px;
+  }
+  .detail-body .rating-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: 10px;
+  }
+  .detail-body .stars {
+    color: var(--color-rating);
+    font-size: 16px;
+  }
+  .detail-body .score {
+    color: var(--color-rating);
+    font-size: 18px;
+    font-weight: var(--font-weight-bold);
+  }
+  .detail-body .desc {
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+    line-height: 1.7;
+    margin-top: 14px;
+  }
+  .detail-body .actions {
+    margin-top: var(--space-4);
+    display: flex;
+    gap: var(--space-3);
+  }
+  .tabs-header {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 var(--space-4);
+  }
+  .tabs-header span {
+    padding: 10px 0;
+    color: var(--color-primary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    border-bottom: 2px solid var(--color-primary);
+    margin-right: var(--space-6);
+  }
+
+  /* Continue Watching */
+  .continue-section {
+    padding: 0 var(--space-4);
+    margin-top: var(--space-2);
+  }
+  .continue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+  }
+  .continue-header span {
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+  }
+  .continue-header a {
+    color: var(--color-primary-light);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="page-content">
+    <!-- @component: detail-header -->
+  <!-- detail-header -->
+  <div class="detail-header">
+    <div class="overlay"></div>
+    <button class="back">‹</button>
+  </div>
+    <!-- @endcomponent -->
+
+    <!-- @component: detail-body -->
+  <!-- detail-body -->
+  <div class="detail-body">
+    <h1>重生之都市仙尊</h1>
+    <div class="sub-info"><span>2024 · 共24集</span></div>
+    <div class="rating-row">
+      <span class="stars">★★★★★</span>
+      <span class="score">9.5</span>
+    </div>
+    <div class="desc">都市青年林风意外重生到修真世界，获得神秘功法，从此踏上逆天改命的修仙之路...</div>
+    <div class="actions">
+      <button class="btn-primary">▶ 立即观看</button>
+      <button class="btn-outline">♡ 收藏</button>
+    </div>
+  </div>
+    <!-- @endcomponent -->
+
+    <!-- @component: tabs -->
+  <!-- episode-tabs -->
+  <div class="tabs-header">
+    <span>剧集列表</span>
+    <span style="border-color:transparent;color:var(--text-tertiary);">评论</span>
+  </div>
+    <!-- @endcomponent -->
+
+    <!-- @component: episode-list -->
+  <!-- episode-list -->
+  <div class="episode-item">
+    <span class="number">1</span>
+    <div class="thumb"></div>
+    <div class="info">
+      <div class="title">第一集：重生归来</div>
+      <div class="duration">15:32</div>
+    </div>
+  </div>
+  <div class="episode-item">
+    <span class="number">2</span>
+    <div class="thumb"></div>
+    <div class="info">
+      <div class="title">第二集：都市风云</div>
+      <div class="duration">16:48</div>
+    </div>
+  </div>
+  <div class="episode-item">
+    <span class="number">3</span>
+    <div class="thumb"></div>
+    <div class="info">
+      <div class="title">第三集：暗流涌动</div>
+      <div class="duration">14:55</div>
+    </div>
+  </div>
+  <div class="episode-item">
+    <span class="number">4</span>
+    <div class="thumb"></div>
+    <div class="info">
+      <div class="title">第四集：初露锋芒</div>
+      <div class="duration">17:20</div>
+    </div>
+  </div>
+  <div class="episode-item">
+    <span class="number">5</span>
+    <div class="thumb"></div>
+    <div class="info">
+      <div class="title">第五集：危机四伏</div>
+      <div class="duration">15:10</div>
+    </div>
+  </div>
+    <!-- @endcomponent -->
+
+  </div>
+</div>
+</body>
+</html>

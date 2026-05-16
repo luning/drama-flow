@@ -1,0 +1,65 @@
+# screens/home.yaml — Home Screen Spec
+#
+# Platform-agnostic description of the home screen layout.
+# Consumed by:
+#   scripts/design-system/generate_prototype.py       → prototype HTML
+#   scripts/design-system/generate_h5_template.py      → Vue page template
+#   scripts/design-system/generate_android_layout.py   → Android layout XML
+#
+# 只描述"页面上有哪些区块、按什么顺序、从哪个 API 取数据"。
+# 视觉样式全部在 components/components.yaml 和 tokens/tokens.css 中定义。
+
+screen: home
+title: "DramaFlow 首页"
+scroll: vertical
+
+sections:
+
+  - id: app-bar
+    component: app-bar
+    data: static
+    props:
+      title: "DramaFlow"
+      show_search: true
+
+  - id: continue-watching
+    component: continue-watching-card
+    data: /api/watch-records/continue-watching
+    visible: "data.length > 0"
+    layout: vertical-stack
+    props:
+      header_title: "继续观看"
+      header_action: "查看全部 →"
+
+  - id: banner
+    component: banner-carousel
+    data: /api/banners
+    layout: horizontal-scroll
+    props:
+      autoplay: true
+      interval: 3000
+      ratio: "16:7"
+
+  - id: category-tabs
+    component: category-tabs
+    data: /api/categories
+    layout: horizontal-scroll
+    props:
+      default_active: all
+      prepend_all: true
+
+  - id: drama-grid
+    component: drama-grid
+    data: /api/dramas?category={category-tabs.active}
+    loading: skeleton-grid
+    empty: "暂无剧集"
+    layout: grid
+    grid:
+      columns: 2
+      gap: "{spacing.md}"
+      padding: "{spacing.lg}"
+    item:
+      component: drama-card
+      key: id
+    pagination:
+      type: scroll

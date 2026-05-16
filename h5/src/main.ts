@@ -3,6 +3,9 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './stores/auth'
+// Design System — single source of truth for all tokens and components
+// Replaces the old hand-maintained style.css variables
+import '@design/exports/h5/designsystem.css'
 import './style.css'
 
 const app = createApp(App)

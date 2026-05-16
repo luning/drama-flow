@@ -33,9 +33,17 @@
 │   ├── src/pages/    # Home.vue, Detail.vue
 │   ├── src/stores/   # Pinia stores
 │   └── src/api/      # API 封装
-├── scripts/          # SQLite 初始化 + seed 数据
+├── design-system/     # 可执行设计系统（Single Source of Truth）
+│   ├── tokens/       # Design Token（tokens.css, tokens.ts, schema）
+│   ├── specs/        # 约束 & 屏幕规格（constraints, design-rules, screens/）
+│   ├── components/   # 平台无关组件规格（components.yaml → CSS/Android）
+│   └── exports/      # 平台导出（H5 CSS, Android colors.xml/styles.xml）
+├── scripts/
+│   ├── design-system/ # Figma 同步 + 代码生成脚本
+│   └── check/         # Token/约束/组件合规检查脚本
 ├── docs/             # 设计截图与文档
-├── prototype/        # 可交互 HTML 原型
+├── prototype/        # 可交互 HTML 原型（引用 design-system）
+│   └── generated/    # 从 screen spec 自动生成的原型
 ├── PRD.md            # 产品需求文档
 └── SPEC.md           # 可执行规格 + 验收标准
 ```
@@ -70,17 +78,36 @@
 | SQL | UPPER_SNAKE_CASE 关键字, snake_case 表/字段 | `SELECT * FROM watch_records` |
 | 路由 | kebab-case 路径 | `/api/watch-records/continue-watching` |
 
-## 设计 Token 引用
+## 设计系统（Design System）引用
 
-颜色、字体、间距必须引用 `design_system.md` 中定义的设计 Token，禁止硬编码色值：
+所有颜色、字体、间距、组件必须引用 `design-system/` 中的定义，禁止硬编码。
 
-- Primary: `#6C5CE7`（主色/按钮/选中态）
-- Primary Light: `#A29BFE`（辅助色/链接）
-- Accent: `#FD79A8`（强调/收藏）
-- Rating: `#FFC048`（评分星级）
-- BG Primary: `#0F0F23`（页面背景）
-- BG Card: `#16163A`（卡片背景）
-- Border: `rgba(255,255,255,0.06~0.08)`
+### Token 层（design-system/tokens/tokens.css）
+所有颜色必须通过 CSS 变量引用，变量名以 tokens.css 为准：
+```css
+/* ✅ 正确 */
+color: var(--color-primary);
+background: var(--bg-card);
+padding: var(--space-4);
+
+/* ❌ 错误 — 硬编码色值 */
+color: #6c5ce7;
+background: #0f0f23;
+
+/* ❌ 错误 — 旧版变量名（已废弃） */
+color: var(--primary);
+background: var(--bg);
+```
+
+### 组件层（design-system/components/components.yaml）
+H5 组件应使用 components.css 中预定义的 class（如 `.btn-primary`, `.drama-card`），不要重写组件样式。只有页面特有的布局逻辑放在 scoped style 中。
+
+### 检查脚本
+```
+python scripts/check/check_tokens.py      # Token 合规
+python scripts/check/check_constraints.py  # 业务约束
+python scripts/check/check_components.py   # 组件使用
+```
 
 ## 用户交互原则
 

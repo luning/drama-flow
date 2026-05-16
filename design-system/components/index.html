@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DramaFlow 组件 Gallery</title>
-<link rel="stylesheet" href="../tokens.css">
+<!-- 引用 design-system tokens -->
+<link rel="stylesheet" href="../tokens/tokens.css">
+<!-- 引用生成的组件样式 -->
+<link rel="stylesheet" href="components.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -32,7 +35,6 @@
     margin-top: 8px;
   }
 
-  /* ── Section ─────────────────────────────────────────── */
   .section {
     margin-bottom: 48px;
   }
@@ -74,27 +76,6 @@
     font-family: monospace;
   }
 
-  /* ── Reuse from prototype ────────────────────────────── */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 24px;
-    border-radius: var(--radius-btn);
-    border: none;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-default);
-    gap: 8px;
-  }
-  .btn-primary { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)); color: var(--text-primary); }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-  .btn-secondary { background: var(--border); color: var(--text-primary); }
-  .btn-secondary:hover { background: var(--surface-hover); }
-  .btn-outline { background: transparent; color: var(--color-primary); border: 1.5px solid var(--color-primary); }
-  .btn-sm { padding: 8px 16px; font-size: 13px; border-radius: var(--radius-md); }
-
   /* ── Color Swatches ──────────────────────────────────── */
   .swatch-grid {
     display: grid;
@@ -117,119 +98,6 @@
   .swatch-var { font-size: 10px; color: var(--text-muted); font-family: monospace; margin-top: 2px; }
   .swatch-hex { font-size: 10px; color: var(--text-tertiary); font-family: monospace; }
 
-  /* ── Drama Card ──────────────────────────────────────── */
-  .drama-card {
-    width: 160px;
-    border-radius: var(--radius-card);
-    overflow: hidden;
-    background: var(--bg-card);
-    cursor: pointer;
-    transition: transform var(--transition-default), box-shadow var(--transition-default);
-  }
-  .drama-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
-  .drama-card .thumb {
-    aspect-ratio: 3/4;
-    background: linear-gradient(135deg, var(--color-primary), var(--bg-card-deep));
-    position: relative;
-    display: flex;
-    align-items: flex-end;
-    padding: 10px;
-  }
-  .drama-card .thumb .badge {
-    background: var(--color-primary-90);
-    color: var(--text-primary);
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: var(--radius-xs);
-    font-weight: 600;
-    align-self: flex-start;
-  }
-  .drama-card .info { padding: 10px 12px 12px; }
-  .drama-card .info h4 { color: var(--text-primary); font-size: 13px; font-weight: 600; }
-  .drama-card .info .rating { color: var(--color-rating); font-size: 11px; margin-top: 4px; }
-
-  /* ── Form Input ──────────────────────────────────────── */
-  .form-input {
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: var(--radius-btn);
-    border: 1.5px solid var(--border);
-    background: var(--border-subtle);
-    color: var(--text-primary);
-    font-size: 14px;
-    outline: none;
-    transition: border-color var(--transition-default);
-  }
-  .form-input:focus { border-color: var(--color-primary); }
-  .form-input::placeholder { color: var(--text-muted); }
-
-  /* ── Badge / Tag ─────────────────────────────────────── */
-  .tag {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 14px;
-    background: var(--color-primary-tint);
-    color: var(--color-primary-light);
-    font-size: 12px;
-    font-weight: 500;
-  }
-  .tag-danger {
-    background: rgba(225, 112, 85, 0.15);
-    color: var(--color-danger);
-  }
-  .tag-success {
-    background: rgba(0, 184, 148, 0.15);
-    color: var(--color-success);
-  }
-
-  /* ── Progress Bar ────────────────────────────────────── */
-  .progress-bar {
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-    width: 200px;
-  }
-  .progress-bar .fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
-    border-radius: 2px;
-  }
-
-  /* ── Toast ───────────────────────────────────────────── */
-  .toast-demo {
-    display: inline-flex;
-    background: rgba(0,0,0,0.85);
-    color: var(--text-primary);
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-size: 13px;
-    backdrop-filter: blur(8px);
-    white-space: nowrap;
-  }
-
-  /* ── Nav Item ────────────────────────────────────────── */
-  .nav-demo {
-    display: flex;
-    background: var(--bg-card);
-    border-top: 1px solid var(--border-subtle);
-    border-radius: 0 0 var(--radius-card) var(--radius-card);
-    width: 320px;
-    overflow: hidden;
-  }
-  .nav-item-demo {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: 8px 0;
-    color: #666;
-    font-size: 10px;
-  }
-  .nav-item-demo .icon { font-size: 20px; }
-  .nav-item-demo.active { color: var(--color-primary); }
-
   /* ── Typography ──────────────────────────────────────── */
   .type-sample { margin-bottom: 8px; }
   .type-sample .size { color: var(--text-muted); font-size: 11px; font-family: monospace; }
@@ -238,192 +106,151 @@
   .space-sample { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
   .space-block { background: var(--color-primary); border-radius: 2px; height: 16px; }
   .space-label { font-size: 11px; color: var(--text-muted); font-family: monospace; width: 100px; }
+
+  /* ── Phone frame ─────────────────────────────────────── */
+  .phone-frame {
+    width: 390px;
+    height: 700px;
+    background: var(--bg-primary);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow-phone);
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
 </style>
 </head>
 <body>
 
 <div class="gallery-header">
   <h1>DramaFlow 组件 Gallery</h1>
-  <p>所有组件均基于 <code>tokens.css</code> 渲染。修改 Token → 刷新 → 全局生效。</p>
-  <span class="version-badge">Design System v1.0</span>
+  <p>所有组件基于 <code>tokens.css</code> + <code>components.css</code> 渲染。修改 Token → 刷新 → 全局生效。</p>
+  <span class="version-badge">Design System v2.0 — Executable</span>
 </div>
 
 <!-- ── 色彩系统 ──────────────────────────────────────── -->
 <div class="section">
   <div class="section-title">Color Tokens — 色彩系统</div>
   <div class="swatch-grid">
-    <div class="swatch">
-      <div class="swatch-color" style="background:var(--color-primary)"></div>
-      <div class="swatch-info">
-        <div class="swatch-name">Primary</div>
-        <div class="swatch-var">--color-primary</div>
-        <div class="swatch-hex">#6C5CE7</div>
-      </div>
-    </div>
-    <div class="swatch">
-      <div class="swatch-color" style="background:var(--color-primary-light)"></div>
-      <div class="swatch-info">
-        <div class="swatch-name">Primary Light</div>
-        <div class="swatch-var">--color-primary-light</div>
-        <div class="swatch-hex">#A29BFE</div>
-      </div>
-    </div>
-    <div class="swatch">
-      <div class="swatch-color" style="background:var(--color-accent)"></div>
-      <div class="swatch-info">
-        <div class="swatch-name">Accent</div>
-        <div class="swatch-var">--color-accent</div>
-        <div class="swatch-hex">#FD79A8</div>
-      </div>
-    </div>
-    <div class="swatch">
-      <div class="swatch-color" style="background:var(--color-rating)"></div>
-      <div class="swatch-info">
-        <div class="swatch-name">Rating</div>
-        <div class="swatch-var">--color-rating</div>
-        <div class="swatch-hex">#FFC048</div>
-      </div>
-    </div>
-    <div class="swatch">
-      <div class="swatch-color" style="background:var(--color-success)"></div>
-      <div class="swatch-info">
-        <div class="swatch-name">Success</div>
-        <div class="swatch-var">--color-success</div>
-        <div class="swatch-hex">#00B894</div>
-      </div>
-    </div>
-    <div class="swatch">
-      <div class="swatch-color" style="background:var(--color-danger)"></div>
-      <div class="swatch-info">
-        <div class="swatch-name">Danger</div>
-        <div class="swatch-var">--color-danger</div>
-        <div class="swatch-hex">#E17055</div>
-      </div>
-    </div>
-    <div class="swatch">
-      <div class="swatch-color" style="background:var(--bg-primary);border:1px solid var(--border-subtle)"></div>
-      <div class="swatch-info">
-        <div class="swatch-name">BG Primary</div>
-        <div class="swatch-var">--bg-primary</div>
-        <div class="swatch-hex">#0F0F23</div>
-      </div>
-    </div>
-    <div class="swatch">
-      <div class="swatch-color" style="background:var(--bg-card);border:1px solid var(--border-subtle)"></div>
-      <div class="swatch-info">
-        <div class="swatch-name">BG Card</div>
-        <div class="swatch-var">--bg-card</div>
-        <div class="swatch-hex">#16163A</div>
-      </div>
-    </div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--color-primary)"></div><div class="swatch-info"><div class="swatch-name">Primary</div><div class="swatch-var">--color-primary</div><div class="swatch-hex">#6C5CE7</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--color-primary-light)"></div><div class="swatch-info"><div class="swatch-name">Primary Light</div><div class="swatch-var">--color-primary-light</div><div class="swatch-hex">#A29BFE</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--color-accent)"></div><div class="swatch-info"><div class="swatch-name">Accent</div><div class="swatch-var">--color-accent</div><div class="swatch-hex">#FD79A8</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--color-rating)"></div><div class="swatch-info"><div class="swatch-name">Rating</div><div class="swatch-var">--color-rating</div><div class="swatch-hex">#FFC048</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--color-success)"></div><div class="swatch-info"><div class="swatch-name">Success</div><div class="swatch-var">--color-success</div><div class="swatch-hex">#00B894</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--color-danger)"></div><div class="swatch-info"><div class="swatch-name">Danger</div><div class="swatch-var">--color-danger</div><div class="swatch-hex">#E17055</div></div></div>
   </div>
 </div>
 
-<!-- ── 按钮 ──────────────────────────────────────────── -->
+<!-- ── 背景色系统 ────────────────────────────────────── -->
 <div class="section">
-  <div class="section-title">Button — 按钮</div>
+  <div class="section-title">Backgrounds — 背景系统</div>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-color" style="background:var(--bg-primary)"></div><div class="swatch-info"><div class="swatch-name">BG Primary</div><div class="swatch-var">--bg-primary</div><div class="swatch-hex">#0F0F23</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--bg-card)"></div><div class="swatch-info"><div class="swatch-name">BG Card</div><div class="swatch-var">--bg-card</div><div class="swatch-hex">#16163A</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--bg-hover)"></div><div class="swatch-info"><div class="swatch-name">BG Hover</div><div class="swatch-var">--bg-hover</div><div class="swatch-hex">#1C1C44</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--bg-deep)"></div><div class="swatch-info"><div class="swatch-name">BG Deep</div><div class="swatch-var">--bg-deep</div><div class="swatch-hex">#2D1B4E</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--bg-skeleton)"></div><div class="swatch-info"><div class="swatch-name">BG Skeleton</div><div class="swatch-var">--bg-skeleton</div><div class="swatch-hex">#1A1A3A</div></div></div>
+  </div>
+</div>
+
+<!-- ── 按钮组件 ──────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">Buttons — 按钮</div>
   <div class="component-row">
     <div class="component-item">
-      <button class="btn btn-primary">立即观看</button>
+      <button class="btn-primary">立即观看</button>
       <div class="label">.btn-primary</div>
     </div>
     <div class="component-item">
-      <button class="btn btn-secondary">收藏</button>
+      <button class="btn-secondary">取消</button>
       <div class="label">.btn-secondary</div>
     </div>
     <div class="component-item">
-      <button class="btn btn-outline">♡ 收藏</button>
+      <button class="btn-outline">收藏</button>
       <div class="label">.btn-outline</div>
     </div>
     <div class="component-item">
-      <button class="btn btn-sm btn-primary">下一集 ›</button>
-      <div class="label">.btn-sm.btn-primary</div>
+      <button class="btn-sm">全部</button>
+      <div class="label">.btn-sm</div>
     </div>
     <div class="component-item">
-      <button class="btn btn-sm btn-secondary">‹ 上一集</button>
-      <div class="label">.btn-sm.btn-secondary</div>
+      <button class="btn-primary" disabled>已禁用</button>
+      <div class="label">.btn-primary:disabled</div>
     </div>
   </div>
 </div>
 
-<!-- ── 剧集卡片 ───────────────────────────────────────── -->
+<!-- ── 剧集卡片 ──────────────────────────────────────── -->
 <div class="section">
-  <div class="section-title">Drama Card — 剧集卡片</div>
+  <div class="section-title">Cards — 剧集卡片</div>
   <div class="component-row">
-    <div>
+    <div class="component-item" style="width:160px;">
       <div class="drama-card">
-        <div class="thumb">
-          <span style="font-size:32px;color:rgba(255,255,255,0.4);">🎬</span>
-          <span class="badge">重生逆袭</span>
-        </div>
+        <div class="thumb"><span class="badge">热播</span></div>
         <div class="info">
-          <h4>重生之女王归来</h4>
-          <div class="rating">★ 4.8</div>
+          <h4>重生之都市仙尊</h4>
+          <div class="rating">★ 9.5</div>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);font-family:monospace;margin-top:8px;">.drama-card</div>
+      <div class="label">.drama-card</div>
     </div>
-    <div>
-      <div class="drama-card" style="opacity:0.6;">
-        <div class="thumb" style="background:linear-gradient(135deg,var(--color-danger),var(--bg-card-deep));">
-          <span style="font-size:32px;color:rgba(255,255,255,0.4);">🎬</span>
-          <span class="badge" style="background:rgba(225,112,85,0.9);">霸总甜宠</span>
-        </div>
+    <div class="component-item" style="width:320px;">
+      <div class="continue-watching-card">
+        <div class="thumb"></div>
         <div class="info">
-          <h4>霸道总裁爱上我</h4>
-          <div class="rating">★ 4.9</div>
+          <h4>重生之都市仙尊</h4>
+          <div class="ep">第 12 集 · 68%</div>
+          <div class="progress-bar" style="margin-top:8px;"><div class="fill" style="width:68%"></div></div>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);font-family:monospace;margin-top:8px;">.drama-card（变体）</div>
-    </div>
-  </div>
-</div>
-
-<!-- ── 标签 ──────────────────────────────────────────── -->
-<div class="section">
-  <div class="section-title">Badge / Tag — 标签</div>
-  <div class="component-row">
-    <div class="component-item">
-      <span class="tag">重生逆袭</span>
-      <div class="label">.tag</div>
-    </div>
-    <div class="component-item">
-      <span class="tag tag-danger">错误提示</span>
-      <div class="label">.tag.tag-danger</div>
-    </div>
-    <div class="component-item">
-      <span class="tag tag-success">完结</span>
-      <div class="label">.tag.tag-success</div>
+      <div class="label">.continue-watching-card</div>
     </div>
   </div>
 </div>
 
 <!-- ── 表单输入 ──────────────────────────────────────── -->
 <div class="section">
-  <div class="section-title">Form Input — 表单输入</div>
+  <div class="section-title">Inputs — 表单输入</div>
   <div class="component-row">
     <div class="component-item" style="width:280px;">
-      <input class="form-input" type="text" placeholder="搜索剧集、演员...">
-      <div class="label">.form-input（默认）</div>
+      <input class="form-input" type="email" placeholder="请输入邮箱" />
+      <div class="label">.form-input</div>
     </div>
     <div class="component-item" style="width:280px;">
-      <input class="form-input" type="text" value="demo@dramaflow.com" style="border-color:var(--color-primary)">
-      <div class="label">.form-input:focus</div>
+      <input class="form-input search" type="text" placeholder="搜索剧集..." />
+      <div class="label">.form-input.search</div>
     </div>
   </div>
 </div>
 
-<!-- ── 进度条 ──────────────────────────────────────────── -->
+<!-- ── 标签 ──────────────────────────────────────────── -->
 <div class="section">
-  <div class="section-title">Progress Bar — 进度条</div>
+  <div class="section-title">Tags — 标签</div>
   <div class="component-row">
     <div class="component-item">
-      <div class="progress-bar"><div class="fill" style="width:45%"></div></div>
-      <div class="label">45% 进度</div>
+      <span class="tag">甜宠</span> <span class="tag">悬疑</span> <span class="tag">搞笑</span>
+      <div class="label">.tag</div>
     </div>
     <div class="component-item">
-      <div class="progress-bar"><div class="fill" style="width:72%"></div></div>
-      <div class="label">72% 进度</div>
+      <span class="tag tag-danger">危险</span>
+      <span class="tag tag-success">完成</span>
+      <div class="label">.tag-danger / .tag-success</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 进度条 ────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">Progress — 进度条</div>
+  <div class="component-row">
+    <div class="component-item" style="width:280px;">
+      <div class="progress-bar"><div class="fill" style="width:68%"></div></div>
+      <div class="label">.progress-bar</div>
     </div>
   </div>
 </div>
@@ -432,64 +259,99 @@
 <div class="section">
   <div class="section-title">Toast — 操作反馈</div>
   <div class="component-row">
-    <div class="component-item">
-      <span class="toast-demo">已收藏 ♡</span>
-      <div class="label">.toast（底部浮现，1.8s）</div>
+    <div class="component-item" style="position:relative;height:60px;">
+      <span class="toast" style="position:static;transform:none;">已加入收藏</span>
+      <div class="label">.toast</div>
     </div>
   </div>
 </div>
 
-<!-- ── 底部导航 ─────────────────────────────────────────── -->
+<!-- ── Banner ─────────────────────────────────────────── -->
 <div class="section">
-  <div class="section-title">Bottom Navigation — 底部导航</div>
+  <div class="section-title">Banner Carousel</div>
   <div class="component-row">
-    <div>
-      <div class="nav-demo">
-        <div class="nav-item-demo active"><span class="icon">🏠</span>首页</div>
-        <div class="nav-item-demo"><span class="icon">🔍</span>发现</div>
-        <div class="nav-item-demo"><span class="icon">▶</span>播放</div>
-        <div class="nav-item-demo"><span class="icon">👤</span>我的</div>
+    <div class="component-item" style="width:340px;padding:0;background:transparent;">
+      <div class="banner-carousel">
+        <div class="slide" style="background:linear-gradient(135deg, var(--color-primary), var(--bg-deep));"></div>
+        <div class="dots">
+          <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+        </div>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);font-family:monospace;margin-top:8px;">.bottom-nav（首页选中）</div>
+      <div class="label" style="padding:0 8px;">.banner-carousel (16:7)</div>
     </div>
   </div>
 </div>
 
-<!-- ── 间距系统 ─────────────────────────────────────────── -->
+<!-- ── 分类标签栏 ────────────────────────────────────── -->
 <div class="section">
-  <div class="section-title">Spacing — 间距系统</div>
-  <div>
-    <div class="space-sample">
-      <div class="space-label">--space-1</div>
-      <div class="space-block" style="width:4px;"></div>
-      <span style="font-size:11px;color:var(--text-tertiary);">4px</span>
-    </div>
-    <div class="space-sample">
-      <div class="space-label">--space-2</div>
-      <div class="space-block" style="width:8px;"></div>
-      <span style="font-size:11px;color:var(--text-tertiary);">8px</span>
-    </div>
-    <div class="space-sample">
-      <div class="space-label">--space-3</div>
-      <div class="space-block" style="width:12px;"></div>
-      <span style="font-size:11px;color:var(--text-tertiary);">12px</span>
-    </div>
-    <div class="space-sample">
-      <div class="space-label">--space-4</div>
-      <div class="space-block" style="width:16px;"></div>
-      <span style="font-size:11px;color:var(--text-tertiary);">16px（页面内边距）</span>
-    </div>
-    <div class="space-sample">
-      <div class="space-label">--space-6</div>
-      <div class="space-block" style="width:24px;"></div>
-      <span style="font-size:11px;color:var(--text-tertiary);">24px（Section 间距）</span>
+  <div class="section-title">Category Tabs</div>
+  <div class="component-row">
+    <div class="component-item" style="width:360px;padding:0;background:var(--bg-primary);border-radius:var(--radius-card);overflow:hidden;">
+      <div class="category-tabs">
+        <button class="tab active">全部</button>
+        <button class="tab">甜宠</button>
+        <button class="tab">悬疑</button>
+        <button class="tab">搞笑</button>
+        <button class="tab">奇幻</button>
+        <button class="tab">霸总</button>
+      </div>
+      <div class="label" style="padding:0 16px 8px;">.category-tabs</div>
     </div>
   </div>
 </div>
 
-<div style="border-top:1px solid var(--border-subtle);padding-top:20px;color:var(--text-muted);font-size:12px;">
-  Design System Token 源文件：<code style="color:var(--color-primary-light);">design-system/tokens.css</code> ·
-  修改 Token 后刷新此页面验证效果
+<!-- ── 剧集列表 ──────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">Episode List</div>
+  <div class="component-row">
+    <div class="component-item" style="width:360px;padding:0;background:var(--bg-primary);border-radius:var(--radius-card);overflow:hidden;">
+      <div class="episode-item"><span class="number">1</span><div class="thumb"></div><div class="info"><div class="title">第一集：重生归来</div><div class="duration">15:32</div></div></div>
+      <div class="episode-item"><span class="number">2</span><div class="thumb"></div><div class="info"><div class="title">第二集：都市风云</div><div class="duration">16:48</div></div></div>
+      <div class="label" style="padding:0 16px 8px;">.episode-item</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 底部导航 ──────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">Bottom Navigation</div>
+  <div class="component-row">
+    <div class="component-item" style="width:320px;padding:0;">
+      <div class="bottom-nav">
+        <div class="nav-item active"><span class="icon">⌂</span>首页</div>
+        <div class="nav-item"><span class="icon">◎</span>发现</div>
+        <div class="nav-item"><span class="icon">▶</span>播放</div>
+        <div class="nav-item"><span class="icon">👤</span>我的</div>
+      </div>
+      <div class="label" style="padding:0 8px 8px;">.bottom-nav</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 排版层级 ──────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">Typography — 排版层级</div>
+  <div class="component-item" style="width:360px;">
+    <div class="type-sample" style="font-size:var(--font-size-3xl);font-weight:var(--font-weight-extrabold);"><span class="size">28px / 800</span> DramaFlow</div>
+    <div class="type-sample" style="font-size:var(--font-size-xl);font-weight:var(--font-weight-bold);"><span class="size">20px / 700</span> 详情页标题</div>
+    <div class="type-sample" style="font-size:var(--font-size-lg);font-weight:var(--font-weight-bold);"><span class="size">17px / 700</span> 区块标题</div>
+    <div class="type-sample" style="font-size:var(--font-size-base);"><span class="size">14px / 400</span> 正文内容，这是卡片描述文字</div>
+    <div class="type-sample" style="font-size:var(--font-size-sm);color:var(--text-tertiary);"><span class="size">12px / tertiary</span> 辅助信息 / 元数据</div>
+    <div class="type-sample" style="font-size:var(--font-size-xs);color:var(--text-muted);"><span class="size">10px / muted</span> 角标 / 时长标签</div>
+  </div>
+</div>
+
+<!-- ── 间距系统 ──────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">Spacing Scale — 间距系统</div>
+  <div class="component-item" style="width:360px;">
+    <div class="space-sample"><span class="space-label">--space-1 4px</span><div class="space-block" style="width:4px"></div></div>
+    <div class="space-sample"><span class="space-label">--space-2 8px</span><div class="space-block" style="width:8px"></div></div>
+    <div class="space-sample"><span class="space-label">--space-3 12px</span><div class="space-block" style="width:12px"></div></div>
+    <div class="space-sample"><span class="space-label">--space-4 16px</span><div class="space-block" style="width:16px"></div></div>
+    <div class="space-sample"><span class="space-label">--space-6 24px</span><div class="space-block" style="width:24px"></div></div>
+    <div class="space-sample"><span class="space-label">--space-8 32px</span><div class="space-block" style="width:32px"></div></div>
+  </div>
 </div>
 
 </body>

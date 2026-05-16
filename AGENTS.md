@@ -15,12 +15,11 @@
 
 ```
 /
-├── backend/          # Python FastAPI 后端
-│   ├── app/api/      # API 路由层
-│   ├── app/models/   # SQLAlchemy ORM 模型
-│   ├── app/schemas/  # Pydantic 请求/响应模型
-│   ├── app/services/ # 业务逻辑层
-│   └── app/db/       # 数据库引擎 + seed 脚本
+├── design-system/     # 可执行设计系统（唯一源）
+│   ├── tokens/       # Design Token（CSS/TS）
+│   ├── specs/        # 约束 + 屏幕规格
+│   ├── components/   # 组件规格 → CSS/Android
+│   └── exports/      # 平台导出
 ├── android/          # Kotlin Android 原生
 │   └── app/src/main/java/com/dramaflow/
 │       ├── auth/     # 认证模块
@@ -33,9 +32,9 @@
 │   ├── src/pages/    # Home.vue, Detail.vue
 │   ├── src/stores/   # Pinia stores
 │   └── src/api/      # API 封装
-├── scripts/          # SQLite 初始化 + seed 数据
-├── docs/             # 设计截图与文档
-├── prototype/        # 可交互 HTML 原型
+├── scripts/
+│   ├── design-system/ # Figma同步 + 代码生成
+│   └── check/         # 合规检查
 ├── PRD.md            # 产品需求文档
 └── SPEC.md           # 可执行规格 + 验收标准
 ```

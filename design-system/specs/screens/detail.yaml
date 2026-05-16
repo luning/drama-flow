@@ -1,0 +1,61 @@
+# screens/detail.yaml — Drama Detail Screen Spec
+
+screen: detail
+title: "剧集详情"
+scroll: vertical
+
+sections:
+
+  - id: detail-header
+    component: detail-header
+    data: /api/dramas/{drama_id}
+    layout: cover
+    props:
+      ratio: "16:9"
+      show_back: true
+      overlay: "linear-gradient(transparent 40%, {background.primary})"
+
+  - id: detail-body
+    component: detail-body
+    data: /api/dramas/{drama_id}
+    layout: stack
+    sections:
+      - title
+      - meta_info:
+          fields: [year, episode_count]
+      - rating_row:
+          stars: 5
+          score_field: rating
+      - description:
+          lines: unlimited
+      - actions:
+          primary:
+            component: btn-primary
+            label: "立即观看"
+            action: play_first_episode
+          secondary:
+            component: btn-outline
+            label: "收藏"
+            action: toggle_favorite
+
+  - id: episode-tabs
+    component: tabs
+    data: static
+    props:
+      tabs:
+        - key: episodes
+          label: "剧集列表"
+        - key: comments
+          label: "评论"
+
+  - id: episode-list
+    component: episode-list
+    data: /api/dramas/{drama_id}/episodes
+    visible: "tabs.active == 'episodes'"
+    loading: skeleton-episodes
+    empty: "暂无剧集"
+    layout: vertical-stack
+    item:
+      component: episode-item
+      key: id
+      action: play_episode

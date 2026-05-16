@@ -1,0 +1,17 @@
+/*
+ * designsystem.css — Single Import for H5
+ *
+ * AUTO-GENERATED.  One import gives you all design tokens + component styles.
+ *
+ * Usage in h5/src/main.ts:
+ *   import '@design/exports/h5/designsystem.css'
+ *
+ * Or in h5/src/style.css:
+ *   @import '@design/exports/h5/designsystem.css';
+ */
+
+/* Layer 1: Design Tokens (CSS Custom Properties on :root) */
+@import '../../tokens/tokens.css';
+
+/* Layer 2: Component Styles (uses tokens from layer 1) */
+@import '../../components/components.css';

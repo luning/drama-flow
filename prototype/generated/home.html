@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DramaFlow 首页 — DramaFlow Prototype</title>
+<link rel="stylesheet" href="../../design-system/tokens/tokens.css">
+<link rel="stylesheet" href="../../design-system/components/components.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg-outer);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: var(--font-family);
+  }
+  .phone {
+    width: var(--phone-width);
+    min-height: var(--phone-height);
+    background: var(--bg-primary);
+    border-radius: var(--phone-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-phone);
+    display: flex;
+    flex-direction: column;
+  }
+  .page-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-y: auto;
+  }
+  .page-content::-webkit-scrollbar { display: none; }
+
+  /* Page-specific layout helpers */
+  .drama-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4) var(--space-5);
+  }
+  .section-title {
+    padding: 0 var(--space-4);
+    margin-top: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  .section-title h3 {
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+  }
+
+  /* App Bar */
+  .app-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    height: 44px;
+  }
+  .app-bar h1 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-extrabold);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .app-bar .search-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  /* Detail Page */
+  .detail-header {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: linear-gradient(135deg, var(--color-primary), var(--bg-deep));
+    position: relative;
+  }
+  .detail-header .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(transparent 40%, var(--bg-primary));
+  }
+  .detail-header .back {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.4);
+    border: none;
+    color: var(--text-primary);
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .detail-body {
+    padding: var(--space-4);
+  }
+  .detail-body h1 {
+    color: var(--text-primary);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+  }
+  .detail-body .sub-info {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: 6px;
+    color: var(--text-tertiary);
+    font-size: 13px;
+  }
+  .detail-body .rating-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: 10px;
+  }
+  .detail-body .stars {
+    color: var(--color-rating);
+    font-size: 16px;
+  }
+  .detail-body .score {
+    color: var(--color-rating);
+    font-size: 18px;
+    font-weight: var(--font-weight-bold);
+  }
+  .detail-body .desc {
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+    line-height: 1.7;
+    margin-top: 14px;
+  }
+  .detail-body .actions {
+    margin-top: var(--space-4);
+    display: flex;
+    gap: var(--space-3);
+  }
+  .tabs-header {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 var(--space-4);
+  }
+  .tabs-header span {
+    padding: 10px 0;
+    color: var(--color-primary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    border-bottom: 2px solid var(--color-primary);
+    margin-right: var(--space-6);
+  }
+
+  /* Continue Watching */
+  .continue-section {
+    padding: 0 var(--space-4);
+    margin-top: var(--space-2);
+  }
+  .continue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+  }
+  .continue-header span {
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+  }
+  .continue-header a {
+    color: var(--color-primary-light);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="page-content">
+    <!-- @component: app-bar -->
+  <!-- app-bar -->
+  <header class="app-bar">
+    <h1>DramaFlow</h1>
+    <button class="search-btn">🔍</button>
+  </header>
+    <!-- @endcomponent -->
+
+    <!-- @component: continue-watching-card -->
+  <!-- continue-watching -->
+  <div class="continue-section">
+    <div class="continue-header">
+      <span>继续观看</span>
+      <a>查看全部 →</a>
+    </div>
+    <div class="continue-watching-card">
+      <div class="thumb"></div>
+      <div class="info">
+        <h4>重生之都市仙尊</h4>
+        <div class="ep">第 12 集 · 68%</div>
+        <div class="progress-bar" style="margin-top:8px;"><div class="fill" style="width:68%"></div></div>
+      </div>
+    </div>
+    <div class="continue-watching-card">
+      <div class="thumb"></div>
+      <div class="info">
+        <h4>总裁的替身新娘</h4>
+        <div class="ep">第 5 集 · 42%</div>
+        <div class="progress-bar" style="margin-top:8px;"><div class="fill" style="width:42%"></div></div>
+      </div>
+    </div>
+  </div>
+    <!-- @endcomponent -->
+
+    <!-- @component: banner-carousel -->
+  <!-- banner -->
+  <div style="padding: var(--space-3) var(--space-4);">
+    <div class="banner-carousel">
+      <div class="slide"></div>
+      <div class="dots">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+    </div>
+  </div>
+    <!-- @endcomponent -->
+
+    <!-- @component: category-tabs -->
+  <!-- category-tabs -->
+  <div class="category-tabs">
+    <button class="tab active">全部</button>
+    <button class="tab">甜宠</button>
+    <button class="tab">悬疑</button>
+    <button class="tab">搞笑</button>
+    <button class="tab">奇幻</button>
+    <button class="tab">霸总</button>
+  </div>
+    <!-- @endcomponent -->
+
+    <!-- @component: drama-grid -->
+  <!-- drama-grid -->
+  <div class="section-title"><h3>为你推荐</h3></div>
+  <div class="drama-grid">
+    <div class="drama-card">
+      <div class="thumb"><span class="badge">热播</span></div>
+      <div class="info">
+        <h4>重生之都市仙尊</h4>
+        <div class="rating">★ 9.5</div>
+      </div>
+    </div>
+    <div class="drama-card">
+      <div class="thumb"><span class="badge">新剧</span></div>
+      <div class="info">
+        <h4>总裁的替身新娘</h4>
+        <div class="rating">★ 8.9</div>
+      </div>
+    </div>
+    <div class="drama-card">
+      <div class="thumb"><span class="badge">甜宠</span></div>
+      <div class="info">
+        <h4>穿越之医女倾城</h4>
+        <div class="rating">★ 9.2</div>
+      </div>
+    </div>
+    <div class="drama-card">
+      <div class="thumb"><span class="badge">搞笑</span></div>
+      <div class="info">
+        <h4>最强赘婿在都市</h4>
+        <div class="rating">★ 8.7</div>
+      </div>
+    </div>
+    <div class="drama-card">
+      <div class="thumb"><span class="badge">奇幻</span></div>
+      <div class="info">
+        <h4>重生之亿万富翁</h4>
+        <div class="rating">★ 9.1</div>
+      </div>
+    </div>
+    <div class="drama-card">
+      <div class="thumb"><span class="badge">霸总</span></div>
+      <div class="info">
+        <h4>穿越之绝世王妃</h4>
+        <div class="rating">★ 8.8</div>
+      </div>
+    </div>
+  </div>
+    <!-- @endcomponent -->
+
+  </div>
+</div>
+</body>
+</html>
