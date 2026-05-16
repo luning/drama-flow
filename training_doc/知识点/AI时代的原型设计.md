@@ -1,30 +1,10 @@
 # AI 时代的原型设计
 
-## 目录
-
-1. [演进全景：不只是工具在变](#演进全景不只是工具在变)
-2. [文档时代：原型 = 沟通说明书](#文档时代原型-沟通说明书)
-3. [视觉设计时代：原型 = 可复用设计组件](#视觉设计时代原型-可复用设计组件)
-   - [Figma 为什么能崛起？](#figma-为什么能崛起)
-4. [代码化时代：原型 = 可运行的组件](#代码化时代原型-可运行的组件)
-   - [代表工具](#代表工具)
-5. [AI 生成时代：原型 = 可执行的产品（进行中）](#ai-生成时代原型-可执行的产品进行中)
-   - [最大的误解](#最大的误解)
-6. [终态：可执行设计系统（Executable Design System）](#终态可执行设计系统executable-design-system)
-   - [过去 vs 未来](#过去-vs-未来)
-   - [未来设计体系的核心结构](#未来设计体系的核心结构)
-   - [推荐目录结构](#推荐目录结构)
-   - [AI 原型 Skill：让生成自动合规](#ai-原型-skill让生成自动合规)
-   - [设计角色如何参与代码仓库](#设计角色如何参与代码仓库)
-7. [设计权力中心的迁移](#设计权力中心的迁移)
-8. [Figma 未来最核心的四个价值](#figma-未来最核心的四个价值)
-9. [团队能力转变：执行层 → 系统定义层](#团队能力转变执行层-系统定义层)
-
 ---
 
 ## 演进全景：不只是工具在变
 
-过去二十多年，软件行业的原型经历了四个时代的演进。这四个时代并非依次替换，而是**叠加积累**——每一层都建立在上一层之上，工具和方法论同时并存：
+过去二十多年，软件行业的原型经历了四个时代的演进，最终指向第五个阶段。这些阶段并非依次替换，而是**叠加积累**——每一层都建立在上一层之上，工具和方法论同时并存：
 
 | 时代 | 代表工具 | 原型的本质 |
 |------|---------|-----------|
@@ -32,6 +12,7 @@
 | 视觉设计时代 | Figma、Design System | 可复用设计组件 |
 | 代码化时代 | React、Storybook、shadcn | 可运行的组件 |
 | AI 生成时代（进行中）| Bolt.new、v0、Lovable | 可执行的产品 |
+| 可执行设计系统（终态）| tokens.css + components.yaml + 代码生成器 | 人机共用的唯一真相源 |
 
 很多人以为这只是"工具在变"。
 
@@ -179,79 +160,85 @@ Visual Collaboration Layer（Figma 协作）
 
 **第二层：Design Token — 品牌变量**
 
-用代码定义所有视觉常量，是整个系统的"单一真相源"：
+用代码定义所有视觉常量。CSS 自定义属性为主要载体，同时提供 TypeScript 版和 JSON Schema 校验：
 
-```ts
-// design-system/tokens.ts
-export const tokens = {
-  color: {
-    primary:      '#6C5CE7',
-    primaryLight: '#A29BFE',
-    accent:       '#FD79A8',
-    bgPrimary:    '#0F0F23',
-    bgCard:       '#16163A',
-    disabled:     '#4A4A6A',
-  },
-  spacing: { xs: '4px', sm: '8px', md: '16px', lg: '24px' },
-  radius:  { sm: '8px', md: '12px', lg: '20px' },
-  font:    { body: '14px', title: '18px', hero: '24px' },
+```css
+/* design-system/tokens/tokens.css */
+:root {
+  --color-primary:       #6C5CE7;   /* 主色 / 按钮 */
+  --color-primary-light: #A29BFE;   /* 渐变辅助 / 链接 */
+  --color-accent:        #FD79A8;   /* 强调 / 收藏 */
+  --color-rating:        #FFC048;   /* 评分 */
+  --bg-primary:  #0F0F23;  --bg-card: #16163A;
+  --text-primary: #FFF;    --text-muted: #555;
+  --space-4: 16px;  --radius-card: 12px;
+  --transition-default: 0.2s ease;
 }
 ```
+
+三种格式关系：`tokens.css` 是权威源 → `tokens.ts` 和 `tokens.schema.json` 从它派生。Figma 通过 Tokens Studio 导出 DTCG JSON，再由脚本同步到 `tokens.css`。
 
 **第三层：Component Runtime — 组件库**
 
-组件消费 Token，暴露语义化 API，人和 AI 都能调用：
+组件消费 Token，通过平台无关的规格文件定义，再自动生成各平台代码。以 `components.yaml` 为唯一源：
 
-```tsx
-// design-system/components/Button.tsx
-<Button variant="primary" size="md" loading={isSubmitting}>
-  立即购买
-</Button>
-
-// design-system/components/Card.tsx
-<Card title="都市爱情" badge="热播" onFavorite={handleFav} />
-
-// design-system/components/Modal.tsx
-<Modal title="确认购买" onConfirm={handleBuy} onCancel={close} />
+```yaml
+# components.yaml — 用 {token.path} 语法引用 Token
+components:
+  btn-primary:
+    base:
+      padding: "{spacing.md} {spacing.xl}"
+      border-radius: "{radius.btn}"
+      background:
+        type: gradient-linear
+        angle: 135deg
+        stops: ["{color.primary} 0%", "{color.primaryLight} 100%"]
+    states:
+      hover: { transform: translateY(-1px), box-shadow: "{shadow.md}" }
+      disabled: { background: "{text.muted}", cursor: not-allowed }
 ```
 
-**第四层：AI Generation — AI 如何使用前三层**
-
-给 AI 提供一个上下文文件，让它生成页面时遵循约束：
-
-```markdown
-<!-- ai-context/design-rules.md -->
-## 可用组件
-从 @/design-system/components 引入：Button、Card、Modal、Input、Toast
-
-## Token 引用规范
-所有颜色、间距、字体必须引用 tokens.ts，禁止写 #xxx 或 px 裸值
-
-## 页面约束
-- 遵守 constraints.md 中的业务规则
-- 列表页使用 <Card /> 网格布局，间距 tokens.spacing.md
-- 主 CTA 使用 <Button variant="primary" />，每页只能出现一个
+从 components.yaml 自动生成各平台代码：
+```
+components.yaml → generate_css.py → components.css       (H5 用 class="btn-primary")
+components.yaml → generate_android.py → styles.xml       (Android 用 style="DramaFlow.Button.Primary")
 ```
 
-AI 生成页面时，直接调用这些组件，输出的代码天然符合规范：
+生成的代码全部由 Token 变量驱动，不含硬编码值。
 
-```tsx
-// AI 生成的 pages/Home.tsx（调用已有组件，符合设计系统约束）
-import { Card, Button } from '@/design-system/components'
+**第四层：AI Generation — 从 Screen Spec 多路生成**
 
-export function HomePage() {
-  return (
-    <div style={{ background: tokens.color.bgPrimary }}>
-      {dramas.map(d => <Card key={d.id} title={d.title} badge={d.tag} />)}
-      <Button variant="primary">开始观看</Button>
-    </div>
-  )
-}
+前三层提供了 Token、约束和组件。第四层用平台无关的 **Screen Spec（YAML）** 描述页面结构，然后多路生成：
+
+```yaml
+# specs/screens/home.yaml — 描述 "页面上有什么、从哪取数据"
+screen: home
+sections:
+  - component: app-bar
+    title: "DramaFlow"
+  - component: continue-watching
+    data: /api/watch-records/continue-watching
+  - component: banner-carousel
+    data: /api/dramas?recommend=1
+  - component: drama-grid
+    data: /api/dramas?category={selected}
+    layout: { columns: 2, gap: "{spacing.md}" }
 ```
+
+同一个 screen spec 三路生成，改一处同步更新：
+
+```
+specs/screens/home.yaml
+    ├── generate_prototype.py     → prototype HTML     (给 PM 看)
+    ├── generate_h5_template.py   → Vue 页面骨架       (给前端开发)
+    └── generate_android_layout.py → Android layout XML (给 Android 开发)
+```
+
+生成的代码引用 tokens.css 和 components.css，样式自动合规。
 
 **第五层：Figma — 可视化协作**
 
-通过 **Tokens Studio** 插件将 `tokens.ts` 同步到 Figma，设计师在 Figma 中操作的是和代码同源的 Token，而非手动维护的色板：
+通过 **Tokens Studio** 插件将 Token 导出为 DTCG JSON，再由同步脚本写入 `tokens.css`。设计师在 Figma 中操作的是和代码同源的 Token，而非手动维护的色板：
 
 - 产品经理在 Figma 中做 UX 走查、标注修改意见
 - 设计师用 Figma 探索视觉节奏，AI 难以替代的微调在这里完成
@@ -259,128 +246,28 @@ export function HomePage() {
 
 ---
 
-### 推荐目录结构
-
-可执行设计系统作为代码的一部分，建议放在 `design-system/` 目录下统一维护：
-
-```
-design-system/
-├── tokens.css             # CSS 变量（HTML 原型直接引用）
-├── tokens.ts              # TypeScript 版本（Vue/React 组件引用）
-├── constraints.md         # 业务约束与尺寸规范（给 AI 和团队看）
-├── design-rules.md        # AI 生成规则（引用 tokens + constraints）
-└── components/            # Component Runtime
-    └── index.html         # 组件 Gallery（可视化验证所有组件渲染效果）
-
-prototype/                 # HTML 可交互原型（直接引用 tokens.css）
-scripts/                   # 工具脚本（check_design_tokens.py 等）
-```
-
-`tokens.ts` 是整个系统的起点：Figma 用它渲染，组件用它驱动样式，AI 用它约束生成。改一个 Token，整个系统同步更新。
-
 ### AI 原型 Skill：让生成自动合规
 
-仅靠 `design-rules.md` 文件还不够——每次让 AI 生成原型时，仍需要手动提醒它"去读设计规范"。更好的做法是把这件事做成一个 **Claude Code Skill**，在触发原型生成任务时自动注入上下文。
+仅靠文档还不够，更好的做法是让生成工具在设计系统约束下自动工作。DramaFlow 中做了两件事：
 
-Skill 的工作流大致如下：
+1. **脚本化生成**：已定义好的页面从 screen spec 直接生成 HTML，自动引用 tokens.css + components.css，无需 AI 参与
+2. **AI 对话生成**：对于新页面，将 tokens.css、constraints.md、design-rules.md 自动注入 Claude Code Skill 上下文，确保 AI 生成的代码只用 var(--xxx) 和预定义 class
 
-```
-用户："帮我生成剧集详情页"
-    ↓ Skill 自动执行
-1. 读取 design-system/tokens.css          ← 获取可用 Token
-2. 读取 design-system/constraints.md      ← 获取业务约束
-3. 读取 design-system/design-rules.md     ← 获取 AI 生成规则
-4. 将三份文件作为上下文注入 Prompt
-    ↓
-AI 生成的页面代码：
-- 只使用 tokens.* 引用颜色和间距
-- 只从 @/design-system/components 引入组件
-- 自动遵守约束（单页只有一个主 CTA 等）
-```
-
-这个 Skill 的价值在于：**设计系统的遵守从"靠人记忆"变成"系统默认"**。团队成员无需每次手动提醒 AI，生成结果天然合规。
+核心价值：**设计系统的遵守从"靠人记忆"变成"系统默认"**。
 
 ### 设计角色如何参与代码仓库
 
-可执行设计系统有一个现实问题：`tokens.ts` 和 `constraints.md` 住在代码仓库里，但设计师和产品经理通常不使用 Git。实践中有几种方式可以低门槛地参与。
+`tokens.css` 和 `constraints.md` 在代码仓库里，但设计师和 PM 可以不使用 Git 参与：
 
-**参与分两个维度：写入规范 和 查看效果。**
+| 角色 | 方式 | 门槛 |
+|------|------|------|
+| PM / 设计师 | GitLab 网页编辑 `constraints.md`、`design-rules.md` → 提交 MR | 零 |
+| 设计师 | Figma Tokens Studio 导出 DTCG JSON → 脚本更新 `tokens.css` | 低 |
+| 设计负责人 | 成为 `design-system/` CODEOWNERS，所有变更需其 Approve | 中 |
 
----
+改了之后看效果：`prototype/generated/` 本地刷新即时预览；Component Gallery（`components/index.html`）查看所有组件状态；MR 触发 CI 预览环境做正式验收。
 
-#### 写入规范：三种门槛递增的方式
-
-**方式一：GitLab 网页直接编辑（零门槛）**
-
-`constraints.md` 和 `design-rules.md` 是纯文字文件。设计师和 PM 直接在 GitLab 网页上打开、编辑、提交 MR——体验和编辑 Notion 文档接近，无需安装任何本地工具：
-
-```
-GitLab 网页
-→ 找到 design-system/constraints.md
-→ 点击网页编辑按钮
-→ 修改规则，填写变更说明
-→ 提交 MR，等待开发 Review 合并
-```
-
-**方式二：Tokens Studio 同步 Token（Figma 原生）**
-
-`tokens.ts` 的修改不需要设计师手动写代码。Figma 的 **Tokens Studio** 插件支持连接内部 Git 平台并双向同步：
-
-```
-设计师在 Figma 中调整色值或间距
-    ↓ Tokens Studio 插件
-自动生成 MR 更新 tokens.ts
-    ↓ 开发 Review 合并
-全系统 Token 同步更新
-```
-
-**方式三：成为 CODEOWNERS（深度参与）**
-
-对于希望深度把关的设计负责人，在仓库配置中将其设为 `design-system/` 目录的 Owner：
-
-```
-# .gitlab/CODEOWNERS 或 .github/CODEOWNERS
-design-system/tokens.ts       @design-lead
-design-system/constraints.md  @product-lead @design-lead
-```
-
-效果：任何人修改这两个文件，**必须经过设计负责人 Approve 才能合并**。设计规范的守门人从"发 Figma 评论"变成了"MR Approve"。
-
----
-
-#### 查看效果：改了之后怎么看结果？
-
-只能编辑文件、看不到效果，是设计角色参与代码仓库最大的摩擦点。有三种途径解决：
-
-**途径一：prototype/ 目录即时预览**
-
-`prototype/` 目录的 HTML 原型直接引用 `tokens.ts` 导出的 CSS 变量，Token 修改后浏览器刷新即见效果，适合本地快速验证。
-
-**途径二：Storybook 组件预览**
-
-MR 合并后 CI 自动重新构建并部署 Storybook，设计师在内网访问即可看到所有组件在最新 Token 下的渲染效果，以及各种 props 状态。
-
-**途径三：MR 触发预览环境**
-
-MR 提交时 CI 自动构建独立预览环境，MR 页面出现 Preview 链接，设计师点击直接在完整真实页面中验收效果。
-
----
-
-**三种预览方式对比：**
-
-| 途径 | 反馈速度 | 覆盖范围 | 适用场景 |
-|------|---------|---------|---------|
-| prototype/ 本地刷新 | 即时 | 原型页面 | 本地快速探索 |
-| Storybook 组件库 | 合并后分钟级 | 所有组件状态 | 团队日常参考 |
-| PR 预览环境 | MR 提交后分钟级 | 完整真实页面 | 正式变更验收 |
-
----
-
-**这个变化最根本的意义是：**
-
-过去，规范写在 Figma 标注里，开发可以选择性遵守，设计师改了色值也不知道有没有生效。
-
-未来，规范写在仓库里，每次修改有 diff、有 review、有历史记录，效果可以立即在原型或预览环境中看到——**规范的变更和代码的变更一样可追溯，执行结果也肉眼可见**。
+过去规范写在 Figma 标注里，开发可以选择性遵守；未来规范写在仓库里，每次修改有 diff、有 review、有历史记录，执行结果肉眼可见。
 
 ---
 
@@ -398,7 +285,7 @@ Figma 是源头 → 前端实现
 
 ```
 Component Runtime 是源头
-Design Token → React Component → AI 生成页面
+Design Token → 平台无关组件规格 → AI 生成页面（HTML / Vue / Android XML）
 Figma 转型为可视化协作层
 ```
 
@@ -439,5 +326,176 @@ AI 真正替代的是**"低结构化设计劳动"**——手工画按钮、重�
 > 现在，原型正在变成"可执行系统"。
 >
 > 而 Figma，也正在从"画图工具"演化为"AI 时代的设计协作 IDE"。
+
+---
+
+## 实践：DramaFlow 的可执行设计系统
+
+以下是 DramaFlow 项目中完整落地的可执行设计系统架构，包含目录结构、流水线、脚本和检查体系。
+
+### 完整目录结构
+
+```
+design-system/                     # 唯一视觉真相源
+├── tokens/                        # Layer 1: Design Token
+│   ├── tokens.css                 # CSS 自定义属性（:root 上定义 60+ 变量）
+│   ├── tokens.ts                  # TypeScript 等价版（组件动态样式引用）
+│   └── tokens.schema.json         # JSON Schema — 验证 token 文件完整性
+│
+├── specs/                         # Layer 2: 约束 + 屏幕规格
+│   ├── constraints.md             # 业务约束（可自动检查：单 btn-primary、loading 态…）
+│   ├── design-rules.md            # AI 生成规则（Skill 触发时自动注入 Prompt）
+│   └── screens/                   # 屏幕规格（平台无关的页面描述）
+│       ├── home.yaml              # 首页：有哪些区块、什么顺序、从哪个 API 取数据
+│       └── detail.yaml            # 详情页：同上
+│
+├── components/                    # Layer 3: 组件规格
+│   ├── components.yaml            # 平台无关组件定义（所有属性的唯一源）
+│   ├── components.css             # 生成：CSS 组件样式（H5 & prototype 直接引用）
+│   ├── index.html                 # 组件 Gallery（可视化验证所有组件渲染效果）
+│   └── android/                   # 生成：Android 组件样式
+│       └── styles.xml
+│
+└── exports/                       # Layer 4: 平台导出
+    ├── h5/
+    │   └── designsystem.css       # 一键导入：tokens.css + components.css
+    └── android/
+        ├── colors.xml             # Android 颜色资源（从 tokens.css 生成）
+        └── styles.xml             # Android 组件样式（从 components.yaml 生成）
+
+scripts/
+├── design-system/                 # Figma → design-system → 多平台代码
+│   ├── figma_sync_tokens.py       # Figma Tokens Studio (DTCG JSON) → tokens.css + tokens.ts
+│   ├── figma_sync_components.py   # Figma REST API → components.yaml
+│   ├── figma_sync_screens.py      # Figma auto-layout pages → specs/screens/*.yaml
+│   ├── generate_css.py            # components.yaml → components.css
+│   ├── generate_android.py        # components.yaml + tokens.css → Android XML
+│   ├── generate_prototype.py      # screen specs → HTML 原型
+│   └── generate_h5_template.py    # screen specs → Vue 页面模板骨架
+│
+└── check/                         # 合规检查（CI/pre-commit 自动运行）
+    ├── check_tokens.py            # Layer 1：检查硬编码色值 + 变量名是否正确
+    ├── check_constraints.py       # Layer 2：检查业务约束是否满足
+    └── check_components.py        # Layer 3：检查组件使用是否符合 components.yaml
+
+prototype/
+├── index.html                     # 原始手写原型（保留）
+├── generated/                     # 从 screen spec 自动生成
+│   ├── home.html                  # 引用 tokens.css + components.css
+│   └── detail.html                # 包含 @component 标记，可提取为 Vue 组件
+└── README.md
+```
+
+### 核心流水线
+
+```
+                    ┌─ Figma ──────────────────────────────┐
+                    │                                        │
+                    │  Variables ──Tokens Studio──> DTCG JSON│
+                    │  Components ──REST API──> Node Tree    │
+                    │  Pages ──REST API──> Auto-layout Tree  │
+                    └──┬────────────┬────────────┬───────────┘
+                       │            │            │
+          ┌────────────┘            │            └──────────────┐
+          ▼                         ▼                           ▼
+   figma_sync_tokens.py   figma_sync_components.py   figma_sync_screens.py
+          │                         │                           │
+          ▼                         ▼                           ▼
+   tokens/                  components/                 specs/screens/
+   tokens.css               components.yaml             *.yaml
+   tokens.ts                      │
+          │                       │
+          └───────────┬───────────┘
+                      │
+          ┌───────────┼───────────┐
+          ▼           ▼           ▼
+   generate_css.py  generate_android.py  generate_prototype.py
+          │           │                  │
+          ▼           ▼                  ▼
+   components.css  exports/android/   prototype/generated/
+   (H5引用)        colors.xml          *.html
+                   styles.xml
+                   (Android引用)
+```
+
+### 三层规格比较
+
+| 层 | 格式 | 定义什么 | 例 |
+|----|------|---------|-----|
+| Token | DTCG JSON → CSS/TS | 原子值 | `--color-primary: #6C5CE7` |
+| Component | components.yaml → CSS/Android | 完整组件 | `.btn-primary { 渐变+padding+圆角+hover }` |
+| Screen | screen.yaml → HTML/Vue/XML | 页面布局 | "首页 = AppBar + Banner + CategoryTabs + DramaGrid" |
+
+### H5 中的使用方式
+
+```typescript
+// main.ts — 一次导入，全站可用
+import '@design/exports/h5/designsystem.css'
+```
+
+```vue
+<!-- 页面中只用 class，样式来自 design-system -->
+<template>
+  <button class="btn-primary" @click="play">▶ 立即观看</button>
+  <div class="drama-card">
+    <div class="thumb"><span class="badge">热播</span></div>
+    <div class="info"><h4>{{ title }}</h4></div>
+  </div>
+</template>
+
+<style scoped>
+/* 只写页面特有布局，不重写组件样式 */
+</style>
+```
+
+### Android 中的使用方式
+
+```xml
+<!-- 引用 design-system 导出的样式 -->
+<Button
+    style="@style/DramaFlow.Button.Primary"
+    android:layout_width="match_parent"
+    android:text="立即观看" />
+
+<!-- 引用 design-system 导出的颜色 -->
+<TextView
+    android:textColor="@color/text_primary"
+    android:background="@color/bg_primary" />
+```
+
+### 合规检查三层
+
+```bash
+# Layer 1: 没有硬编码色值，CSS 变量名都在 tokens.css 中有定义
+python scripts/check/check_tokens.py --path h5/src
+python scripts/check/check_tokens.py --path android/app/src/main/res/layout
+
+# Layer 2: 业务约束满足
+#   - 每页只有一个 btn-primary
+#   - 异步操作有 loading 态
+#   - 最小触摸目标 44px
+#   - 卡片 3:4 比例
+python scripts/check/check_constraints.py
+
+# Layer 3: 组件使用正确
+#   - class 名与 components.yaml 一致
+#   - 组件嵌套结构符合 parts 定义
+python scripts/check/check_components.py
+```
+
+### 设计 ←→ 开发的完整闭环
+
+```
+设计师在 Figma 中调整主题色
+    → Tokens Studio 同步 DTCG JSON
+    → figma_sync_tokens.py 更新 tokens.css
+    → generate_css.py 重新生成 components.css
+    → generate_android.py 重新生成 colors.xml + styles.xml
+    → generate_prototype.py 重新生成原型 HTML
+    → CI 运行 check_*.py，全部通过
+    → PR 合并，H5/Android/原型同步更新
+```
+
+**改一处，全平台生效。Figma 是创作入口，design-system/ 是唯一真相源。**
 
 ---
