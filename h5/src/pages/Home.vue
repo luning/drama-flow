@@ -1,31 +1,27 @@
 <!--
-  DramaFlow 首页.vue — Auto-generated from specs/screens/home.yaml
-  DO NOT EDIT MANUALLY. Modify the screen spec instead.
+  DramaFlow 首页.vue — Scaffold generated from specs/screens/home.yaml
+  Edit this file to implement the page. The screen spec defines the structure.
 -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useHome } from '@/stores/home'
-import { fetchfetchContinueWatching } from '@/api/home'
-import { fetchfetchBanner } from '@/api/home'
-import { fetchfetchCategoryTabs } from '@/api/home'
-import { fetchfetchDramaGrid } from '@/api/home'
+// Import stores and APIs as needed:
 
 const router = useRouter()
-const store = useHome()
 const loading = ref(true)
-const continue_watching = ref([])
-const banner = ref([])
-const category_tabs = ref([])
-const drama_grid = ref([])
+const title = ref('')
+const continueWatching = ref([] as any[])
+const banners = ref([] as any[])
+const activeCategory = ref('')
+const categories = ref([] as any[])
+const items = ref([] as any[])
+// Data sources defined in screen spec:
+// /api/watch-records/continue-watching, /api/banners, /api/categories, /api/dramas?category={category-tabs.active}
 
 onMounted(async () => {
   loading.value = true
   try {
-    await store.fetchContinueWatching()
-    await store.fetchBanner()
-    await store.fetchCategoryTabs()
-    await store.fetchDramaGrid()
+    // TODO: Fetch data from: /api/watch-records/continue-watching, /api/banners, /api/categories, /api/dramas?category={category-tabs.active}
   } finally {
     loading.value = false
   }
@@ -34,14 +30,19 @@ onMounted(async () => {
 
 <template>
   <div class="page home-page">
+    <!-- app-bar: app-bar -->
     <header class="app-bar">
       <h1>{{ title }}</h1>
     </header>
-    <ContinueWatchingCard :items="store.continueWatching" />
-    <BannerCarousel :items="store.banners" />
-    <CategoryTabs v-model="activeCategory" :items="store.categories" />
+    <!-- continue-watching: continue-watching-card -->
+    <ContinueWatchingCard :items="continueWatching" />
+    <!-- banner: banner-carousel -->
+    <BannerCarousel :items="banners" />
+    <!-- category-tabs: category-tabs -->
+    <CategoryTabs v-model="activeCategory" :items="categories" />
+    <!-- drama-grid: drama-grid -->
     <div class="drama-grid">
-      <div class="drama-card" v-for="item in store.dramas" :key="item.id"
+      <div class="drama-card" v-for="item in items" :key="item.id"
            @click="router.push('/detail/' + item.id)">
         <div class="thumb"><span class="badge">{{ item.tag }}</span></div>
         <div class="info">

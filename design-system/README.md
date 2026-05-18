@@ -11,8 +11,7 @@ Figma 是创作入口，但规范以本仓库中的文件为准。
 design-system/
 ├── tokens/                    # Layer 1: Design Tokens
 │   ├── tokens.css             # CSS 自定义属性（prototype & H5 引用）
-│   ├── tokens.ts              # TypeScript 版本（组件中 import）
-│   └── tokens.schema.json     # JSON Schema 验证
+│   └── tokens.ts              # TypeScript 版本（组件中 import）
 │
 ├── specs/                     # Layer 2: Specs & Constraints
 │   ├── constraints.md         # 业务约束（可自动检查）

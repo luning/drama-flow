@@ -7,8 +7,6 @@ Placeholder: In production, this would:
   2. Parse the DTCG design token JSON
   3. Generate tokens/tokens.css (CSS custom properties on :root)
   4. Generate tokens/tokens.ts (TypeScript const object)
-  5. Validate against tokens/tokens.schema.json
-
 For now, this script prints the expected pipeline structure and validates
 that the current tokens files conform to the schema.
 
@@ -24,9 +22,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-DESIGN_SYSTEM = ROOT / "design-system"
-TOKENS_DIR = DESIGN_SYSTEM / "tokens"
-SCHEMA_FILE = TOKENS_DIR / "tokens.schema.json"
+TOKENS_DIR = ROOT / "design-system" / "tokens"
 TOKENS_CSS = TOKENS_DIR / "tokens.css"
 TOKENS_TS = TOKENS_DIR / "tokens.ts"
 
@@ -88,12 +84,6 @@ def main():
     print("🎨  Figma → Tokens Sync")
     print(f"    Tokens directory: {TOKENS_DIR}")
     print()
-
-    # Validate schema exists
-    if not SCHEMA_FILE.exists():
-        print(f"⚠️  Schema file not found: {SCHEMA_FILE}")
-    else:
-        print(f"✅ Schema: {SCHEMA_FILE}")
 
     # Validate tokens.css
     if TOKENS_CSS.exists():

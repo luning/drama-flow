@@ -176,7 +176,7 @@ Visual Collaboration Layer（Figma 协作）
 }
 ```
 
-三种格式关系：`tokens.css` 是权威源 → `tokens.ts` 和 `tokens.schema.json` 从它派生。Figma 通过 Tokens Studio 导出 DTCG JSON，再由脚本同步到 `tokens.css`。
+两种格式关系：`tokens.css` 是权威源，`tokens.ts` 从它派生。Figma 通过 Tokens Studio 导出 DTCG JSON，再由脚本同步到 `tokens.css`。
 
 **第三层：Component Runtime — 组件库**
 
@@ -231,7 +231,7 @@ sections:
 specs/screens/home.yaml
     ├── generate_prototype.py     → prototype HTML     (给 PM 看)
     ├── generate_h5_template.py   → Vue 页面骨架       (给前端开发)
-    └── generate_android_layout.py → Android layout XML (给 Android 开发)
+    └── generate_android.py → Android colors.xml + styles.xml (给 Android 开发)
 ```
 
 生成的代码引用 tokens.css 和 components.css，样式自动合规。
@@ -339,8 +339,7 @@ AI 真正替代的是**"低结构化设计劳动"**——手工画按钮、重�
 design-system/                     # 唯一视觉真相源
 ├── tokens/                        # Layer 1: Design Token
 │   ├── tokens.css                 # CSS 自定义属性（:root 上定义 60+ 变量）
-│   ├── tokens.ts                  # TypeScript 等价版（组件动态样式引用）
-│   └── tokens.schema.json         # JSON Schema — 验证 token 文件完整性
+│   └── tokens.ts                  # TypeScript 等价版（组件动态样式引用）
 │
 ├── specs/                         # Layer 2: 约束 + 屏幕规格
 │   ├── constraints.md             # 业务约束（可自动检查：单 btn-primary、loading 态…）
@@ -352,9 +351,7 @@ design-system/                     # 唯一视觉真相源
 ├── components/                    # Layer 3: 组件规格
 │   ├── components.yaml            # 平台无关组件定义（所有属性的唯一源）
 │   ├── components.css             # 生成：CSS 组件样式（H5 & prototype 直接引用）
-│   ├── index.html                 # 组件 Gallery（可视化验证所有组件渲染效果）
-│   └── android/                   # 生成：Android 组件样式
-│       └── styles.xml
+│   └── index.html                 # 组件 Gallery（可视化验证所有组件渲染效果）
 │
 └── exports/                       # Layer 4: 平台导出
     ├── h5/

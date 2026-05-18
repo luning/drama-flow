@@ -11,6 +11,8 @@ Usage:
   python scripts/design-system/generate_android.py --check
 """
 
+from __future__ import annotations
+
 import argparse
 import re
 import sys
@@ -80,29 +82,28 @@ def generate_colors_xml(tokens: dict) -> str:
         '<resources>',
     ]
 
-    # Map token names to Android resource names
-    for var_name, value in sorted(tokens.items()):
-        if "shadow" in var_name or "transition" in var_name or "z-" in var_name:
-            continue  # Skip non-color tokens
+    # Only include actual color values (not spacing, fonts, dimensions, etc.)
+    color_tokens = {
+        k: v for k, v in tokens.items()
+        if v.strip().startswith("#") or v.strip().startswith("rgba")
+    }
 
+    # Category headers — insert a comment before the first item of each group
+    category_order = [
+        ("color-primary", "Brand Colors"),
+        ("color-rating", "Semantic Colors"),
+        ("bg-outer", "Backgrounds"),
+        ("surface-subtle", "Borders & Surfaces"),
+        ("text-primary", "Text"),
+    ]
+
+    for var_name, value in sorted(color_tokens.items()):
         android_name = var_name.replace("-", "_")
         android_color = css_hex_to_android_hex(value)
 
-        # Add comment for categories
-        if var_name.startswith("color-"):
-            if "color-primary:" in f"{var_name}:":
-                lines.append("  <!-- ── Brand Colors ───────────────────────────────────────── -->")
-            elif "color-rating:" in f"{var_name}:":
-                lines.append("  <!-- ── Semantic Colors ─────────────────────────────────────── -->")
-        elif var_name.startswith("bg-"):
-            if "bg-outer:" in f"{var_name}:":
-                lines.append("  <!-- ── Backgrounds ─────────────────────────────────────────── -->")
-        elif var_name.startswith("border") or var_name.startswith("surface"):
-            if "surface-subtle:" in f"{var_name}:":
-                lines.append("  <!-- ── Borders & Surfaces ──────────────────────────────────── -->")
-        elif var_name.startswith("text-"):
-            if "text-primary:" in f"{var_name}:":
-                lines.append("  <!-- ── Text ────────────────────────────────────────────────── -->")
+        for prefix, label in category_order:
+            if var_name == prefix:
+                lines.append(f"  <!-- {label} -->")
 
         lines.append(f'  <color name="{android_name}">{android_color}</color>')
 

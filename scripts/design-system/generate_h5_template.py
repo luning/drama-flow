@@ -11,6 +11,8 @@ Usage:
   python scripts/design-system/generate_h5_template.py --stdout
 """
 
+from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
@@ -21,37 +23,35 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 SCREENS_DIR = ROOT / "design-system" / "specs" / "screens"
 DEFAULT_OUTPUT = ROOT / "h5" / "src" / "pages"
 
-COMPONENT_VUE_MAP = {
-    "app-bar": "header",
-    "continue-watching-card": "ContinueWatchingCard",
-    "banner-carousel": "BannerCarousel",
-    "category-tabs": "CategoryTabs",
-    "drama-grid": "DramaCard",
-    "detail-header": "DetailHeader",
-    "detail-body": "DetailBody",
-    "tabs": "EpisodeTabs",
-    "episode-list": "EpisodeItem",
+# Which refs each component type needs declared in <script setup>
+COMPONENT_REFS: dict[str, list[str]] = {
+    "app-bar": ["title"],
+    "continue-watching-card": ["continueWatching"],
+    "banner-carousel": ["banners"],
+    "category-tabs": ["activeCategory", "categories"],
+    "drama-grid": ["items"],
+    "episode-list": ["episodes"],
 }
 
 VUE_TEMPLATE = """<!--
-  {title}.vue — Auto-generated from specs/screens/{screen}.yaml
-  DO NOT EDIT MANUALLY. Modify the screen spec instead.
+  {title}.vue — Scaffold generated from specs/screens/{screen}.yaml
+  Edit this file to implement the page. The screen spec defines the structure.
 -->
 <script setup lang="ts">
 import {{ ref, onMounted }} from 'vue'
 import {{ useRouter }} from 'vue-router'
-import {{ use{store_name} }} from '@/stores/{store_file}'
 {imports}
 
 const router = useRouter()
-const store = use{store_name}()
 const loading = ref(true)
-{reactive_state}
+{refs}
+// Data sources defined in screen spec:
+// {data_sources}
 
 onMounted(async () => {{
   loading.value = true
   try {{
-{fetches}
+    // TODO: Fetch data from: {data_sources}
   }} finally {{
     loading.value = false
   }}
@@ -74,6 +74,17 @@ onMounted(async () => {{
 </style>
 """
 
+# Default values for ref declarations so templates type-check out of the box
+REF_DEFAULTS: dict[str, str] = {
+    "title": "''",
+    "continueWatching": "[] as any[]",
+    "banners": "[] as any[]",
+    "activeCategory": "''",
+    "categories": "[] as any[]",
+    "items": "[] as any[]",
+    "episodes": "[] as any[]",
+}
+
 
 def generate_vue_page(yaml_path: Path) -> str:
     with open(yaml_path) as f:
@@ -83,36 +94,33 @@ def generate_vue_page(yaml_path: Path) -> str:
     screen_title = spec.get("title", screen.capitalize())
     sections = spec.get("sections", [])
 
-    store_name = screen.capitalize()
-    store_file = screen.lower()
-
-    imports = []
-    template_lines = []
-    reactive_state = []
-    fetches = []
+    imports = ["// Import stores and APIs as needed:"]
+    template_lines: list[str] = []
+    data_sources: list[str] = []
+    refs_needed: dict[str, str] = {}  # name → default value
 
     for section in sections:
         comp = section["component"]
         sid = section.get("id", "")
         data_src = section.get("data", "static")
-        vue_comp = COMPONENT_VUE_MAP.get(comp)
-
-        if not vue_comp:
-            continue
 
         if data_src != "static" and data_src != "none":
-            method = f"fetch{sid.replace('-', ' ').title().replace(' ', '')}"
-            imports.append(f"import {{ fetch{method} }} from '@/api/{store_file}'")
-            fetches.append(f"    await store.{method}()")
-            reactive_state.append(f"const {sid.replace('-', '_')} = ref([])")
+            data_sources.append(data_src)
+
+        # Collect needed refs
+        for ref_name in COMPONENT_REFS.get(comp, []):
+            if ref_name not in refs_needed:
+                refs_needed[ref_name] = REF_DEFAULTS.get(ref_name, "null")
 
         if comp == "app-bar":
+            template_lines.append(f'    <!-- {sid}: {comp} -->')
             template_lines.append(f'    <header class="app-bar">')
             template_lines.append(f'      <h1>{{{{ title }}}}</h1>')
             template_lines.append(f'    </header>')
         elif comp == "drama-grid":
+            template_lines.append(f'    <!-- {sid}: {comp} -->')
             template_lines.append(f'    <div class="drama-grid">')
-            template_lines.append(f'      <div class="drama-card" v-for="item in store.dramas" :key="item.id"')
+            template_lines.append(f'      <div class="drama-card" v-for="item in items" :key="item.id"')
             template_lines.append(f'           @click="router.push(\'/detail/\' + item.id)">')
             template_lines.append(f'        <div class="thumb"><span class="badge">{{{{ item.tag }}}}</span></div>')
             template_lines.append(f'        <div class="info">')
@@ -122,14 +130,18 @@ def generate_vue_page(yaml_path: Path) -> str:
             template_lines.append(f'      </div>')
             template_lines.append(f'    </div>')
         elif comp == "category-tabs":
-            template_lines.append(f'    <CategoryTabs v-model="activeCategory" :items="store.categories" />')
+            template_lines.append(f'    <!-- {sid}: {comp} -->')
+            template_lines.append(f'    <CategoryTabs v-model="activeCategory" :items="categories" />')
         elif comp == "banner-carousel":
-            template_lines.append(f'    <BannerCarousel :items="store.banners" />')
+            template_lines.append(f'    <!-- {sid}: {comp} -->')
+            template_lines.append(f'    <BannerCarousel :items="banners" />')
         elif comp == "continue-watching-card":
-            template_lines.append(f'    <ContinueWatchingCard :items="store.continueWatching" />')
+            template_lines.append(f'    <!-- {sid}: {comp} -->')
+            template_lines.append(f'    <ContinueWatchingCard :items="continueWatching" />')
         elif comp == "episode-list":
+            template_lines.append(f'    <!-- {sid}: {comp} -->')
             template_lines.append(f'    <div class="episode-list">')
-            template_lines.append(f'      <div class="episode-item" v-for="ep in store.episodes" :key="ep.num"')
+            template_lines.append(f'      <div class="episode-item" v-for="ep in episodes" :key="ep.num"')
             template_lines.append(f'           @click="router.push(\'/player/\' + ep.num)">')
             template_lines.append(f'        <span class="number">{{{{ ep.num }}}}</span>')
             template_lines.append(f'        <div class="info">')
@@ -138,18 +150,20 @@ def generate_vue_page(yaml_path: Path) -> str:
             template_lines.append(f'      </div>')
             template_lines.append(f'    </div>')
         else:
-            # Generic placeholder for undefined components
-            template_lines.append(f'    <!-- @component: {comp} (template not yet defined) -->')
+            template_lines.append(f'    <!-- @component: {comp} — template not yet defined for section {sid} -->')
+
+    # Generate ref declarations
+    ref_lines = [f"const {name} = ref({default_val})" for name, default_val in refs_needed.items()]
+    if not ref_lines:
+        ref_lines.append("// No reactive state defined in screen spec")
 
     return VUE_TEMPLATE.format(
         title=screen_title,
         screen=screen,
-        store_name=store_name,
-        store_file=store_file,
-        imports="\n".join(imports) if imports else "// No API imports needed (static content)",
-        reactive_state="\n".join(reactive_state) if reactive_state else "",
-        fetches="\n".join(fetches) if fetches else "    // Static content — no data fetch",
-        template_content="\n".join(template_lines) or "    <!-- No sections defined -->",
+        imports="\n".join(imports),
+        refs="\n".join(ref_lines),
+        data_sources=", ".join(data_sources) if data_sources else "static content",
+        template_content="\n".join(template_lines) or "    <!-- No sections defined in screen spec -->",
     )
 
 
