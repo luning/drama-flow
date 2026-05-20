@@ -23,7 +23,9 @@
   border: none;
   cursor: pointer;
   background: linear-gradient(135deg, var(--colorprimary) 0%, var(--colorprimary-light) 100%);
-  typography: {'font-size': '{typography.size.md}', 'font-weight': '{typography.weight.semibold}', 'color': '{text.primary}'};
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .btn-primary:hover {
@@ -46,11 +48,11 @@
 
 .btn-secondary {
   background: var(--border);
-  typography: {'color': '{text.primary}'};
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background: {'color': '{border.surfaceHover}'};
+  background: var(--surface-hover);
 }
 
 /* ──────────────────────────────────────────────────────────── */
@@ -59,7 +61,7 @@
 .btn-outline {
   background: transparent;
   border: 1.5px solid var(--colorprimary);
-  typography: {'color': '{color.primary}'};
+  color: var(--color-primary);
 }
 
 /* ──────────────────────────────────────────────────────────── */
@@ -69,7 +71,7 @@
   padding: var(--space-2) var(--space-4);
   height: 32px;
   border-radius: var(--radius-md);
-  typography: {'font-size': '{typography.size.sm}'};
+  font-size: var(--font-size-sm);
 }
 
 /* ──────────────────────────────────────────────────────────── */
