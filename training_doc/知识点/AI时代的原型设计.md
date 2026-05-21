@@ -1,4 +1,4 @@
-# AI 时代的原型设计
+# AI 时代的原型设计 - 建立 Agent 友好的 Design System
 
 ---
 
