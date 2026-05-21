@@ -1,279 +1,167 @@
-# Harness 工程基础概念
-
-## 目录
-
-1. [什么是 Harness？](#什么是-harness)
-2. [一个典型的 Harness 目录树](#一个典型的-harness-目录树)
-3. [Harness 的五个层级](#harness-的五个层级)
-   - [1. 架构层 — 让 Agent "看到"边界](#1-架构层-让-agent-看到边界)
-   - [2. 文档层 — 渐进披露，按需下钻](#2-文档层-渐进披露按需下钻)
-   - [3. 经验层 — 让 Agent 不踩同样的坑](#3-经验层-让-agent-不踩同样的坑)
-   - [4. 约束层 — 可执行规则，而不是口头约定](#4-约束层-可执行规则而不是口头约定)
-   - [5. 执行层 — Agent 的"手"和"工具箱"](#5-执行层-agent-的手和工具箱)
-4. [Harness 的团队治理与 Git 管理](#harness-的团队治理与-git-管理)
-   - [Git 提交边界](#git-提交边界)
-   - [Code Review 策略](#code-review-策略)
-   - [个人偏好管理："分层覆盖"模型](#个人偏好管理分层覆盖模型)
-   - [经验文件的质量管控](#经验文件的质量管控)
-5. [Memory：Agent 自管理的跨会话持久化](#memoryagent-自管理的跨会话持久化)
-
----
-
-## 什么是 Harness？
-
-在 AI Coding Agent（如 Claude Code、Codex CLI）中，**模型本身只是拼图的一块**。模型周围的工程组件同样决定了任务完成的质量。这些模型外部的、可编辑的组件集合，统称为 Agent 的 **Harness**（挽具/工装）。
-
-> **直觉类比**：把 Coding Agent 比作一支施工队，模型就是工人的技能水平，Harness 则是工地的工程管理体系——施工图纸、安全规范、质量巡检、进度管控。没有这套体系，几个工人也能搭个简易棚子；但要盖摩天大楼，缺了它寸步难行。
-
-Harness 包含系统提示词（system prompt）、工具（tools）、中间件（middleware）、技能库（skills）、子代理（sub-agents）、长期记忆（long-term memory）等。它决定了：
-
-- 模型如何感知环境（能看到什么文件和上下文）
-- 模型如何执行操作（能调哪些工具，工具的行为是什么）
-- 模型如何从错误中恢复（中间件的拦截与重试逻辑）
-- 模型的"工作风格"（提示词注入的行为准则）
-
----
-
-## 一个典型的 Harness 目录树
-
-下面用一个虚拟项目的完整目录树直观展示：**从项目源码到 .claude 配置，哪些内容在充当 Agent 的 Harness**。
-
-```
-my-project/
-│
-├── CLAUDE.md                          # ① System Prompt — 全局行为规则与架构约束
-├── README.md                          #    项目总览
-├── SPEC.md                            #    可执行规格（AC 验收标准，Agent 自检依据）
-├── .mcp.json                          # ⑦ MCP 注册 — Agent 启动时自动发现 MCP 工具
-│
-├── api/
-│   └── openapi.yaml                   #    接口契约（强类型 Schema，Agent 不猜参数）
-│
-├── src/
-│   ├── modules/
-│   │   ├── auth/                      #    DDD 限界上下文：认证
-│   │   │   ├── README.md              #       模块级 Purpose / Interfaces / Constraints
-│   │   │   ├── EXPERIENCE.md          #       本模块的经验陷阱（可从 Git History 提炼）
-│   │   │   ├── auth_service.py        #       Type Hints = 代码级文档
-│   │   │   └── auth_schema.py         #       Pydantic → Agent 的"强类型提示"
-│   │   ├── profile/                   #    限界上下文：用户画像
-│   │   │   ├── README.md
-│   │   │   ├── EXPERIENCE.md
-│   │   │   └── ...
-│   │   └── notification/              #    限界上下文：通知
-│   │       ├── README.md
-│   │       └── ...
-│   ├── mcp/                            # ⑦ MCP 工具实现 — Agent 通过 .mcp.json 自动发现
-│   │   └── server.py
-│   │
-│   └── shared/
-│       └── types.py                   # 跨模块共享类型的集中定义点
-│
-├── docs/
-│   └── adr/                           #    架构决策记录
-│       ├── 001-sqlite-not-pg.md       #       为什么选 SQLite — 防止 Agent 走回头路
-│       └── 002-jwt-session.md         #       认证方案选型
-│
-├── design-system/                     #    设计约束（被 Skills 和 System Prompt 引用）
-│   ├── tokens.css                    #       CSS 变量 — 颜色/间距/阴影/动画/字体（单一真相源）
-│   ├── tokens.ts                     #       TypeScript 版本 — Vue/React 组件引用
-│   ├── constraints.md                #       业务约束与尺寸规范（UX 规则，Agent 生成 UI 必读）
-│   ├── design-rules.md               #       AI 生成规则（Prototype Skill 自动注入此文件）
-│   ├── components/
-│   │   └── index.html                #       组件 Gallery — 可视化验证所有组件在 Token 下的渲染效果
-│   └── README.md                     #       设计系统总览与变更流程
-│
-├── .importlinter                       # Architecture as Code — 模块依赖规则
-├── pyproject.toml                      # Lint / Type Check（mypy, ruff）
-├── .github/workflows/ci.yml           # CI — 提交即验证
-│
-├── .claude/
-│   ├── settings.json                  # ② Tool 权限 — allowlist / deny list
-│   ├── settings.local.json
-│   │
-│   ├── hooks/                         # ③ Middleware — 管线拦截（PreToolUse / PostToolUse）
-│   │   ├── validate-commit.sh         #    提交前自动跑 lint + test
-│   │   ├── secret-scanner.js          #    阻止密钥泄露
-│   │   └── dangerous-cmd-guard.js     #    拦截危险命令
-│   │
-│   │── skills/                        # ④ Skills — 按需注入的工作流
-│   │   ├── code-review/
-│   │   ├── debug/
-│   │   ├── test-run/
-│   │   └── deploy/
-│   │
-│   ├── agents/                        # ⑤ Sub-Agents — 隔离执行的委派单元，隔离上下文膨胀
-│   │   ├── code-reviewer.md
-│   │   ├── debugger.md
-│   │   └── planner.md
-│   │
-│   ├── experience/                    # ⑥ 跨模块经验的索引（具体经验文件在代码目录中）
-│   │   └── INDEX.md                   #    "新增路由 → src/modules/EXPERIENCE.md"
-│   │
-│   └── memory/                        # Ⓜ Agent 自管理的跨会话记忆
-│       ├── user.md
-│       ├── project.md
-│       └── feedback.md
-│
-└── scripts/                           # 工具支撑脚本
-    ├── reset_db.sh
-    └── seed_data.py
-```
+Harness 工程全景：从概念起源到行业实践
 
----
+2026 年上半年 AI 工程里升温速度最快的概念——Harness Engineering。
 
-## Harness 的五个层级
+2025 年底到 2026 年初，Anthropic、OpenAI、Google DeepMind、Stripe、Vercel 这些公司几乎同时开始公开讲一件事：决定 agent 上线的，不是你给模型写了什么 prompt，甚至不是你选了什么模型，而是你给模型搭了一套什么样的运行系统。这个运行系统，就是他们说的 harness。
 
-这棵目录树的每一部分都可以归入以下五个层级，从松到紧排列：
+## 第一个问题：Harness Engineering 到底是什么？
 
-| 层 | 涵盖内容 | 约束强度 | 存在形式 |
-|---|---------|---------|---------|
-| **架构层** | 模块目录结构、OpenAPI、Type Hints、DDD 限界上下文 | ★★☆☆☆ | 源码目录 + 类型系统 + 接口契约 |
-| **文档层** | CLAUDE.md、模块 README、ADR、SPEC、PRD、design-system | ★★☆☆☆ | Markdown，渐进披露，按需下钻 |
-| **经验层** | 模块 EXPERIENCE.md、.claude/experience/INDEX.md | ★★☆☆☆ | 结构化经验文件，随代码 colocate |
-| **约束层** | import-linter、pyproject.toml、CI、Hooks | ★★★★☆ | 可执行规则 + 管线拦截 |
-| **执行层** | Skills、Sub-Agents、settings.json 权限、MCP（.mcp.json + src/mcp/）、scripts | ★★★★☆ | 注入 Prompt + 隔离执行 + allowlist |
+先说这个词本身。harness 这个词的原始含义是马具——缰绳、马鞍子，一整套控制马匹的装备。这个隐喻是刻意的：马就是模型，强大、快速，但自己不知道该往哪跑；骑手是人类工程师提供方向，而马具就是 harness，把这匹马的原始能力导向有用的工作。
 
-### 1. 架构层 — 让 Agent "看到"边界
+翻译成技术语言就是一句话：harness engineering 不是在教模型怎么回答，而是在设计模型怎么工作。它处理的是模型外部那一整层东西：任务怎么拆解、上下文怎么管理、工具怎么编排、权限怎么设定、状态怎么交接、做完了怎么验证、失败了怎么恢复、什么时候该把控制权交回给人类。这不是一条 prompt 能搞定的事情，这是一个完整的运行系统设计问题。
 
-架构层与其他四层有本质区别：**文档、经验、约束、执行都是可以"外挂"到项目上的 Harness 组件，而架构层就是项目源码本身**——目录怎么切、模块怎么拆、类型怎么定义。
+这个概念的结晶时刻可以追溯到 2026 年 2 月 5 号，HashiCorp 的联合创始人 Mitchell Hashimoto 发了一篇博客，说了一句极简洁的话：每当你发现 agent 犯了一个错误，你就花时间工程化一个解决方案，让他永远不再犯同样的错。
 
-正因如此，项目架构的设计质量直接决定了 Agent 的工作效果。一套对人类工程师友好的架构，往往也对 Agent 友好——两者的核心诉求一致：**快速定位"改哪里"、清晰识别"边界在哪"**。
+一周之后，OpenAI 在官方博客直接发了一篇文章，标题就叫 Harness Engineering，正式把这个术语推到台前。但要注意一点，Anthropic 实际上更早就在用这个概念了。早在 2025 年 11 月，Anthropic 发布了一篇工程博客叫《Building effective harnesses for long-running agents》，已经把 Claude Agent SDK 定义为一个通用型 agent harness。所以 Anthropic 是实践在先，Mitchell Hashimoto 是命名，OpenAI 是推广。
 
-推荐基于 **DDD（领域驱动设计）** 来组织代码架构，它和 LLM 的运作方式天然契合：
+## 第二个问题：它跟 Prompt Engineering、Context Engineering 是什么关系？
 
-- **限界上下文 → 模块边界**：DDD 按业务领域拆分限界上下文，每个上下文映射为一个模块目录（`auth/`、`profile/`、`notification/`），Agent 修改某一个时不会误入其他上下文的实现细节
-- **通用语言（Ubiquitous Language）→ 命名体系**：DDD 要求每个限界上下文内建立统一的术语，目录名、类名、字段名共享同一套词汇——这与 LLM 基于语义匹配的推理模式高度一致，Agent 的"理解"和"生成"都更精准
-- **聚合根 → 类型约束**：DDD 的聚合根通过类型系统（OpenAPI Schema、Pydantic 模型、Type Hints）固化为代码级约束，Agent 无需跳转即可理解数据结构的边界和校验规则
+这三个概念形成了一条非常清晰的演进链条。
 
-具体落地到目录树：
+**第一层，Prompt Engineering，2022 到 2024 年是主导范式。** 他关注的是「问什么」——你怎么措辞、怎么给少样本示例、要不要用思维链。本质上是单轮的、文本层面的优化。
 
-- 模块目录结构（DDD 限界上下文）：目录即边界
-- `api/openapi.yaml` → 接口契约，强类型 Schema，Agent 不猜参数
-- Type Hints（`src/modules/*/auth_service.py`）+ Pydantic（`src/modules/*/auth_schema.py`）→ 代码级文档 + 强类型校验
-- `src/shared/types.py` → 跨模块共享类型
+**第二层，Context Engineering，2025 年开始主导。** Anthropic 在 2025 年 6 月公开说 Context Engineering 比 Prompt Engineering 更重要，Shopify 的 CEO 也表达了类似观点。Anthropic 有一个很精彩的比喻，把大语言模型看成 CPU，上下文窗口看成 RAM，Context Engineering 就是操作系统层面管理工作内存的技术。它涵盖了 RAG、记忆注入、工具定义、对话历史管理，这些动态组装模型输入的所有技术，核心回答的问题是「让模型看到什么」。
 
-### 2. 文档层 — 渐进披露，按需下钻
+**第三层，Harness Engineering，2026 年开始显现。** 他不仅管模型看到什么，还管模型能用什么工具、拥有什么权限、怎么保持状态、必须通过什么验证、产生什么日志、失败了怎么重试、什么时候该暂停让人来。
 
-文档层回答"为什么要这么做"。Agent 不会一次性吞下所有文档，而是按任务范围按需查阅。
+三者之间的包含关系是：harness 包含 context，context 包含 prompt。用一个比喻来说：prompt 是命令「右转」；context 给模型一张地图，让他理解右转是什么意思；而 harness 是整辆车——方向盘、刹车、车道边界、维护计划、警示灯，以及确保车门不会在高速公路上脱落的所有工程设计。
 
-- `CLAUDE.md` / `SPEC.md` → 全局行为规则与可执行规格，Agent 启动即加载，完成后以此为自检清单
-- `src/modules/*/README.md` → 模块级 Purpose / Interfaces / Constraints，Agent 只需读当前模块
-- `docs/adr/` → 架构决策记录（如"为什么选 SQLite"），防止 Agent 走回头路
-- `design-system/` → 设计 Token 与约束，被 Skills 和 System Prompt 引用
+Anthropic 在 2026 年 3 月的文章里直接挑明了一个判断：Prompt Engineering 和 Context Engineering 都能显著提升效果，但都会碰到上限，前沿的性能关键越来越落在 harness design 上。
 
-### 3. 经验层 — 让 Agent 不踩同样的坑
+## 第三个问题：为什么偏偏到 2026 年初爆发？四个原因。
 
-经验层是团队与 Agent 之间的"错题本"。某段代码出过什么 Bug、踩过什么坑，沉淀为结构化经验文件。
+**第一，模型能力抬高之后，系统设计变成了主要的差异来源。** 说白了就是模型够强了，但光靠它没用，你得给他一个好的工作环境，它才能把能力发挥出来。
 
-- `src/modules/*/EXPERIENCE.md` → 与模块代码 colocate，记录该模块的历史陷阱和反模式
-- `.claude/experience/INDEX.md` → 跨模块经验的索引入口，让 Agent 按关键词快速定位
+**第二，长任务暴露了裸模型的系统性缺陷。** Anthropic 描述的很具体：即使是 Opus 4.5，在跨多个上下文窗口运行时，如果你只给一个高层级指令，比如「构建一个 Claude.ai 的克隆」，它依然造不出生产质量的外部应用。失败模式非常典型：要么试图一口气完成所有事情，导致上下文耗尽；要么下一个 session 看到一部分进展就提前宣布完成，而不验证。这些问题换一个更强的模型不会自动消失，必须靠 harness 层面的机制来治理。
 
-### 4. 约束层 — 可执行规则，而不是口头约定
+**第三，有一个被广泛引用的数学直觉，能说明问题的严重性。** 假设一个多 agent 流水线中每一步的成功率是 95%，听起来很高了，但串联 20 步之后，端到端的任务完成率只剩 36%。这就是为什么团队报告说 agent 95% 的时间都在正常工作，但真实任务上仍然有三分之一的失败率。这个问题不是靠聪明的模型能解决的，必须靠系统层面的验证。
 
-约束层与文档层的区别在于：文档层靠 Agent 自觉遵守，约束层**编译时或运行时强制拦截**。
+**第四，模型正在趋于商品化。** GPT 系列、Claude 系列、Gemini 系列在核心能力上的差距在缩小。当模型本身不再是差异化因素的时候，围绕模型的系统设计——也就是 harness——就成了新的竞争壁垒。多个分析文章都在说同一句话：旧护城河是模型质量，新护城河是 harness 质量。
 
-- `.importlinter` → 模块依赖规则，Architecture as Code，违规即 CI 红灯
-- `pyproject.toml` / `.github/workflows/ci.yml` → Lint + Type Check + 测试，提交即验证，不规范的代码无法合入
-- `.claude/hooks/` → PreToolUse / PostToolUse 管线拦截（扫描密钥、阻止 `rm -rf` 等危险命令）
+## 概念讲清楚了，接下来进入最硬核的部分：头部公司到底是怎么做的？
 
-### 5. 执行层 — Agent 的"手"和"工具箱"
+### Anthropic
 
-执行层定义 Agent 能做什么、怎么委派任务、如何调用外部系统。
+Anthropic 的实践集中体现在两篇工程博客里，一篇是 2025 年 11 月的，一篇是 2026 年 3 月的。两篇文章之间能看到他们方法论的明显演进。
 
-- `.mcp.json` + `src/mcp/` → MCP 工具声明与实现，启动时自动发现。`.mcp.json` 声明 Server（命令、环境变量），`src/mcp/` 存放实现代码
-- `.claude/settings.json` → Tool 权限 allowlist / deny list，控制 Agent 能调用哪些系统命令
-- `.claude/skills/` → 按需注入的工作流（CR、debug、deploy），Agent 识别意图后自动加载
-- `.claude/agents/` → 隔离执行的委派单元（子代理），独立上下文，并行执行，保护主会话不受污染
-- `scripts/` → 工具支撑脚本（数据库重置、种子数据导入），Agent 直接调用而非手写
+第一版方案是双 agent 架构，他们把长任务拆成两种角色：一个叫初始化 agent，一个叫编码 agent。初始化 agent 只在第一个 session 运行，负责建立环境、创建初始化脚本、写入一个进度日志文件、建立 Git 基线，然后——这是关键——把用户的高层级指令扩展成数百条具体的、可测试的功能需求清单，以 JSON 格式存下来。编码 agent 在后续 session 中逐个功能推进，每次启动先确认当前位置：读进度文件、审查功能清单、跑现有测试。
 
-这五个层级的核心规律是：**越往上层，约束越"软"（靠 Agent 自觉）；越往下层，约束越"硬"（靠工具和规则强制执行）。** 一个成熟的 Harness 不会只依赖某一层，而是在五层之间形成纵深防御。
+这里有一个很重要的设计思想：外部制品成为 agent 记忆。进度文件、Git 历史、结构化需求清单，跨 session 持久化，每个 agent session 在动手之前先从这些制品重建上下文。
 
----
+技术上还有个细节值得注意：Anthropic 自己说了，这两个 agent 其实并不是真正独立的 agent，他们共享相同的系统提示、工具集和整个 harness，区别只是初始用户提示不同。换句话说，仅通过提示工程就能在单一 harness 内创造专门化行为。
 
-## Harness 的团队治理与 Git 管理
+然后到了 2026 年 3 月，方案演进了，升级到三 Agent 架构：planner 负责扩展需求，generator 负责实现，evaluator 负责用 Playwright 这类工具做交互式验证和打分。
 
-### Git 提交边界
+这里面最有意思的发现是什么？是评估器分离这件事。Anthropic 发现，当你让模型评估自己的工作时，它会倾向于自信地表扬自己的作品，即使在人类看来质量明显平庸。这不是哪个模型的问题，这是自评估的系统性缺陷。他们的结论是：工程化一个独立的严格评估器 agent，远比教会生成器 agent 自我批评要容易得多。
 
-核心原则：**代表团队共识的 → 提交；Agent 自动生成或纯个人偏好的 → .gitignore。**
+说到这里，我很好奇，你们自己用 agent 做开发的时候，有没有遇到过 agent 自信满满地告诉你搞定了，结果一检查全是半成品的经历？弹幕里扣个一让我看看。
 
-绝大多数 Harness 文件都是团队共识的产物，应当提交。真正不该提交的只有两类：
+另一个关键发现跟模型迭代有关。他们早期 harness 用的是 Sonnet 4.5，这个模型有一种很明显的上下文焦虑倾向，随着上下文增长，模型会变得不稳定，所以 harness 里设计了上下文重置机制。但换成 Opus 4.5 之后，模型自行消除了这个行为，上下文重置机制就变得不再必要了。这说明什么？说明 harness 不是越复杂越好，它必须跟模型当前的能力边界相匹配，模型强了，有些 harness 模块反而应该撤掉。
 
-| 文件 | 不提交的原因 |
-|------|-------------|
-| `.claude/settings.local.json` | 个人对工具权限的微调，`.claude/settings.json` 已提供团队默认值 |
-| `.claude/memory/` | Agent 自动生成的个人记忆，每个开发者有自己的一份 |
+### OpenAI
 
-其余目录树中出现的所有 Harness 文件——`CLAUDE.md`、`SPEC.md`、`.mcp.json`、`hooks/`、`skills/`、`agents/`、`experience/INDEX.md`、`design-system/`、`docs/adr/`、`scripts/`、模块级 `README.md` 和 `EXPERIENCE.md`——全部提交。
+OpenAI 的案例更具传播力，因为他们给出了非常具体的数字：2025 年 8 月开始，一个最初只有三个人、后来扩展到七个人的工程团队，用 GPT-5 驱动的 Codex Agent，在大约 5 个月里生成了约百万行代码，合并了约 1500 个 PR，构建了一个有内部日活用户和外部测试者的生产级产品。团队人均日吞吐量大约 3.5 个 PR，而且随着团队扩大，吞吐量反而上升了。
 
-### Code Review 策略
+他们还给自己加了一个极端约束：禁止手写代码，所有应用逻辑、测试、CI、文档、可观测性和内部工具，全部由 Codex 生成。他们坦率地说，构建速度大约是手写的十分之一，但认为这是一种可接受的取舍。
 
-**一个错误的 CLAUDE.md 比一行错误的代码破坏力更大**——代码出错是单点 Bug，提示词出错会让 Agent 系统性地产出有问题的代码。
+Martin Fowler 网站上的 Boeckeler 对 OpenAI 的 Harness 做了一个很精炼的归纳，三大支柱：第一是 Context Engineering，持续增强代码库中的知识库，加上 agent 对可观测性数据和浏览器的动态访问；第二是架构约束，不只是靠 agent 自觉遵守，而是用确定性的自定义 Linter 和结构测试来执行；第三——这个很有意思——叫「垃圾回收」：定期运行后台 agent，扫描不一致和架构违规，对抗系统的熵增。
 
-| 级别 | 文件类型 | Review 要求 | 理由 |
-|------|---------|------------|------|
-| **严格 Review** | `CLAUDE.md`、`.claude/hooks/`、`.claude/skills/`、`.claude/agents/`、`.claude/settings.json` | 必须 PR + 至少一人 Approve | 直接影响 Agent 行为模式和安全边界 |
-| **正常 Review** | `SPEC.md`、`EXPERIENCE.md`、`docs/adr/`、`design-system/` | 建议 PR Review | 影响团队知识对齐，但不直接改变 Agent 执行路径 |
-| **低门槛** | `scripts/`、`.claude/experience/INDEX.md` | 变更通知即可 | 影响面可控 |
+OpenAI 团队发现了一个核心模式，非常值得记住：当 agent 遇到困难时，不要更努力地尝试，而是访问缺少什么能力，怎么让这个能力对 agent 来说既可读又可执行，然后让 Codex 自己编写修复代码。这形成了一个 harness 自我改进的闭环。
 
-关键判断标准：**这个改动会让 Agent 在不知情的情况下做出不同的决策吗？** 如果是，就必须 Review。
+但这里我必须加一个诚实度提醒：Boeckeler 在他的分析里明确指出，OpenAI 在呈现这个案例时有既得利益，让我们相信 AI 可以维护代码。而且他还发现了一个有趣的细节：那篇文章标题虽然叫 Harness Engineering，但正文里 harness 这个词只出现了一次，这个标题很可能是受 Mitchell Hashimoto 那篇博客启发后加上去的。所以对这个案例，该学的学，该存疑的也得存疑。
 
-### 个人偏好管理："分层覆盖"模型
+### Google DeepMind
 
-团队成员风格差异是现实——有人爱用 SDD，有人嫌繁琐；有人加自约束，有人嫌别人的经验文件"污染"自己的 Agent。硬性统一引发抵触，完全放任导致 Harness 失效。
+Google 在 harness 这件事上没有像 Anthropic 和 OpenAI 发一篇专门的方法论文章，但他们用产品说话。2026 年 2 月，DeepMind 发布了 Aletheiad，一个面向数学研究的自主 agent。它的核心架构恰好就是一个三组件的 agent harness：generator 负责提出候选解法和证明策略，verifier 用自然语言检查逻辑缺陷和幻觉，revisor 负责修正验证器发现的错误。三个组件循环迭代，直到输出通过验证。
 
-解决思路：**分层覆盖**——每一层有明确的权威范围和冲突解决规则。
+注意到了吗？generator、verifier、revisor，这跟 Anthropic 的 planner、generator、evaluator 三 Agent 架构高度对应。两家公司独立走到了同一个设计模式上，不是巧合。这说明「生成-评估分离」正在成为 agent harness 设计的行业共识。
 
-```
-个人层（.claude/settings.local.json, memory/）
-  ↓ 覆盖
-项目层（.claude/settings.json, CLAUDE.md, hooks/, skills/）
-  ↓ 引用
-模块层（src/modules/*/EXPERIENCE.md, README.md）
-  ↓ 被约束
-执行层（CI, import-linter, pyproject.toml）
-```
+Aletheiad 的成果也很亮眼，在 IMO-Proof Bench Advanced 上达到 95.1% 的准确率，自主解决了 Erdős 猜想数据库中四个此前未被解决的开放问题。但也有批评性报道指出，它在更广泛的问题上错了 68.5%。这恰好说明了 harness 的一个特点：在特定场景下可以非常强大，但泛化能力仍然受限于 harness 的设计边界。
 
-| 层 | 修改方式 | 补充说明 |
-|----|---------|---------|
-| **执行层** | 不可绕过 | CI、import-linter、pyproject.toml 是硬约束，代码合入的必要条件 |
-| **项目层** | PR 博弈 | `CLAUDE.md`、`hooks/` 等团队级 Harness，增删改都要走 PR 并有理由 |
-| **模块层** | PR 博弈 | `EXPERIENCE.md` 属于文档层（约束强度 ★★），本质是建议。觉得某条过时或误导 → 提 PR 删除并附理由（如"该 Bug 已在 v2.3 修复"）。经验条目建议**标注日期**，超过 6 个月标记待审查 |
-| **个人层** | 自由调整 | `.claude/settings.local.json` 覆盖团队默认权限；不喜欢的 Skill 可以不调用。但**不能移除项目层的强制性约束**（hooks、CI） |
+Google 在工具层面也有动作。他们的 Agent Development Kit，简称 ADK，是一个开源的 agent 框架，定位类似 Anthropic Claude Agent SDK，里面内置了 evaluation harness 做场景驱动测试。还有 Agent Starter Pack，提供生产级脚手架，包括 CI/CD 管道、测试框架和监控配置。2026 年 3 月发布的 ADK Python 2.0 Alpha 还加入了图式工作流编排。
 
-### 经验文件的质量管控
+另外还有一个技术细节值得一提：Gemini 3 在 2026 年 3 月引入了一个叫 Thought Signature 的机制，模型在调用工具之前会生成一个加密的推理状态表示，传回对话历史之后可以恢复精确的推理链路。这本质上是在模型层面解决跨步骤的状态持续性问题。Anthropic 用的是 harness 层面的外部制品（进度文件、Git 历史）来保持记忆，Google 则尝试在模型内部解决同样的问题。两条路线值得持续观察哪条更有效。
 
-`EXPERIENCE.md` 最容易引发"洁癖 vs 实用"的争议。几条质量原则：
+### 其他值得聊的案例
 
-- **写"陷阱条件"，不写"个人偏好"**：`"当 token 为 None 时 refresh_token() 会抛未捕获异常"` ✅；`"不要用 async/await"` ❌
-- **标日期**：过时经验不如没有经验
-- **少而精**：5 条验证过的陷阱 > 50 条未经检验的"注意事项"
-- **实验性经验走 Memory 先验证**：不确定是否普适 → 写入 `.claude/memory/`（个人、不提交），验证有效后再提炼到 `EXPERIENCE.md`（团队共享）
+除了三大巨头，还有几个案例非常值得聊。
 
----
+**Vercel** 提供了一个完全反直觉的经验。他们最初给 agent 配了一个非常全面的工具库，搜索、代码、文件、API 工具全都有，结果效果很差：agent 变得困惑，进行冗余调用，执行不必要的步骤。然后 Vercel 做了一件看起来倒退的事：他们移除了 80% 的工具，结果反而获得了更好的效果——更少的步骤、更少的 token 消耗、更快的响应、更高的成功率。
 
-**总结**：Harness 治理的核心不是统一所有人的风格，而是建立清晰的**分层架构**——硬约束强制执行，软建议 PR 讨论，个人偏好有逃生舱。
+这件事告诉我们一个非常重要的设计原则：约束 agent 的解决空间，反而能提升它的表现。Boeckeler 把这个洞察提炼到了更深的层次：为了获得更多 AI 自主性，运行时环境反而需要更多约束，而非更少护栏。这跟传统软件开发里给工程师更多自由度的理念完全相反。
 
----
+**Stripe** 的做法也很有参考价值。他们的 agent 叫 Minions，运行在隔离的、预热好的 DevBox 环境里，跟人类工程师用的开发环境一样，但与生产环境和互联网隔离。agent 通过 MCP 服务器访问超过 400 个内部工具。他们的核心理念是：agent 需要跟人类工程师一模一样的上下文和工具，而不是后期拼凑的集成方案。
 
-## Memory：Agent 自管理的跨会话持久化
+还有 **Manus**——2025 年初走红的自主 agent，在 harness 达到生产就绪之前，经历了六个月、五次完整的架构重写。这说明 harness 的成熟是一个高成本、迭代密集的过程，没有人是一次就做对的。
 
-Memory 与上面五个层级有本质区别：
+## 一个成熟的 harness 到底包含哪些核心模块？
 
-> **五个层是人写的、注入给 Agent 的；Memory 是 Agent 自己写的、自己维护的。**
+综合 Anthropic、OpenAI、Google DeepMind、Stripe 这些公司的实践，我把它归纳为六大模块。
 
-- 架构、文档、经验、约束、执行 —— 都是**人主动编写的工程制品**，回答"我们希望 Agent 遵守什么"
-- `.claude/memory/`（`user.md` / `project.md` / `feedback.md` / `reference.md`）→ Agent 在对话中自动提取并持久化的跨会话记忆，回答"Agent 从这次会话中学到了什么"
+**第一个模块：上下文工程与知识管理。**
+这是最基础的一层，包括：项目指令文件，像 AGENT.md、CLAUDE.md 这类 agent 启动时读取的文档；动态上下文注入，从日志、指标、追踪信息中获取实时信息；上下文隔离，用子 agent 作为上下文防火墙，让不同子任务在隔离的上下文窗口里运行；还有上下文压缩，随着窗口被填满，自动丢弃或摘要无关信息。OpenAI 有一个精辟的观察：从 agent 的角度看，它在运行时无法访问的任何东西都等同于不存在。所以越来越多的知识需要被推送到代码库内部，成为版本化的制品。
 
-Memory 不是第六层，而是**横切所有层的持久化机制**。Agent 可以在任何一层学到东西并写入 memory：
+**第二个模块：工具编排与权限设计。**
+Vercel 的经验已经说了，工具不是越多越好。成熟的 harness 需要精心策划工具集，移除多余选项，还包括 MCP 协议集成、文件系统访问管理、沙箱隔离等等。
 
-| 当 Agent 在… | 学到的东西 | 写入 memory 类型 |
-|-------------|-----------|-----------------|
-| 文档层 | 用户偏好的技术栈、项目约定 | `user.md`、`project.md` |
-| 经验层 | 某个模块的陷阱被验证了 | `project.md` |
-| 约束层 | 用户纠正了某种行为风格 | `feedback.md` |
-| 执行层 | 某个外部系统的连接方式 | `reference.md` |
+**第三个模块：验证机制与约束。**
+这是 harness 区别于简单 scaffold 的核心特征，包括：确定性约束——自定义 Linter、结构测试、pre-commit hooks，这些不依赖 LLM 判断的硬性规则；生成-评估分离，Anthropic 已经证明了为什么这很必要；还有自动审查循环，OpenAI 的系统里，Codex 在本地审查自己的更改，其他 agent 审查回应，所有反馈在循环里迭代，直到所有审查者都满意。
 
-**关键类比**：五个层是 Agent 的"规章制度手册"（人写的）；Memory 是 Agent 的"工作笔记"（自己写的）。规章制度可以引用笔记中的经验，但笔记本身是 Agent 在遵守制度的过程中不断积累的。
+**第四个模块：状态管理与记忆持续性。**
+大语言模型是无状态的，每个新 session 从零开始，这是长任务场景中最核心的挑战。解决办法是外部化记忆：进度追踪文件、结构化功能清单、增量更新提交、检查点与恢复机制。
 
-这也解释了为什么经验层和记忆容易混淆——**EXPERIENCE.md 是人写的陷阱预判，Memory 是 Agent 踩过坑之后自己记下的教训。** 前者是预防，后者是复盘。
+**第五个模块：可观测性与反馈回路。**
+还包括执行追踪、质量分级、异常检测，还有非常关键的反馈归因——把 agent 在生产中的失败模式追溯到 harness 的具体缺陷，驱动持续改进。
+
+**第六个模块：人类接管与生命周期管理。**
+在关键决策点暂停——要删数据库、要扣费、要发客户邮件，必须让人类确认。还有升级路径、失败重试、完整的生命周期 hooks。
+
+这六个模块合在一起，就是一个成熟 harness 的完整图像。
+
+## 这东西不就是新瓶装旧酒吗？
+
+坦率地说，Harness Engineering 里确实有很大一部分不是新发明：test harness 在软件工程里已经有几十年历史了；CI/CD 管道、Linter、pre-commit hooks 是成熟的 DevOps 实践；任务分解与编排在分布式系统里早就被充分研究；沙箱隔离是安全工程的基础概念；可观测性在 SRE 领域已经高度成熟。
+
+所以如果有人说 Harness Engineering 全是新东西，那是吹牛。但如果有人说它就是纯粹的旧酒，那也不对。它确实在几个维度上产生了新的方法论贡献。
+
+**第一，约束对象发生了根本变化。** 传统软件工程约束的是确定性代码执行，而 harness engineering 约束的是概率性推理系统。这要求在验证、重试恢复等方面采用根本不同的设计模式。
+
+**第二，「约束以提升」这个反直觉原则。** Vercel 的案例证明了：约束 agent 的解决空间、减少工具、限定模式、强制架构边界，反而提升了它的生产力和可靠性。这跟给人类工程师更多自由度的思路是相反的。
+
+**第三，生成-评估分离模式。** 虽然灵感可以追溯到 GAN 架构，但在 agent 系统中被重新发现并工程化。工程化一个外部评估器，比教会生成器自我批评要有效得多。Anthropic 的 planner-generator-evaluator、Google DeepMind Aletheiad 的 generator-verifier-revisor，独立收敛到了同一个模式。这已经不是个别公司的偏好，而是工程实践倒逼出来的结构性结论。
+
+**第四，代码库本身成为 harness 的一部分。** 代码结构、命名约定、模块边界，不仅服务于人类可读性，更服务于 agent 的可推理性。OpenAI 的代码库甚至首先为 Codex 的可读性优化，而不是人类的阅读偏好。
+
+所以我的判断是：Harness Engineering 不是纯粹的新瓶装旧酒，但也不是从零开始的全新学科。它更准确的定位是：在 agent 生产化的压力下，将多个成熟工程领域的实践重新组合、调试，并补充针对概率性推理系统的新模式，形成了一个统一的方法论。这种重组本身就是有价值的创新——就像 DevOps 重组了开发与运维实践，Harness Engineering 正在重组 AI 系统的构建与运维实践。
+
+## 风险和局限
+
+**第一个风险是概念膨胀。** Harness Engineering 正在变成一个什么都能往里装的框，当一个术语从 AGENT.md 文件到完整的生产运维系统都能涵盖时，它的精确性和实用性就会被稀释。
+
+**第二个风险是过度工程化。** OpenAI 自己都强调 harness 必须是可撕裂的。随着模型变强，之前需要复杂 harness 来补偿的问题，可能被模型直接解决。Anthropic 已经给出了实例：Opus 4.5 自己消除了 Sonnet 4.5 的上下文焦虑行为，早期 harness 里的上下文重置机制就成了多余的。所以 harness 不是越复杂越好，过度工程化的 harness 在模型升级后反而会成为包袱。
+
+**第三个风险——也是我个人最在意的——是当前的证据基础。** 说实话，支持 Harness Engineering 价值的大多数证据，来自 AI 工具厂商自身：OpenAI 报告 Codex 有多厉害，Anthropic 报告 Claude Agent SDK 改进了多少，LangChain 报告自己的框架有多好。这些来源都存在利益冲突。独立的、定量的、可重现的 benchmark 验证目前仍然缺乏。Anthropic 自己都在文章里说了，他们的案例缺少显著的定量成功指标。学术层面虽然已经开始出现相关论文，但还没有经过同行评审的、被广泛引用的学术验证。
+
+**第四个风险是可重现性缺口。** OpenAI 的百万行代码案例是在极其特定的条件下完成的：从空仓库开始，用自家的 Codex 工具，团队本身就是 AI 系统专家。这个经验对普通工程团队的可重现性完全没被验证过。
+
+还有一个 Anthropic 自己发现的问题值得警惕：更强的 harness 也可能放大新的风险。他们在 BrowseComp 的评测中发现，多 agent 配置并不一定改变模型想走捷径的倾向，但因为更高的 token 使用量和更多并行搜索，反而提高了意外污染的概率。单 agent 配置下非预期解法的发生率是 0.24%，多 agent 配置下上升到 0.87%。Harness 不只是性能放大器，也可能是风险放大器。
+
+这里我想抛一个开放性的问题给大家：如果 harness 必须与模型能力边界相匹配，而模型能力在快速提升，那 Harness Engineering 作为一门工程学科，它的核心知识会持续积累，还是会像很多补丁技术一样被下一代模型直接淘汰？换句话说，你认为 Harness Engineering 最终会成为 AI 时代的 DevOps，还是会成为另一个被遗忘的过度概念？这个问题我自己也没有确定答案，非常想听听评论区各位的看法。
+
+## 最后收一下
+
+今天我们把 Harness Engineering 从概念到实践到争议都过了一遍，核心结论用三句话概括：
+
+- **Prompt Engineering** 解决「怎么说」；
+- **Context Engineering** 解决「给模型看什么」；
+- **Harness Engineering** 解决「让模型在什么运行机制里干活，并且如何确保它真的把活干成」。
+
+对于正在做 agent 开发的团队，最务实的行动路径是三步走：
+
+**立即能做的**：在项目根目录创建一个 AGENT.md，每次 agent 犯重复性错误就加一条规则。
+
+**中期投入的**：构建确定性验证层——Linter、结构测试、commit hooks，加上基本的可观测性。
+
+**长期要做的**：设计模块化的、可替换的 harness 架构，支持模型升级时平滑迁移。
+
+最后引用 OpenAI Codex 团队工程师 R Popular 的一句话来结束今天的内容：「agent 不难，harness 才难」。
