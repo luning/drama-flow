@@ -63,7 +63,8 @@ mp4/
 
 # SDD tooling runtime files (auto-installed, not project source)
 .claude/agents/
-.claude/commands/
+.claude/commands/gsd
+.claude/commands/opsx
 .claude/get-shit-done/
 .claude/gsd-file-manifest.json
 .claude/hooks/
