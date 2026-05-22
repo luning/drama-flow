@@ -2,12 +2,17 @@
 
 ## 目录
 
-1. [五层架构全景](#1-五层架构全景)
-2. [同一架构，两种实现形态](#2-同一架构两种实现形态)
-3. [Context OS（上下文操作系统）](#3-context-os上下文操作系统)
-4. [Execution Runtime（执行运行时）](#4-execution-runtime执行运行时)
-5. [Model Router（模型路由）](#5-model-router模型路由)
-6. [关键结论](#6-关键结论)
+1. [1. 五层架构全景](#1-五层架构全景)
+2. [2. 同一架构，两种实现形态](#2-同一架构两种实现形态)
+3. [3. Context OS（上下文操作系统）](#3-context-os上下文操作系统)
+   - [Agent 怎么调用 Context OS？](#agent-怎么调用-context-os)
+   - [三类 context，三个最合适的主体来管](#三类-context三个最合适的主体来管)
+   - [三层分工总结](#三层分工总结)
+4. [4. Execution Runtime（执行运行时）](#4-execution-runtime执行运行时)
+   - [组织场景：核心基础设施](#组织场景核心基础设施)
+   - [Agent 怎么调用 Execution Runtime？](#agent-怎么调用-execution-runtime)
+5. [5. Model Router（模型路由）](#5-model-router模型路由)
+6. [6. 关键结论](#6-关键结论)
 
 ---
 

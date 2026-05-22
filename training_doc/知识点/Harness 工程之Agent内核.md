@@ -2,10 +2,19 @@
 
 ## 目录
 
-1. [内核与项目空间的分工](#1-内核与项目空间的分工)
-2. [内核的九大组件](#2-内核的九大组件)
-3. [内核与项目空间的接口](#3-内核与项目空间的接口)
-4. [关键结论：理解内核是为了建设项目空间](#4-关键结论理解内核是为了建设项目空间)
+1. [1. 内核与项目空间的分工](#1-内核与项目空间的分工)
+2. [2. 内核的九大组件](#2-内核的九大组件)
+   - [组件 ① LLM（推理引擎）](#组件-①-llm推理引擎)
+   - [组件 ② 感知层（Perception）](#组件-②-感知层perception)
+   - [组件 ③ 规划与反思（Planning & Reflection）](#组件-③-规划与反思planning-reflection)
+   - [组件 ④ 推理循环（Agentic Loop）](#组件-④-推理循环agentic-loop)
+   - [组件 ⑤ 上下文管理（Context Management）](#组件-⑤-上下文管理context-management)
+   - [组件 ⑥ 工具调用引擎（Tool Calling Engine）](#组件-⑥-工具调用引擎tool-calling-engine)
+   - [组件 ⑦ 权限与安全（Permission & Safety）](#组件-⑦-权限与安全permission-safety)
+   - [组件 ⑧ 记忆系统（Memory System）](#组件-⑧-记忆系统memory-system)
+   - [组件 ⑨ 子代理编排（Sub-Agent Orchestration）](#组件-⑨-子代理编排subagent-orchestration)
+3. [3. 内核与项目空间的接口](#3-内核与项目空间的接口)
+4. [4. 关键结论：理解内核是为了建设项目空间](#4-关键结论理解内核是为了建设项目空间)
 
 ---
 

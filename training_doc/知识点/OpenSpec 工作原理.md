@@ -4,8 +4,17 @@
 
 1. [OpenSpec 是什么](#openspec-是什么)
 2. [Schema：变更的"蓝图"](#schema变更的蓝图)
+   - [工件依赖是怎么判断的](#工件依赖是怎么判断的)
+   - [Schema 的关键概念](#schema-的关键概念)
+   - [自定义 Schema](#自定义-schema)
 3. [四个 Skill 速览](#四个-skill-速览)
+   - [1. Propose — 创建变更](#1-propose-创建变更)
+   - [2. Explore — 探索模式](#2-explore-探索模式)
+   - [3. Apply — 执行变更](#3-apply-执行变更)
+   - [4. Archive — 归档变更](#4-archive-归档变更)
 4. [instructions 命令的内部原理](#instructions-命令的内部原理)
+   - [调用 artifact 指令时（Propose 用）](#调用-artifact-指令时propose-用)
+   - [调用 apply 指令时（Apply 用）](#调用-apply-指令时apply-用)
 5. [三层架构与设计哲学](#三层架构与设计哲学)
 
 ---
