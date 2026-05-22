@@ -1,4 +1,4 @@
-# OpenSpec 探秘
+# OpenSpec 工作原理 - Schema、CLI、Skills三层协作让 Agent 知道"该干什么"
 
 ## 目录
 

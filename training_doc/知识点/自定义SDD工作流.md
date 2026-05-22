@@ -1,4 +1,4 @@
-# 自定义 SDD 工作流
+# 自定义 SDD 工作流 - 把判断编码进流程
 
 > 标准 SDD 流程（Explore → Propose → Execute → Verify → Archive）解决的是"不忘记做什么"。  
 > 它有意留白了很多判断——**它告诉 Agent 何时做，但没有告诉 Agent 怎么才算做好**。  

@@ -1,53 +1,21 @@
-# AI Agent 技术栈：从 LLM 到 Agent 的分层架构
+# Agent 运行平台 - 内核之外的五层架构
 
 ## 目录
 
-1. [我们感知到的 Agent](#我们感知到的-agent)
-2. [为什么需要分层？](#为什么需要分层)
-3. [一张图看清全貌](#一张图看清全貌)
-4. [重要前提：同一架构，两种实现形态](#重要前提同一架构两种实现形态)
-5. [Context OS（上下文操作系统）](#context-os上下文操作系统)
-   - [Agent 怎么调用 Context OS？](#agent-怎么调用-context-os)
-   - [三类 context，三个最合适的主体来管](#三类-context三个最合适的主体来管)
-   - [三层分工总结](#三层分工总结)
-6. [Execution Runtime（执行运行时）](#execution-runtime执行运行时)
-   - [个人场景：确实不需要独立 Runtime](#个人场景确实不需要独立-runtime)
-   - [组织场景：核心基础设施](#组织场景核心基础设施)
-   - [Agent 怎么调用 Execution Runtime？](#agent-怎么调用-execution-runtime)
-7. [Model Router（模型路由）](#model-router模型路由)
-8. [LLM Provider（推理引擎）](#llm-provider推理引擎)
-9. [关键结论](#关键结论)
+1. [五层架构全景](#1-五层架构全景)
+2. [同一架构，两种实现形态](#2-同一架构两种实现形态)
+3. [Context OS（上下文操作系统）](#3-context-os上下文操作系统)
+4. [Execution Runtime（执行运行时）](#4-execution-runtime执行运行时)
+5. [Model Router（模型路由）](#5-model-router模型路由)
+6. [关键结论](#6-关键结论)
 
 ---
 
-## 我们感知到的 Agent
-
-Claude Code、Cursor、Cline——这些是大多数人第一次真正"使用" Agent 的方式。它不只是一个聊天窗口，而是能够多步骤规划、自主调用工具、反思纠错、持续执行，直到任务完成。
-
-| 普通 LLM 调用 | Agent |
-|-------------|-------|
-| 一次 prompt → 一次 response | 多步推理 → 多次行动 |
-| 无法主动获取信息 | 调用 shell / git / browser / API |
-| 无状态 | 有记忆、有上下文 |
-| 人在循环中 | 可以自主决策 |
-
-**核心能力**：Planning（任务分解）· Tool Calling（工具调用）· Reflection（自我修正）· Multi-step Execution（多轮执行）
-
-但 Agent 能做到这些，背后依赖一套分层的基础设施。接下来要回答的问题就是：**这些能力从何而来，各层之间如何协作？**
+> **本文定位**：《Harness 工程之 Agent 内核》的配套文档。内核文档讲的是 Agent 内部九大组件；本文聚焦**内核之外**的基础设施——支撑一个或多个 Agent 长期、可治理地工作的组织级平台。
 
 ---
 
-## 为什么需要分层？
-
-很多人以为"接入 GPT/Claude API"就等于有了 AI 产品。但真正能在生产环境中工作的 AI 系统，远比一次 API 调用复杂。
-
-理解 AI Agent 的技术栈，本质上是回答一个问题：
-
-> **一个 AI 要完成真实任务，需要哪些"基础设施"？**
-
----
-
-## 一张图看清全貌
+## 1. 五层架构全景
 
 ```
 ┌──────────────────────────────────┐
@@ -63,11 +31,11 @@ Claude Code、Cursor、Cline——这些是大多数人第一次真正"使用" A
 └──────────────────────────────────┘
 ```
 
-每一层解决完全不同的问题。下面自上而下逐层介绍。
+> **Agent 层内部**的结构（LLM、感知层、推理循环、工具引擎、记忆、子代理编排等）详见《Harness 工程之 Agent 内核》。本文从 Context OS 层往下展开。
 
 ---
 
-## 重要前提：同一架构，两种实现形态
+## 2. 同一架构，两种实现形态
 
 这个分层是**概念架构**，不是物理部署图。同样的五层，在不同规模下对应截然不同的实现：
 
@@ -95,11 +63,11 @@ Claude Code、Cursor、Cline——这些是大多数人第一次真正"使用" A
 
 ---
 
-## Context OS（上下文操作系统）
+## 3. Context OS（上下文操作系统）
 
 **解决什么问题**：Agent 怎么得到它需要知道的东西？
 
-LLM 的上下文窗口是有限的，Agent 不可能每次把所有信息塞进 prompt。Context OS 负责管理 AI 的"记忆"——按需检索、注入相关上下文、跨 session 保持状态。
+LLM 的上下文窗口有限（内核组件⑤），Agent 不可能每次把所有信息塞进 prompt。Context OS 负责管理 AI 的"记忆"——按需检索、注入相关上下文、跨 session 保持状态。
 
 ### Agent 怎么调用 Context OS？
 
@@ -116,8 +84,6 @@ Context OS 返回相关片段（不是全部，只取相关的）
 Agent 将这些 context 加入推理窗口，开始工作
 ```
 
-每次 Agent 开始新任务，或者需要特定知识时，都会主动向 Context OS 查询。任务结束后，Agent 也可以向 Context OS 写入新的记忆，供下次使用。
-
 ### 三类 context，三个最合适的主体来管
 
 Context OS 不是单一的层，而是三类问题各有最合适的负责方。判断原则：
@@ -126,7 +92,7 @@ Context OS 不是单一的层，而是三类问题各有最合适的负责方。
 
 **第一类：Agent 自己管——当前任务 context**
 
-当前任务的状态、当前 repo 的理解、当前 session 的规划历史——这些高度动态、高度私有，Agent 自己管最合适。Claude Code 的 CLAUDE.md 和 memory 文件、Cursor 的 `.cursorrules` 和代码索引，都属于这一类。
+当前任务的状态、当前 repo 的理解、当前 session 的规划历史——这些高度动态、高度私有，Agent 自己管最合适。Claude Code 的 CLAUDE.md 和 memory 文件、Cursor 的 `.cursorrules` 和代码索引，都属于这一类（对应内核组件⑧记忆系统）。
 
 **第二类：企业内部平台——组织私有 context**
 
@@ -156,13 +122,11 @@ Agent 自身     当前任务              效率（当前 session）
 
 ---
 
-## Execution Runtime（执行运行时）
+## 4. Execution Runtime（执行运行时）
 
 **解决什么问题**：Agent 安全、可控地执行操作。
 
-### 个人场景：确实不需要独立 Runtime
-
-在本机用 Claude Code 或 Cursor，`shell.exec()` 直接执行，Docker 本来就有隔离，浏览器就是你自己的。独立搭一套 Runtime 平台是过度工程化——因为**你是风险承担者**，`rm -rf` 删的是你自己的文件。
+个人场景下，权限控制轻量内嵌在 Agent 内核里（内核组件⑦）——Claude Code 执行 shell 命令前弹出确认框，就是最简单的形态，因为**你是风险承担者**，`rm -rf` 删的是你自己的文件。
 
 ### 组织场景：核心基础设施
 
@@ -180,7 +144,7 @@ Agent 自身     当前任务              效率（当前 session）
 
 ### Agent 怎么调用 Execution Runtime？
 
-Agent 不直接调用系统资源，而是通过 Runtime 提供的接口发起操作请求。Runtime 在中间充当"执行代理"：
+Agent 不直接调用系统资源，而是通过 Runtime 提供的接口发起操作请求：
 
 ```
 Agent 决定执行一个操作
@@ -197,15 +161,11 @@ Runtime 执行检查：
 拒绝 → 返回错误信息 + 通知管理员
 ```
 
-这就是 Execution Runtime 的核心价值：Agent 的每一个操作都经过它，任何"不该发生的行为"在这一层被拦截，任何"已发生的行为"都有日志可查。
-
-**个人 Agent 里同样有这个角色**——Claude Code 在执行 shell 命令前弹出确认框，就是最简单的 Runtime：它在 Agent 和操作系统之间加了一层"你确定吗？"。只不过个人场景里这一层非常轻量，无需独立建设。
-
 > 核心认知：不是"AI 能不能执行"，而是**"组织是否允许 AI 执行，以及如何对执行负责"**。
 
 ---
 
-## Model Router（模型路由）
+## 5. Model Router（模型路由）
 
 **解决什么问题**：调用哪个模型最合适？
 
@@ -220,20 +180,18 @@ Runtime 执行检查：
 
 个人 Agent 通常直接硬编码调某个模型，不需要独立 Router。企业场景变成统一 AI Gateway（如 LiteLLM、Azure AI Gateway），集中管控成本和访问策略，所有 Agent 都通过它访问模型。
 
----
-
-## LLM Provider（推理引擎）
-
-**解决什么问题**：谁来产生智能？
-
-LLM Provider 是整个系统的认知底座，负责文本理解、推理、代码生成。这些能力的技术实现（Transformer、KV Cache、GPU 调度）完全由 Provider 控制，外部无法插手。
-
-**代表厂商**：OpenAI · Anthropic · Google Gemini · Meta Llama
+LLM Provider 层本身（Anthropic、OpenAI、Google 等推理引擎的选择与能力边界）详见《Harness 工程之 Agent 内核》组件①。
 
 ---
 
-## 关键结论
+## 6. 关键结论
 
 > **真正难的越来越不是"让 AI 说一句聪明的话"，而是"让 AI 在真实世界中长期、低成本、可治理地工作"。**
 
 这正是 Context OS 和 Execution Runtime 的核心价值：它们解决的是 AI 从"演示"走向"生产"的工程挑战，而这些挑战只有在 Agent 从个人工具变成组织级数字劳动力之后，才会真正浮现。
+
+| 层 | 个人场景 | 组织场景 |
+|----|---------|---------|
+| Context OS | Agent 内置（CLAUDE.md、memory 文件） | 共享知识平台 + 访问控制 + Context CDN |
+| Execution Runtime | 轻量确认框（内核组件⑦） | 独立治理平台：身份、策略、审计、隔离 |
+| Model Router | 无（硬编码模型） | 统一 AI Gateway（LiteLLM / Azure）|

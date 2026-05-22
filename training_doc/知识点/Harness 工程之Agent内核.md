@@ -1,4 +1,4 @@
-# Harness 工程之 Agent 内核
+# Harness 工程之 Agent 内核 - 拆解九大组件，找到 Harness 工程的建设着力点
 
 ## 目录
 
