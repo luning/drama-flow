@@ -42,7 +42,6 @@
 
 ---
 
-
 > **核心命题**：决定 agent 上线的，不是你给模型写了什么 prompt，甚至不是你选了什么模型，而是你给模型搭了一套什么样的运行系统——这就是 harness。
 
 2026 年上半年 AI 工程里升温速度最快的概念——Harness Engineering。2025 年底到 2026 年初，Anthropic、OpenAI、Google DeepMind、Stripe、Vercel 这些公司几乎同时开始公开讲同一件事。
