@@ -136,7 +136,7 @@
   - Claude Code：Slash Commands 定义阶段命令 + Subagent 隔离执行 + Hooks 强制关卡
   - OpenCode：Custom Commands + Agent 定义角色 + Permission 分阶段收权 + Plugin 强制关卡
 - [演示] 从零构建最小可用 SDD：PLAN.md 模板 + /execute 命令 + subagent verify
-- [练习] 为 drama-flow 定制一条最小 SDD 流水线（自定义阶段命令 + 验证关卡），并用它跑通一个小需求
+- [练习] 为案例项目定制一条最小 SDD 流水线（自定义阶段命令 + 验证关卡），并用它跑通一个小需求
 - 进阶讨论：团队级固化与版本化、与 CI / 项目管理系统对接
 
 ---
@@ -356,7 +356,7 @@
 **10.5 规模化节奏与挑战**
 
 - 递进路径：单 Agent → 2 Agent 串行（跑通传递协议）→ 3-4 Agent 扇出（验证隔离）→ 8 Agent 全矩阵
-- [练习·分步实操] 在 drama-flow 上亲手跑通：① 2 个 Agent + 1 个 FD 文件，跑通上下游传递协议；② Worktree 隔离下 3 Agent 扇出并行；③ 设计自己团队的 Agent 拓扑
+- [练习·分步实操] 在案例项目上亲手跑通：① 2 个 Agent + 1 个 FD 文件，跑通上下游传递协议；② Worktree 隔离下 3 Agent 扇出并行；③ 设计自己团队的 Agent 拓扑
 - 模型分层：Worker 用低成本模型执行确定性任务，Planner / Reviewer 用高能力模型做推理判断
 - 认知负荷极限：1–4 并发为高效区，8 为极限，超过 8 先完成一个再开新的；频繁要求 Agent 总结是过载信号
 - 常见挑战：Token 放大（分层策略）、信息跨角色衰减（结构化传递载体）、并发文件冲突（Worktree 隔离）
