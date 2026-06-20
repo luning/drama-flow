@@ -1,3 +1,4 @@
+# Harness 工程之知识体系 - 提升复杂项目的生成质量
 
 ## 适用场景
 
@@ -9,8 +10,6 @@
 - **构建工程知识体系**：将分散的领域知识系统化地组织为 Agent 可路由、可加载的结构
 
 两者相辅相成——工程知识体系单独存在时效果有限，与 SDD 配合才能充分发挥价值：SDD 定义 Agent 如何推理，知识体系决定 Agent 推理时能看到什么。
-
-**不一定需要从头自定义 SDD**。OpenSpec 已经提供了 propose → review → apply 的确认机制，Superpowers/GSD 的 Skill 集本身就是按推理模式拆分的。对大多数团队来说，直接使用这些工具，重点投入在 Knowledge 层和 Router 文件的建设上，是更务实的起点——领域定制写在 Router 文件里，Skill 本身不需要改动。
 
 ---
 
@@ -60,7 +59,7 @@ Spec + Engineering Knowledge + Code → Implementation
 
 缺少 Engineering Knowledge 这一层，Spec 再详细也无法生成高质量代码。
 
-## Knowledge 才是核心资产
+## Knowledge：最难积累的核心资产
 
 Skill 本质是几十行 Prompt，可以快速编写和迭代。Knowledge 是团队几年到十几年的沉淀，无法快速复制。
 
@@ -71,13 +70,17 @@ Skill 本质是几十行 Prompt，可以快速编写和迭代。Knowledge 是团
 | 演进速度 | 快 | 慢但稳定 |
 | 可迁移性 | 高（通用推理模式） | 低（领域专属） |
 
-随着项目规模增长，真正持续积累价值的是 Knowledge，而不是 Skill 库。
+随着项目规模增长，真正持续积累价值的是 Knowledge，而不是 Skill 库。Skill 可以快速迭代补齐，Knowledge 的积累是不可替代的长期投入。
 
 ---
 
 # 设计 — Skill、Knowledge 与 Router
 
-## Skill：按推理模式拆分
+三个组件的分工由一个核心约束推导出来：**Skill 只定义推理模式，不包含任何领域内容。**
+
+这个约束决定了另外两层的必要性：领域内容（规范、手册、历史约束）需要有地方存放，于是有了 Knowledge；"当前任务该加载哪些知识、按什么步骤执行"需要有地方表达，于是有了 Router。三层不是凑出来的，是从这一个约束自然推导的结果。
+
+## Skill：只定义推理模式
 
 很多团队会为每个业务场景设计专用 Skill：
 
@@ -85,64 +88,24 @@ Skill 本质是几十行 Prompt，可以快速编写和迭代。Knowledge 是团
 implement-can-driver
 implement-spi-driver
 implement-uart-driver
-implement-i2c-driver
 ...（几十个）
 ```
 
-其中 `implement-can-driver` 的内容大概是：
+这是常见误区。这些 Skill 的推理模式高度相似：理解需求 → 找相关模块 → 找类似实现 → 实现 → 验证。真正在变化的是知识内容（寄存器名、配置顺序、历史约束），不是推理模式。把知识内容写进 Skill，就会不断复制出几十个结构几乎相同的文件。
 
-```markdown
-# implement-can-driver
+**Skill 的边界**：定义推理模式，不包含领域内容。"CAN 怎么过滤"、"哪个寄存器控制过滤器"不属于 Skill——正是这些内容的存在，才需要 Knowledge 和 Router。
 
-## 步骤
-1. 查看 STM32 CAN 控制器寄存器手册
-2. 配置 CAN_BTR 设置波特率
-3. 配置过滤器 CAN_FMR / CAN_FM1R
-4. 实现发送函数 HAL_CAN_AddTxMessage()
-5. 实现接收中断 HAL_CAN_RxFifo0MsgPendingCallback()
-```
+**如何建立 Skill 体系**
 
-`implement-spi-driver`、`implement-uart-driver` 的结构几乎一样，只是寄存器名字和 HAL 函数不同，于是不断复制出几十个 Skill。
+专业 SDD 工具（Superpowers/OpenSpec 等）提供的不只是推理模式——它们还包含多步骤编排、用户确认节点、系统调试、验收检查等机制，这些从头构建的复杂度远超预期。领域定制通过向 Skill 执行时注入上下文（即本文所说的 Router 文件）实现，不需要修改 Skill 本身，扩展成本很低。
 
-这是一个常见误区。这些 Skill 的**推理模式高度相似**：理解需求 → 找相关模块 → 找类似实现 → 实现 → 验证。真正在变化的是知识内容，不是推理模式。
+| 情况 | 做法 |
+|------|------|
+| 已在使用 Superpowers/OpenSpec | 直接复用，无需重新设计 Skill |
+| 需要领域专属步骤或阻断条件 | 通过 Router 注入，不改动 Skill |
+| 现有 Skill 完全无法覆盖的全新交互模式 | 才新建 Skill，以现有 Skill 为子步骤编排 |
 
-**正确做法：Skill 按 Reasoning Pattern 拆分，而不是按业务名词拆分。**
-
-> 如果已经在使用 Superpowers 或 GSD，它们的 Skill 集已经是这个结构，不需要重新设计。可以直接复用，必要时在现有 Skill 上追加领域专属的阻断条件（如"遇到 AUTOSAR 接口定义不明确时必须停下来确认"）。
-
-5~15 个 Skill 即可覆盖绝大多数开发活动：
-
-| Skill | 职责 |
-|-------|------|
-| `understand-system` | 理解系统架构与模块关系 |
-| `analyze-requirement` | 分析需求，识别影响范围 |
-| `implement-change` | 实现变更 |
-| `debug-issue` | 调试定位问题 |
-| `root-cause-analysis` | 根因分析 |
-| `review-change` | 代码审查 |
-| `refactor-module` | 重构模块 |
-| `investigate-performance` | 性能排查 |
-| `write-tests` | 编写测试 |
-| `release-delivery` | 发布交付 |
-
-**`implement-change` Skill 示例（极简）：**
-
-```markdown
-# implement-change
-
-## 步骤
-1. 阅读需求，确认影响范围
-2. 在 knowledge/ 中查找相关模块文档和历史实现
-3. 检查 coding-standard，确认约束
-4. 实现变更，逐条对照 AC 自检
-5. 运行测试，确认无回归
-
-## 约束
-- 不得跨模块直接调用内部实现
-- 所有异常必须按 coding-standard 中的规范处理
-```
-
-Skill 本身不包含任何领域知识——"CAN 怎么过滤"、"哪个寄存器控制过滤器"这些由 Knowledge 提供。
+自建 Skill 的场景极少。大多数团队真正需要投入的是 Knowledge 层和 Router 文件。
 
 ## Knowledge：五层分层模型
 
@@ -249,6 +212,14 @@ Skill 本身不包含任何领域知识——"CAN 怎么过滤"、"哪个寄存�
 
 ## Router：连接任务与知识
 
+看到这里，有一个自然的疑问：Router 的逻辑为什么不直接放进 Skill 或 Knowledge？
+
+- 放进 **Skill**：Skill 就必须感知领域（"如果是 CAN 模块，加载 can.md；如果是 SPI，加载 spi.md"），每新增一个领域都要改 Skill，通用性消失
+- 放进 **Knowledge**：Knowledge 是内容，路由规则是"哪个任务该看哪些内容"的操作元数据，混在一起后内容文件变成充斥 if/else 逻辑的配置大杂烩
+- 放进 **SDD 工作流**：工作流变成领域相关的，你就需要为嵌入式、汽车、AI 平台各维护一套 SDD，与"一套通用工作流 + 多个领域 Router"的目标背道而驰
+
+Router 的作用是做这个隔离：Skill 不感知领域，Knowledge 不感知任务，Router 是两者之间"任务 × 领域"的映射层。改领域？改 router，不动 Skill。加知识？更新 router 的 load 列表，Skill 照常工作。
+
 Knowledge Router 的职责不只是"加载知识"，还包括**为当前任务细化执行步骤**。一个 router 文件同时定义了 steps 和 load，Skill 读到后按 router 提供的步骤执行，而不是按自己的通用步骤——两者不冲突，router 的 steps 是对 Skill 通用步骤的具体化。
 
 ```yaml
@@ -270,7 +241,17 @@ load:
   - can-history
 ```
 
-Skill 本身无需修改——它提供通用推理框架，Router 文件提供领域专属的步骤细化和知识装载。**需要为新领域或新模块定制行为时，新增或修改 router 文件，而不是改 Skill**。
+**Skill 本身无需修改**——它提供通用推理框架，Router 文件提供领域专属的步骤细化和知识装载。需要为新领域或新模块定制行为时，新增或修改 router 文件，而不是改 Skill。
+
+不同场景的步骤约束如何应对：
+
+| 场景 | 应对方式 |
+|------|---------|
+| 单任务需要领域专属步骤顺序（如 CAN 寄存器配置顺序） | 写入 router 的 `steps` 字段 |
+| 单任务需要加载特定领域知识 | 写入 router 的 `load` 字段 |
+| 多阶段流程需要用户在关键节点确认 | OpenSpec/Superpowers propose → review → apply |
+| 跨所有任务的项目级约束（如安全关键模块必须留审计记录） | 写入 Knowledge 文件（如 `coding-standard.md`） |
+| 真正需要不同交互模式的全新流程 | 新建 Skill 文件，以现有 Skill 为子步骤进行编排 |
 
 **Router 的成熟度演进：**
 
@@ -281,27 +262,9 @@ Skill 本身无需修改——它提供通用推理框架，Router 文件提供�
 
 成熟阶段，Skill 保持稳定，所有领域定制都在 Router 层完成。
 
-## 各模块分工与步骤约束的应对方案
+---
 
-三个层次各司其职，不同的定制需求对应不同的层次：
-
-| 层次 | 工具 | 职责 | 定制方式 |
-|------|------|------|---------|
-| **工作流** | OpenSpec/Superpowers | 多任务编排、用户确认节点、交互模式 | Propose 时读入 Router，生成的开发步骤自然满足领域要求；极少数情况才需写新 Skill |
-| **任务** | Knowledge Router | 单任务内步骤细化 + 知识装载 | 新增或修改 router 文件，Skill 不动 |
-| **内容** | Knowledge 文件 | 领域知识本身 | 按五层模型组织，持续积累 |
-
-**不同场景下步骤约束的具体应对：**
-
-| 场景 | 应对方式 |
-|------|---------|
-| 单任务需要领域专属步骤顺序（如 CAN 寄存器配置顺序） | 写入 router 的 `steps` 字段 |
-| 单任务需要加载特定领域知识 | 写入 router 的 `load` 字段 |
-| 多阶段流程需要用户在关键节点确认 | OpenSpec/Superpowers propose 读入 router，proposal 文档包含 router 定义的步骤，用户 review 后再 apply |
-| 跨所有任务的项目级约束（如安全关键模块必须留审计记录） | 写入 Knowledge 文件（如 `coding-standard.md`），作为 router load 的内容之一 |
-| 真正需要不同交互模式的全新流程 | 新建 Skill 文件，以现有 Skill 为子步骤进行编排 |
-
-Skill 文件本身几乎不需要修改——它是通用推理框架，领域定制通过 Router 和 Knowledge 注入。
+# 落地 — 知识管理与推荐架构
 
 ## 执行纪律：防止幻觉与跳步
 
@@ -317,7 +280,7 @@ Skill 文件本身几乎不需要修改——它是通用推理框架，领域�
 | 逐条验收 | 每条 AC 注明"已覆盖/未覆盖/不适用" | 有未覆盖 AC 时不得声明完成 |
 | 运行测试 | 粘贴实际测试输出 | 不得仅声明"测试通过" |
 
-更系统的做法是引入**中间确认文档**——OpenSpec/Superpowers 的 propose → review → apply 模式就是这套机制，Agent 在实现前先产出一份结构化文档，用户确认后再开始写代码。Propose 时读入 router，生成的文档步骤自然包含领域专属的约束：
+更系统的做法是引入**中间确认文档**——OpenSpec/Superpowers 的 propose → review → apply 就是这套机制，Agent 在实现前先产出一份结构化文档，用户确认后再开始写代码：
 
 ```markdown
 # 变更确认文档：实现 CAN 过滤功能
@@ -346,10 +309,6 @@ Skill 文件本身几乎不需要修改——它是通用推理框架，领域�
 ```
 
 "待确认项"是关键——它强迫 Agent 在动手前把不确定的部分显式列出，而不是悄悄假设一个答案往下走。
-
----
-
-# 落地 — 知识管理与推荐架构
 
 ## 知识存储原则
 
@@ -380,6 +339,8 @@ Skill 文件本身几乎不需要修改——它是通用推理框架，领域�
 
 ## 推荐架构
 
+目录结构对应五层模型：
+
 ```
 skills/
 ├── understand-system
@@ -390,20 +351,20 @@ skills/
 └── investigate-performance
 
 knowledge/
-├── architecture/
-├── coding-standard/
-├── adr/
-├── embedded/
+├── architecture/          # Layer 1：Architecture Knowledge
+├── coding-standard/       # Layer 2：Coding Standards
+├── adr/                   # Layer 3：ADR
+├── embedded/              # Layer 4：Domain Knowledge
 │   ├── stm32/
 │   ├── freertos/
 │   ├── linux-driver/
 │   └── bsp/
-├── automotive/
+├── automotive/            # Layer 4：Domain Knowledge
 │   ├── autosar/
 │   ├── can/
 │   ├── diagnostics/
 │   └── ota/
-└── project/
+└── project/               # Layer 5：Project Knowledge
     ├── module-map/
     ├── examples/
     ├── bug-history/
@@ -419,7 +380,7 @@ router/
 
 | 维度 | 传统认知 | AI Native 认知 |
 |------|----------|----------------|
-| 核心流程 | SDD → Skill → Code | 自定义 SDD + Engineering Knowledge System |
+| 核心流程 | SDD → Skill → Code | SDD 工作流 + Engineering Knowledge System |
 | 质量瓶颈 | Spec 写得够不够详细 | Engineering Knowledge 积累得够不够丰富 |
 | 长期资产 | 流程文档 | Knowledge System |
 
@@ -429,4 +390,4 @@ router/
 - **Knowledge** — 决定 Agent 思考什么（领域内容）
 - **Router** — 决定 Agent 在当前任务中应该看到什么（上下文装载）
 
-工程知识体系与自定义 SDD 配合使用时效果最佳：SDD 是推理的骨架，Knowledge 是推理的血肉。随着项目规模增长，持续积累 Engineering Knowledge System 是复杂领域代码生成质量能否持续提升的决定性因素。
+工程知识体系与 SDD 工作流配合使用时效果最佳：SDD 是推理的骨架，Knowledge 是推理的血肉。随着项目规模增长，持续积累 Engineering Knowledge System 是复杂领域代码生成质量能否持续提升的决定性因素。
