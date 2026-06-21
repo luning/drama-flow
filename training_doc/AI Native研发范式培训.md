@@ -139,6 +139,7 @@
 
 - SDD 本质是流程状态机：阶段定义 → 工件 Schema → 关卡条件 → 上下文加载策略
 - 四要素设计：上下文加载策略、任务拆解规则、验证关卡、归档与变更追溯
+- 落地方式：Claude Code（Slash Commands + Subagent + Hooks）/ OpenCode（Custom Commands + Agent 角色 + Permission 分阶段收权 + Plugin）
 - [演示] 从零构建最小可用 SDD：PLAN.md 模板 + /execute 命令 + subagent verify
 - [练习] 为案例项目定制最小 SDD 流水线，跑通一个小需求
 
@@ -338,7 +339,7 @@
 
 **12.2 三类进化场景（问题现象 → Harness 层级）**
 
-- 操作安全：每次询问权限 → 权限配置；不询问删文件 → 安全规则；多 Agent 改同一文件 → Worktree 隔离
+- 操作安全：每次询问权限 → 权限配置（settings.json / opencode.json）；不询问删文件 → 安全规则；多 Agent 改同一文件 → Worktree 隔离
 - 任务边界：直接写代码没澄清 → CLAUDE.md 任务启动规则；宣布完成但没验证 → DoD；长会话性能下降 → 上下文重置时机
 - 经验沉淀：选了已排除的方案 → ADR；口头纠正下次又犯 → 写入永久规则；规则文件过长被忽略 → 封装为 Skill
 
