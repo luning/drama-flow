@@ -59,11 +59,32 @@
    - H5: 页面组件只负责布局，Store 管理状态，API 层封装网络请求
    - 后端: API 路由层不直接操作数据库，通过 Service 层调用
 
+## OpenSpec 使用规范
+
+项目使用自定义 schema `dramaflow`（fork 自 `spec-driven`），已有 spec：
+`user-auth`, `drama-catalog`, `watch-record`, `jsbridge-protocol`, `player-state-machine`, `video-player`, `video-sign-url`
+
+```bash
+# 创建新 change（务必指定 --schema dramaflow）
+openspec new change <name> --schema dramaflow
+
+# 查看所有 spec
+openspec list --specs
+
+# 查看当前 change 状态
+openspec status --change <name>
+```
+
+Spec 格式约定（dramaflow schema）：
+- 每个 Requirement 用 `**Scope**: Backend | Android | H5 | JSBridge` 标注所属端
+- Backend/JSBridge Requirement 包含 `**Endpoint**` / `**Request**` / `**Response**` 描述
+- Scenario 必须用 4 个 `#`（`####`），不用 3 个或 bullet
+
 ## SDD 最小约束
 
 在接收任务和生成代码时，必须遵循以下规则：
 
-1. **接受任务前**：先阅读对应模块的 SPEC.md 中的规格定义和验收标准（AC），确认理解需求范围
+1. **接受任务前**：先阅读 `openspec/specs/<module>/spec.md` 中的规格和 AC，确认理解需求范围
 2. **生成代码后**：逐条自检 AC，确保所有验收标准被覆盖
 3. **测试**: 修改 API 后运行 `pytest`，确保不破坏已有行为级测试
 4. **Spec 变更**: 修改已有 AC 时标注 `[Changed]` 保留历史意图，而非直接覆盖
