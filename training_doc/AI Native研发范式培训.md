@@ -123,25 +123,21 @@
 **4.1 可执行 Spec — 格式、AC 质量与失败模式**
 
 - 五段式：领域名词 → 前置条件 → 主流程 → 异常处理 → 验收标准（AC）
-- 三方消费：开发者自检、AI Agent 自检、自动化测试生成
-- AC 质量标准：可验证、无歧义、无实现细节
-- 失败模式：Agent 填充错误实现；约束在新 Session 中遗失；多 Agent 出现分歧
+- AC 质量标准：可验证、无歧义、无实现细节；三方共用：开发者自检、Agent 自检、自动化测试
+- 失败模式：Agent 填充错误实现；约束跨 Session 遗失；多 Agent 出现分歧
 - [练习] 模糊 PRD → 可执行 Spec 全过程
 
-**4.2 SDD 工具生态 — 原理与选型**
+**4.2 SDD 工具生态 — 工具如何突破 Prompt 的结构性限制**
 
-- Prompt SDD 最小约束：接受任务前读 AC → 完成后逐条自检 → 变更时标注
-- Prompt SDD 的规模瓶颈：约束易遗漏、AC 无法自动验证、变更无结构化追溯
-- SDD 基本循环：讨论 → 规划 → 执行 → 验证 → 归档
-- 工具原理及选型：GSD、OpenSpec 等工具的设计原理与适用场景对比
+- Prompt SDD 局限：强制验证 / 上下文隔离 / 审计追踪 / 变更隔离
+- 主流工具定位与选型：OpenSpec（棕地变更隔离）、Superpowers（工程纪律层）等
+- OpenSpec 剖析：三层架构；Schema 定义工件依赖图；Explore → Propose → Apply → Archive
 
-**4.3 自定义 SDD — 定制你自己的 Agent 编排**
+**4.3 定制 SDD 工具 — 以 OpenSpec 为例**
 
-- SDD 本质是流程状态机：阶段定义 → 工件 Schema → 关卡条件 → 上下文加载策略
-- 四要素设计：上下文加载策略、任务拆解规则、验证关卡、归档与变更追溯
-- 落地方式：Claude Code（Slash Commands + Subagent + Hooks）/ OpenCode（Custom Commands + Agent 角色 + Permission 分阶段收权 + Plugin）
-- [演示] 从零构建最小可用 SDD：PLAN.md 模板 + /execute 命令 + subagent verify
-- [练习] 为案例项目定制最小 SDD 流水线，跑通一个小需求
+- Schema 是 OpenSpec 的扩展单元：定义 artifact 列表、依赖链、apply 行为
+- template vs instruction：template 控制工件输出结构，instruction 控制 AI 填充行为
+- [演示] 定制 DramaFlow 的 schema
 
 ---
 
