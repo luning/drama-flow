@@ -1,0 +1,26 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "skill": {
+      "*": "allow",
+      "superpowers-*": "deny"
+    }
+  },
+  "agent": {
+    "superpowers": {
+      "permission": { "skill": { "superpowers-*": "allow" } }
+    },
+    "superpowers-spec-writer": {
+      "permission": { "skill": { "superpowers-*": "allow" } }
+    },
+    "superpowers-plan-writer": {
+      "permission": { "skill": { "superpowers-*": "allow" } }
+    },
+    "superpowers-implementer": {
+      "permission": { "skill": { "superpowers-*": "allow" } }
+    },
+    "superpowers-code-reviewer": {
+      "permission": { "skill": { "superpowers-*": "allow" } }
+    }
+  }
+}
