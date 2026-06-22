@@ -250,26 +250,24 @@
 
 **9.1 问题与方案全景**
 
-- 复杂领域（嵌入式、汽车软件、交易系统）大量关键工程知识散落在代码库外——芯片手册、历史故障、隐性约定，通用 SDD 无法传递；完整公式是 `Spec + Engineering Knowledge + Code → Implementation`
-- 解法：SDD + 工程知识体系双轨并行——SDD 定义推理模式，Knowledge 决定推理时能看到什么；Router 为 SDD 注入领域专属步骤并按需装载知识，Skill 本身保持通用不变
+- 复杂领域大量关键知识散落在代码库外（芯片手册、历史故障、隐性约定）；`Spec + Engineering Knowledge → Implementation`
+- 双轨并行：SDD 定推理模式，Knowledge 定内容，Router 为 SDD 注入领域上下文，Skill 保持通用不变
 
 **9.2 Skill vs Knowledge — 核心资产**
 
-- Skill 是推理模式（快速迭代，价值占比 ~5–10%）；Knowledge 是领域沉淀（不可快速复制，~90–95%）
-- 常见误区：为每个业务场景建专用 Skill → 几十个结构相同文件；正确做法：Skill 只定推理模式，领域内容全部归入 Knowledge
+- Skill 是推理模式（价值 ~5–10%）；Knowledge 是领域沉淀（~90–95%）
+- 常见误区：为每个场景建专用 Skill → 几十个结构相同文件；正确：Skill 只定推理模式，领域内容归入 Knowledge
 
 **9.3 Knowledge 五层分层模型**（对应第七部分项目空间的文档层与经验层）
 
-- **L1 架构知识**：系统结构、模块边界——理解任何任务的基础
-- **L2 编码规范**：命名、日志、异常处理——**每个任务都加载**
-- **L3 ADR**：关键决策理由与被否决方案，让 Agent 理解"为什么"
-- **L4 领域知识**：芯片手册、外部规范——可跨项目共享，建独立 repo
-- **L5 项目知识**：模块地图、历史 Bug、隐性约定——项目专属，变动最频繁
+- 五层：架构知识 / 编码规范 / ADR / 领域知识 / 项目知识
+- 存储选型：单项目 → `knowledge/` 目录；多项目共享 → 独立 repo + submodule；体量过大 → RAG；优先 git，而非 Wiki
 
-**9.4 Router — 为 SDD 注入领域步骤与知识**
+**9.4 Router — 为 SDD 注入领域上下文**
 
-- Router 定义 `steps`（领域专属步骤）和 `load`（知识文件列表），Skill 无需修改；演进：内嵌路由 → 独立 Router 文件
-- 存储选型：单项目 → `knowledge/` 目录；多项目共享 → 独立 repo + submodule；体量过大 → RAG
+- Router 三职责：**选择器**（识别场景）/ **加载器**（注入知识）/ **精化器**（细化步骤）
+- 使用 OpenSpec 时，自定义 Schema 天然承担 Router 职责
+- 演进路径：Skill 内嵌路由（初级）→ 独立 Router 文件（成熟）
 
 ---
 
