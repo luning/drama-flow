@@ -16,9 +16,9 @@
 
 ---
 
-# 诊断 — 复杂项目的生成质量瓶颈
+## 诊断 — 复杂项目的生成质量瓶颈
 
-## Agent 视角下的 SDD
+### Agent 视角下的 SDD
 
 Agent 执行时真正看到的只有两样东西：**Context** 和 **Instructions**。SDD 的各组成部分，对 Agent 而言本质上只有两类：
 
@@ -41,7 +41,7 @@ Agent 执行时真正看到的只有两样东西：**Context** 和 **Instruction
 Spec + Engineering Knowledge → Implementation
 ```
 
-## Knowledge：最难积累的核心资产
+### Knowledge：最难积累的核心资产
 
 Skill 本质是几十行 Prompt，可以快速编写和迭代。Knowledge 是团队多年的沉淀，无法快速复制。
 
@@ -54,7 +54,7 @@ Skill 本质是几十行 Prompt，可以快速编写和迭代。Knowledge 是团
 
 ---
 
-# 设计 — Skill、Knowledge 与 Router
+## 设计 — Skill、Knowledge 与 Router
 
 三个组件的分工由一个核心约束推导出来：**Skill 只定义推理模式，不包含任何领域内容。**
 
@@ -63,7 +63,7 @@ Skill 本质是几十行 Prompt，可以快速编写和迭代。Knowledge 是团
 - 领域内容（规范、手册、历史约束）需要有地方存放 → **Knowledge**
 - "当前任务该加载哪些知识、按什么步骤执行"需要有地方表达 → **Router**
 
-## Skill：只定义推理模式
+### Skill：只定义推理模式
 
 很多团队会为每个业务场景设计专用 Skill：
 
@@ -88,9 +88,9 @@ implement-uart-driver
 | 需要领域专属步骤或阻断条件 | 通过 Router 注入，不改动 Skill |
 | 现有 Skill 完全无法覆盖的全新交互模式 | 才新建 Skill，以现有 Skill 为子步骤编排 |
 
-## Knowledge：五层分层模型
+### Knowledge：五层分层模型
 
-### Layer 1：Architecture Knowledge
+#### Layer 1：Architecture Knowledge
 
 描述系统的整体结构，是 Agent 理解任何任务的基础。
 
@@ -107,7 +107,7 @@ implement-uart-driver
 - TTS 无状态，接收文本返回音频流
 ```
 
-### Layer 2：Coding Standards
+#### Layer 2：Coding Standards
 
 规定项目内的统一编码规则，防止 Agent 生成风格不一致或违反约束的代码。
 
@@ -129,7 +129,7 @@ implement-uart-driver
 - 错误向上传递，不在中间层静默吞掉
 ```
 
-### Layer 3：ADR（Architecture Decision Record）
+#### Layer 3：ADR（Architecture Decision Record）
 
 记录关键设计决策的**理由**，让 Agent 理解"为什么这么做"而不只是"做了什么"。
 
@@ -150,7 +150,7 @@ implement-uart-driver
 - gRPC：引入网络开销，同进程内不必要
 ```
 
-### Layer 4：Domain Knowledge
+#### Layer 4：Domain Knowledge
 
 嵌入式和汽车软件最重要的一层，存储领域专属的外部技术知识。
 
@@ -171,7 +171,7 @@ implement-uart-driver
 - 过滤器组编号从0开始，STM32F4 最多28组
 ```
 
-### Layer 5：Project Knowledge
+#### Layer 5：Project Knowledge
 
 企业最有价值的一层，记录在代码和文档中无法直接读出的隐性知识。
 
@@ -191,7 +191,7 @@ implement-uart-driver
   修复：增加队列水位监控，超过 80% 触发 LOGW
 ```
 
-### 分层的实践意义
+#### 分层的实践意义
 
 五层在三个维度上有实质差异，直接影响知识库的组织和 Router 的写法：
 
@@ -208,7 +208,7 @@ implement-uart-driver
 - **L4 可以跨项目共享**：STM32 手册、AUTOSAR 规范和具体项目无关，可以建独立 knowledge repo，多个项目通过 submodule 引用同一份，更新一次、全部受益。
 - **L2 需要全量加载**：编码规范适用于所有任务，Router 的 load 字段应始终包含它；其余各层按任务需要按需加载，避免无关知识干扰 Agent 推理。
 
-## Router：连接任务与知识
+### Router：连接任务与知识
 
 Router 的逻辑为什么不直接放进 Skill 或 Knowledge？
 
@@ -245,7 +245,7 @@ load:
 | **初级**：知识体系刚建立 | Skill 内嵌 Routing 逻辑（识别领域 → 查找知识 → 实现） |
 | **成熟**：知识库规模较大 | Router 独立：Task → Router → Context + Steps → Skill |
 
-### Router 字段的本质
+#### Router 字段的本质
 
 Router 示例中的字段不是固定格式，而是从三个本质职责推导出来的：
 
@@ -257,7 +257,7 @@ Router 示例中的字段不是固定格式，而是从三个本质职责推导�
 
 设计具体 Router 格式时，从这三个职责出发按需设计字段即可，不必照搬示例。
 
-### 用 OpenSpec Schema 实现 Router
+#### 用 OpenSpec Schema 实现 Router
 
 使用 OpenSpec 时，**自定义 Schema 天然承担了 Router 的职责**，三个职责在 OpenSpec 里都有对应位置：
 
@@ -277,9 +277,9 @@ Router 示例中的字段不是固定格式，而是从三个本质职责推导�
 
 ---
 
-# 落地 — 知识管理与推荐架构
+## 落地 — 知识管理与推荐架构
 
-## 执行纪律：防止幻觉与跳步
+### 执行纪律：防止幻觉与跳步
 
 有了知识体系还不够——还需要解决"Agent 是否真的做完了每一步"。幻觉完成（声称做了但没做）和跳步（遇到不确定直接假设）是复杂项目最常见的执行问题。
 
@@ -295,7 +295,7 @@ Router 示例中的字段不是固定格式，而是从三个本质职责推导�
 
 更系统的做法是引入**中间确认文档**——OpenSpec/Superpowers 的 propose → review → apply 就是这套机制：Agent 在实现前先输出一份包含"需求理解 / 影响范围 / 依据的知识 / **待确认项**"的结构化文档，用户确认后再开始写代码。"待确认项"强迫 Agent 在动手前把不确定的部分显式列出，而不是悄悄假设。
 
-## 知识存储原则
+### 知识存储原则
 
 对 Agent 来说，git repo 内的文件是最易访问的知识形式，优先于任何外部系统。知识的存储位置从两个维度判断：
 
@@ -310,7 +310,7 @@ Router 示例中的字段不是固定格式，而是从三个本质职责推导�
 - 多项目共享不是 RAG 的理由——独立 git repo 同样可以共享，且版本可以 pin
 - 历史故障、Review 经验等应在 git 里管理，而不是放 Wiki——Wiki 对 Agent 是额外的访问边界
 
-## 推荐架构
+### 推荐架构
 
 目录结构对应五层模型（embedded/automotive 为领域示例，按实际领域替换）：
 
@@ -342,7 +342,7 @@ router/
 
 ---
 
-# 结论
+## 结论
 
 | 维度 | 传统认知 | AI Native 认知 |
 |------|----------|----------------|
