@@ -1,24 +1,5 @@
 # Agent 驱动的探索性测试 - 用 Claude 代替脚本做 UI 决策
 
-## 目录
-
-1. [两个维度：驱动方式 × 执行工具](#两个维度驱动方式-执行工具)
-2. [脚本驱动](#脚本驱动)
-   - [Espresso（单 App，白盒）](#espresso单-app白盒)
-   - [UI Automator（跨 App，黑盒）](#ui-automator跨-app黑盒)
-   - [运行](#运行)
-3. [Agent 驱动（以 test-agent 为例）](#agent-驱动以-testagent-为例)
-   - [架构：决策层 + 执行层](#架构决策层-执行层)
-   - [执行循环](#执行循环)
-   - [核心模块](#核心模块)
-   - [screen_knowledge：跨会话的操作经验库](#screen_knowledge跨会话的操作经验库)
-   - [Mission 文件示例](#mission-文件示例)
-4. [执行层演进路线](#执行层演进路线)
-   - [WebView 内嵌 H5 的精确定位](#webview-内嵌-h5-的精确定位)
-5. [与 SPEC 验收标准的关系](#与-spec-验收标准的关系)
-
----
-
 ## 两个维度：驱动方式 × 执行工具
 
 Android 端测试可以沿两个独立维度做选择：
@@ -49,51 +30,34 @@ Android 端测试可以沿两个独立维度做选择：
 声明式：**找控件 → 执行操作 → 断言结果**
 
 ```kotlin
-onView(withId(R.id.login_button))
-    .perform(click())
-    .check(matches(isDisplayed()))
+// 从 AC 直接映射到测试用例
+@Test
+fun login_success() {                          // 对应 AC-1
+    onView(withId(R.id.username)).perform(typeText("test@test.com"))
+    onView(withId(R.id.password)).perform(typeText("123456"))
+    onView(withId(R.id.login_btn)).perform(click())
+    onView(withId(R.id.home_title)).check(matches(isDisplayed()))
+}
 
-// 常用 Matcher：withId / withText / withTag / hasDescendant / allOf
-// 常用 Action：click / typeText / scrollTo / swipeLeft / closeSoftKeyboard
-// 常用 Assert：isDisplayed / withText / isEnabled / isSelected / doesNotExist
+// 常用 Matcher：withId / withText / withTag / allOf
+// 常用 Action：click / typeText / scrollTo / swipeLeft
+// 常用 Assert：isDisplayed / withText / isEnabled / doesNotExist
 // 异步等待：IdlingResource（自动等，不用 sleep）
 ```
 
-**从 AC 直接映射到测试用例**（与 SPEC.md 对应）：
-
-```kotlin
-@RunWith(AndroidJUnit4::class)
-class LoginTest {
-    @Test
-    fun login_success() {                          // 对应 AC-1
-        onView(withId(R.id.username)).perform(typeText("test@test.com"))
-        onView(withId(R.id.password)).perform(typeText("123456"))
-        onView(withId(R.id.login_btn)).perform(click())
-        onView(withId(R.id.home_title)).check(matches(isDisplayed()))
-    }
-}
-```
-
-也可以用 Android Studio 录制：Run > Record Espresso Test，点击手机操作自动生成代码。
-
 ### UI Automator（跨 App，黑盒）
-
-命令式：**查找元素 → 操作**
 
 ```kotlin
 val device = UiDevice.getInstance(instrumentation)
 device.findObject(By.text("登录")).click()
 device.findObject(By.res("com.dramaflow:id/btn")).click()
-device.findObject(By.desc("菜单")).click()
-
-// 跨 App：device.pressHome() / pressRecentApps() / openQuickSettings()
-// 等待：device.wait(Until.findObject(...), 5000)
+device.wait(Until.findObject(By.text("首页")), 5000)
 ```
 
 ### 运行
 
 ```bash
-# 运行全部测试（Espresso / UI Automator 统一入口）
+# 运行全部测试
 adb shell am instrument -w com.dramaflow.test/androidx.test.runner.AndroidJUnitRunner
 
 # 指定单个测试类
@@ -106,7 +70,7 @@ adb shell am instrument -w -e class com.dramaflow.LoginTest com.dramaflow.test/.
 
 Claude 在运行时看截图决策，适合探索性验收——不需要提前知道 UI 结构，也能处理意外弹窗和布局变化。
 
-test-agent 是项目使用的演示性质的 Python CLI 工具集，以 ADB 为执行层，由 Claude Code 驱动测试循环。
+test-agent 是项目使用的演示性质 Python CLI 工具集，以 ADB 为执行层，由 Claude Code 驱动测试循环。
 
 ### 架构：决策层 + 执行层
 
@@ -128,67 +92,15 @@ test-agent 是项目使用的演示性质的 Python CLI 工具集，以 ADB 为�
 ### 执行循环
 
 ```
-Observe（截图 + UI 树）
-   ↓
-Plan（Claude 分析状态，决定下一步）
-   ↓
-Locate（定位目标元素）
-   ↓
-Act（发送操作指令到设备）
-   ↓
-Record（记录结果、截图存档）
-   ↓ 循环直到 mission 完成或超时
+Observe（截图 + UI 树）→ Plan（分析状态，决定下一步）→ Locate（定位目标元素）
+   → Act（发送操作指令）→ Record（记录结果、截图存档）→ 循环直到完成或超时
 ```
 
-### 核心模块
+核心模块：`adb_client / device / element_finder / crash_monitor / verifier / reporter`
 
-- **核心模块**：adb_client / device / element_finder / crash_monitor / verifier / reporter
-- **设备交互**：通过 ADB 命令（`input tap`、`screencap`、`uiautomator dump`、`logcat`）
-- **测试任务**：YAML 定义的 mission 文件（smoke_test / login_flow / browse_content / playback_test）
+### Mission 文件
 
-### screen_knowledge：跨会话的操作经验库
-
-Agent 探索中会遇到各种页面陷阱——键盘遮挡按钮、系统手势误触、单 Activity 架构导致的"Screen unchanged"误判等。如果不记录，每次新会话都要重新踩坑。
-
-`screen_knowledge/` 目录以**页面名称为索引**存储这些经验：
-
-```
-test-agent/screen_knowledge/
-  LoginFragment.md    ← 登录页的已知陷阱
-  HomeFragment.md     ← 首页（WebView）的已知陷阱
-  README.md
-```
-
-**使用时机**：`info` 命令返回当前 Activity/Fragment 名称后，先查是否有对应的 `.md` 文件，有则读取再操作。
-
-```
-python test-agent/run.py info
-→ Activity: LoginFragment
-
-test-agent/screen_knowledge/LoginFragment.md 存在 → 读取
-→ 陷阱：输入密码后键盘遮挡登录按钮，需先按 BACK 收起键盘
-→ 带着这个认知再执行操作，不会重复踩坑
-```
-
-**文件内容示例**：
-
-```markdown
-# LoginFragment
-
-## 陷阱
-- 键盘遮挡：输入密码后按 BACK 收起键盘，再点登录按钮
-- 单 Activity：tap 报 "Screen unchanged" 是正常的，登录成功标志
-  是 nav_host_fragment 中出现 WebView 节点
-- 底部导航栏始终可见：不要因为看到首页/发现/我的就以为已登录
-```
-
-**与 mission 文件的分工**：
-- **mission**：描述要做什么（流程目标、验收标准）
-- **screen_knowledge**：描述操作这个页面时的已知陷阱
-
-两者都在执行前读取，mission 确定方向，screen_knowledge 避免已知坑。
-
-### Mission 文件示例
+Mission 直接对应 SPEC.md 中的主流程——**AC 定义验收标准，mission 定义验收任务**。
 
 ```yaml
 # missions/login_flow.yaml
@@ -205,7 +117,32 @@ steps_hint:
   - 等待跳转，验证首页内容
 ```
 
-Mission 直接对应 SPEC.md 中的主流程和 AC——**AC 定义验收标准，mission 定义验收任务。**
+### screen_knowledge：跨会话的操作经验库
+
+Agent 探索中会遇到各种页面陷阱——键盘遮挡按钮、系统手势误触、单 Activity 架构导致的"Screen unchanged"误判等。如果不记录，每次新会话都要重新踩坑。
+
+`screen_knowledge/` 目录以**页面名称为索引**存储这些经验。`info` 命令返回当前 Activity/Fragment 名称后，先查是否有对应的 `.md` 文件，有则读取再操作：
+
+```
+python test-agent/run.py info
+→ Activity: LoginFragment
+
+test-agent/screen_knowledge/LoginFragment.md 存在 → 读取
+→ 陷阱：输入密码后键盘遮挡登录按钮，需先按 BACK 收起键盘
+→ 带着这个认知再执行操作，不会重复踩坑
+```
+
+文件内容示例：
+
+```markdown
+# LoginFragment
+
+## 陷阱
+- 键盘遮挡：输入密码后按 BACK 收起键盘，再点登录按钮
+- 单 Activity：tap 报 "Screen unchanged" 是正常的，登录成功标志
+  是 nav_host_fragment 中出现 WebView 节点
+- 底部导航栏始终可见：不要因为看到首页/发现/我的就以为已登录
+```
 
 ---
 
@@ -225,46 +162,33 @@ Agent 驱动和脚本驱动的执行层都可以从 ADB 升级到 UI Automator S
 
 ### WebView 内嵌 H5 的精确定位
 
-ADB 和 UI Automator 都把 WebView 当作单个不透明节点处理——能看到渲染结果（截图），但无法获取 H5 内部的 DOM 结构。当 H5 元素密集或布局动态变化时，坐标点击容易偏。
-
-解决方案是通过 **Chrome DevTools Protocol（CDP）** 直接访问 WebView 的 DOM 层：
+ADB 和 UI Automator 都把 WebView 当作单个不透明节点处理——能看到截图，但无法获取 H5 内部 DOM 结构。通过 **Chrome DevTools Protocol（CDP）** 可以直接访问 WebView 的 DOM 层：
 
 ```kotlin
-// 在 App 中开启 WebView 远程调试（开发/测试构建才开启）
+// App 中开启 WebView 远程调试（仅 DEBUG 构建）
 WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
 ```
 
 ```bash
-# 端口转发，让 PC 能访问设备上的 WebView 调试端口
 adb forward tcp:9222 localabstract:chrome_devtools_remote
-
-# 查看当前可调试的 WebView 列表
-curl http://localhost:9222/json
+curl http://localhost:9222/json    # 查看可调试的 WebView 列表
 ```
-
-开启后，可以用支持 CDP 的工具（如 Playwright、Puppeteer）直接操作 WebView 内的 H5：
 
 ```python
 # Playwright 连接到 Android WebView
 browser = await playwright.chromium.connect_over_cdp("http://localhost:9222")
 page = browser.contexts[0].pages[0]
-
-# 精确定位 DOM 元素，不依赖坐标
 await page.click("text=登录")
 await page.fill("#username", "test@test.com")
-element = await page.query_selector(".drama-card:first-child")
-box = await element.bounding_box()   # 获取精确位置
 ```
 
 | | ADB 坐标点击 | UI Automator Server | CDP（WebView 专用）|
 |---|---|---|---|
-| **定位方式** | 像素坐标（视觉估算）| 元素 API（By.text/By.res）| CSS 选择器 / XPath / 文本 |
 | **H5 内部元素** | ❌ 无法区分 | ❌ WebView 是黑盒 | ✅ 完整 DOM 访问 |
 | **API 请求拦截** | ❌ | ❌ | ✅ 可拦截/修改网络请求 |
 | **JS 执行** | ❌ | ❌ | ✅ 可直接执行 JS |
-| **适用场景** | 通用操作 | 原生控件 | H5 内容精确验收 |
 
-**在 test-agent 中的结合方式**：原生层（登录页、播放器）继续用 ADB/UI Automator，进入 WebView 后切换到 CDP 通道操作 H5 内容，Claude 的决策层不变，只替换执行层的调用路径。
+在 test-agent 中的结合方式：原生层（登录页、播放器）继续用 ADB/UI Automator，进入 WebView 后切换到 CDP 通道操作 H5 内容，决策层不变。
 
 ---
 
