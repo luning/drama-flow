@@ -1,4 +1,6 @@
-# AI-Native 研发范式课程大纲
+AI-Native 研发范式培训
+
+# 课程大纲
 
 ## 第一部分：认知地图 — AI Native 的本质与 Harness Engineering（约 1h）
 
