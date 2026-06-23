@@ -5,19 +5,9 @@
 1. [什么是项目空间](#什么是项目空间)
 2. [一个典型的 Harness 目录树](#一个典型的-harness-目录树)
 3. [代码库基础结构 — Harness 的地基](#代码库基础结构-harness-的地基)
-   - [利用 DDD 划分模块边界](#利用-ddd-划分模块边界)
-   - [接口契约标准化（OpenAPI / Protobuf）](#接口契约标准化openapi-protobuf)
 4. [Harness 的四个层级](#harness-的四个层级)
-   - [1. 文档层 — 渐进披露，按需下钻](#1-文档层-渐进披露按需下钻)
-   - [2. 经验层 — 让 Agent 不踩同样的坑](#2-经验层-让-agent-不踩同样的坑)
-   - [3. 约束层 — 可执行规则，而不是口头约定](#3-约束层-可执行规则而不是口头约定)
-   - [4. 执行层 — Agent 的行动与反馈回路](#4-执行层-agent-的行动与反馈回路)
 5. [改造优先级](#改造优先级)
 6. [Harness 的团队治理与 Git 管理](#harness-的团队治理与-git-管理)
-   - [Git 提交边界](#git-提交边界)
-   - [Code Review 策略](#code-review-策略)
-   - [个人偏好管理："分层覆盖"模型](#个人偏好管理分层覆盖模型)
-   - [经验文件的质量管控](#经验文件的质量管控)
 7. [Memory：Agent 自管理的跨会话持久化](#memoryagent-自管理的跨会话持久化)
 
 ---
@@ -28,9 +18,7 @@
 
 ## 什么是项目空间
 
-Harness 由两部分构成：**Agent 内核**（模型本身、推理机制、上下文压缩等）和**项目空间**。内核是 AI 工具厂商提供的，工程师无法直接干预；而项目空间是工程师和团队完全自主管理的部分——代码库结构、文档、规则文件、工具配置、经验沉淀，每一项都是团队可以主动建设和持续演化的工程制品。
-
-**Harness Engineering 的实质，就是把项目空间建设好。** 模型在运行时能看到什么、能调用什么、被什么规则约束——这些全由项目空间决定。一个粗糙的项目空间，再强的模型也只能低效试探；一个精心建设的项目空间，普通模型也能稳定完成复杂任务。
+Harness 由两部分构成：**Agent 内核**（模型本身，厂商提供，无法干预）和**项目空间**（代码库结构、文档、规则文件、工具配置，团队完全自主管理）。**Harness Engineering 的实质，就是把项目空间建设好**——模型运行时能看到什么、调用什么、被什么规则约束，全由项目空间决定。一个精心建设的项目空间，普通模型也能稳定完成复杂任务；粗糙的项目空间，再强的模型也只能低效试探。
 
 ---
 
@@ -56,13 +44,8 @@ my-project/
 │   │   │   ├── EXPERIENCE.md          #       本模块的经验陷阱（可从 Git History 提炼）
 │   │   │   ├── auth_service.py        #       Type Hints = 代码级文档
 │   │   │   └── auth_schema.py         #       Pydantic → Agent 的"强类型提示"
-│   │   ├── profile/                   #    限界上下文：用户画像
-│   │   │   ├── README.md
-│   │   │   ├── EXPERIENCE.md
-│   │   │   └── ...
-│   │   └── notification/              #    限界上下文：通知
-│   │       ├── README.md
-│   │       └── ...
+│   │   ├── profile/                   #    其他限界上下文，目录结构同上
+│   │   └── notification/
 │   ├── mcp/                            # ⑦ MCP 工具实现 — Agent 通过 .mcp.json 自动发现
 │   │   └── server.py
 │   │
@@ -75,30 +58,12 @@ my-project/
 │       └── 002-jwt-session.md         #       认证方案选型
 │
 ├── design-system/                     #    可执行设计系统（唯一视觉真相源）
-│   ├── tokens/                        #       Layer 1: Design Token
-│   │   ├── tokens.css                 #          CSS 变量（:root 定义 60+ 变量，Agent 生成 UI 必须引用）
-│   │   └── tokens.ts                  #          TypeScript 等价版（组件动态样式引用）
-│   ├── specs/                         #       Layer 2: 约束 + 屏幕规格
-│   │   ├── constraints.md             #          业务约束（单 btn-primary、loading 态等，可自动检查）
-│   │   ├── design-rules.md            #          AI 生成规则（Skill 触发时自动注入 Prompt）
-│   │   └── screens/                   #          屏幕规格（平台无关，驱动多平台代码生成）
-│   │       ├── home.yaml
-│   │       └── detail.yaml
-│   ├── components/                    #       Layer 3: 组件规格
-│   │   ├── components.yaml            #          平台无关组件定义（唯一源，生成 CSS/Android XML）
-│   │   ├── components.css             #          生成产物：H5 直接引用的 class 库
-│   │   └── index.html                 #          组件 Gallery（可视化验证所有组件渲染效果）
-│   └── exports/                       #       Layer 4: 平台导出（从 yaml 生成，禁止手改）
-│       ├── h5/designsystem.css        #          一键导入：tokens + components 合并包
-│       └── android/
-│           ├── colors.xml             #          从 tokens.css 生成的 Android 颜色资源
-│           └── styles.xml             #          从 components.yaml 生成的 Android 样式
+│   ├── tokens/                        #       Design Token（CSS 变量 / TS 等价版）
+│   ├── specs/                         #       约束 + 屏幕规格（平台无关，驱动多平台生成）
+│   ├── components/                    #       组件规格 → 生成 CSS / Android XML
+│   └── exports/                       #       平台导出产物（禁止手改，从 yaml 生成）
 │
 ├── prototype/                         #    可交互 HTML 原型（引用 design-system，PM 验收用）
-│   ├── generated/                     #       从 screen spec 自动生成，改 yaml 即更新
-│   │   ├── home.html
-│   │   └── detail.html
-│   └── README.md
 │
 ├── .importlinter                       # Architecture as Code — 模块依赖规则
 ├── pyproject.toml                      # Lint / Type Check（mypy, ruff）
@@ -149,9 +114,7 @@ my-project/
 
 ## 代码库基础结构 — Harness 的地基
 
-Harness 的四个层级（文档、经验、约束、执行）都是"外挂"到项目上的工程制品，可以独立建设和演化。但它们共同依赖一个前提：**代码库本身的结构质量**。
-
-目录怎么切、模块怎么拆、接口怎么描述、类型怎么定义——这些不是 Harness 层级，而是 Harness 能否发挥作用的地基。一套混乱的单体代码库上，再精心的文档和约束都只能事倍功半；而一套边界清晰的代码库，Agent 能自然地定位任务范围、理解调用关系，甚至无需额外文档。
+四个层级（文档、经验、约束、执行）都是可以独立建设的工程制品，但共同依赖一个前提：**代码库本身的结构质量**。目录怎么切、模块怎么拆、类型怎么定义——这些是 Harness 能否发挥作用的地基。混乱的单体代码库上，再精心的文档和约束都只能事倍功半；边界清晰的代码库，Agent 能自然地定位任务范围，甚至无需额外文档。
 
 ### 利用 DDD 划分模块边界
 
@@ -165,13 +128,7 @@ Harness 的四个层级（文档、经验、约束、执行）都是"外挂"到�
 
 ### 接口契约标准化（OpenAPI / Protobuf）
 
-**强类型协议**比弱类型描述更能防止 Agent 产生通讯幻觉。
-
-| 模糊描述 | 标准化描述 |
-|---------|-----------|
-| "传一个 id 给用户中心" | OpenAPI JSON：明确 `id` 为 UUID 格式，包含 404 错误响应示例、字段类型与校验规则 |
-
-强制使用 OpenAPI 或 Protobuf 描述所有内部和外部接口，给模型提供清晰的 Schema，可以大幅提升 API 调用代码生成的成功率。
+强制用 OpenAPI 或 Protobuf 描述所有接口，而不是弱类型的自然语言（"传一个 id 给用户中心"）。明确的 Schema（字段类型、UUID 格式、404 响应示例）让 Agent 直接确认参数，不靠猜测——**强类型协议是防止 Agent 产生调用幻觉的最直接手段**。
 
 ---
 
@@ -194,7 +151,7 @@ Harness 的四个层级（文档、经验、约束、执行）都是"外挂"到�
 
 > **原则**：将知识从工程师脑中同步到 Agent 的"磁盘"——Agent 在运行时无法访问的任何东西都等同于不存在。
 
-文档层回答"为什么要这么做"。Agent 不会一次性吞下所有文档，而是按任务范围按需查阅。底层逻辑是**渐进披露（Progressive Disclosure）**：任何时刻只加载当前任务所需的那一层信息，无关内容不占推理窗口，每层各司其职，不会牵一发动全身。
+Agent 不会一次性吞下所有文档，而是按任务范围按需查阅。底层逻辑是**渐进披露（Progressive Disclosure）**：任何时刻只加载当前任务所需的信息，无关内容不占推理窗口。
 
 #### 三层文档体系
 
@@ -208,11 +165,6 @@ Harness 的四个层级（文档、经验、约束、执行）都是"外挂"到�
 代码级辅助（Type Hints / JSDoc）
   └── 函数签名、参数含义、"为什么"而非"是什么"
 ```
-
-- `CLAUDE.md` / `SPEC.md` → 全局行为规则与可执行规格，Agent 启动即加载，完成后以此为自检清单
-- `src/modules/*/README.md` → 模块级 Purpose / Interfaces / Constraints，Agent 只需读当前模块
-- `docs/adr/` → 架构决策记录（如"为什么选 SQLite"），防止 Agent 走回头路
-- `design-system/` → 设计 Token 与约束，被 Skills 和 System Prompt 引用
 
 #### 模块级 README 标准模板
 
@@ -233,11 +185,9 @@ Harness 的四个层级（文档、经验、约束、执行）都是"外挂"到�
 - 所有错误响应统一使用 `ErrorResponse` Schema
 ```
 
-`Purpose` 字段是 Agent 语义定位的锚点——处理新任务时，Agent 先基于各模块 Purpose 描述锁定目标目录，再按需读取文件，不必扫描整个 Repo。描述越精准，定位越准，进入上下文的噪音越少。
+`Purpose` 是 Agent 语义定位的锚点——描述越精准，定位越快，进入上下文的噪音越少。
 
 #### 代码级类型提示的价值
-
-类型定义是给 Agent 最直接的"强力暗示"：
 
 ```python
 # 没有类型提示 — Agent 需要猜
@@ -259,20 +209,14 @@ def get_drama(
 
 #### 架构决策记录（ADR）
 
-**结构化的 ADR** 是 Agent 进行长远演进的"营养来源"。将架构选型、弃用的方案和踩过的坑记录在 ADR 中，当 Agent 重构代码时，通过阅读 ADR 可以自动规避团队已经尝试并证伪的技术方案——避免"3 年后重蹈覆辙"。
+`docs/adr/` 记录选型背景、决策和被否决方案。Agent 重构时读 ADR，自动规避已被证伪的技术路径。关键字段是**被否决的方案**——这是最容易被后人（和 Agent）"重新发明"的部分。
 
 ```markdown
 # ADR-001: 选择 SQLite 而非 PostgreSQL 作为开发环境数据库
 
 ## 状态：已采纳
 
-## 背景
-...
-
-## 决策
-...
-
-## 后果（包括已知的权衡）
+## 背景 / 决策 / 后果
 ...
 
 ## 被否决的方案
@@ -286,10 +230,9 @@ def get_drama(
 
 经验层是团队与 Agent 之间的"错题本"。某段代码出过什么 Bug、踩过什么坑，沉淀为结构化经验文件，colocate 在对应模块目录下。
 
-- `src/modules/*/EXPERIENCE.md` → 与模块代码 colocate，记录该模块的历史陷阱和反模式
-- `.claude/experience/INDEX.md` → 跨模块经验的索引入口，让 Agent 按关键词快速定位
+- `src/modules/*/EXPERIENCE.md` → 与模块代码 colocate，记录历史陷阱和反模式
 
-> **重要前提**：经验层是"遇到问题后才引入"的应对手段，而非前置工程。模型能力在持续演进，Agent 未必像你想象的那么笨——不要把它能自己推理出来的东西写成知识文件，否则只是在制造维护负担。**先让 Agent 直接尝试，真的反复犯同一类错误时，再提炼经验注入。**
+> **重要前提**：先让 Agent 直接尝试，真的反复犯同一类错误时再提炼注入——过度前置文档只会制造维护负担。
 
 #### 什么情况值得沉淀经验
 
@@ -297,8 +240,6 @@ def get_drama(
 - Agent 在同类任务上**反复遗漏同一个步骤**（如忘记注册路由、忘记更新 OpenAPI）
 - 任务涉及**项目特有的隐性约定**，无法从代码结构本身推断
 - 高复杂度长链路任务中，Agent 出现**顾此失彼**的情况
-
-这时将经验显性化，本质是提供搜索空间的修剪（Pruning）——让 Agent 跳过探索阶段，直接进入执行。
 
 **示例**：`NEW_API_ROUTE.md`（在发现 Agent 多次遗漏注册步骤后才创建）
 
@@ -317,12 +258,7 @@ def get_drama(
 
 经验文件不必手写，**Git 提交历史本身就是最真实的经验库**——它记录了团队在真实约束下，每类任务实际动了哪些文件。
 
-**提炼流程**：
-
-1. 取出最近一段时间的提交记录（commit messages + diff stat）
-2. 按**任务**而非提交聚合：一个功能往往横跨多个提交（数据模型、API、前端各一个提交），要把同一个任务的多个提交当作一个整体来分析
-3. 让 LLM 按任务类型归类（"新增功能模块"、"修改数据模型"、"重构模块"…），并识别每类任务的完整变更集
-4. 整理成结构化的"执行笔记"存入经验库
+关键：按**任务**而非提交聚合——一个功能往往横跨多个提交，要把同一任务的多个提交当作整体分析，再让 LLM 识别每类任务的完整变更集。
 
 ```bash
 # 按 PR/分支提取完整任务历史（比逐提交更准确）
@@ -359,7 +295,7 @@ CLAUDE.md（一级指针，始终精简）
 .claude/experience/*.md（具体经验文件）
 ```
 
-CLAUDE.md 只放一句话："遇到以下场景先查 INDEX.md"。新增经验只需更新 INDEX.md，不触碰 CLAUDE.md。Agent 在任务开始时读 INDEX，按需加载相关文件，不相关的经验文件完全不进入上下文。
+新增经验只需更新 INDEX.md，不触碰 CLAUDE.md——保持 CLAUDE.md 精简的同时，不限制经验文件的数量。
 
 对于高频且复杂的任务类型，把"加载经验 + 执行任务"整体封装成 Skill，比依赖 Agent 自觉查 INDEX 更可靠——Skill 开头直接 `Read` 对应的经验文件，不依赖 Agent 的主动性。
 
@@ -386,9 +322,8 @@ source_modules = app.api
 forbidden_modules = app.models
 ```
 
-这段规则本身就是代码，可以被 Git 管理和版本化。将它放入 CI 流水线后，每次提交都会自动执行——违规时 CI 报错，Agent 读取错误信息并自主修正代码结构，**约束本身就成了 Agent 的纠错信号**。
+纳入 CI 流水线后，每次提交自动执行——违规时 CI 报错，Agent 读取错误信息并自主修正，**约束本身就成了 Agent 的纠错信号**。
 
-同类工具：`ArchUnit`（Java/Kotlin）可以用代码断言表达模块依赖规则，原理一致。
 
 #### SOP 即规格（Steps as Constraints）
 
@@ -408,7 +343,7 @@ forbidden_modules = app.models
 
 ### 4. 执行层 — Agent 的行动与反馈回路
 
-执行层定义 Agent 能做什么、怎么委派任务，以及每次行动后能得到什么反馈。工具和反馈是一体的：**Agent 能调用程序，也必须能看到程序的结果**，否则执行就是盲目的。
+工具和反馈是一体的：**Agent 能调用程序，也必须能看到程序的结果**，否则执行就是盲目的。
 
 **工具与委派**
 
@@ -420,15 +355,14 @@ forbidden_modules = app.models
 
 **可测试性 — Agent 能验证自己的改动**
 
-测试套件是执行层的核心反馈机制。Agent 修改代码后，能立即运行测试并读取结果，判断改动是否正确——这让 Agent 形成"改→验→改"的自主闭环，而不是每次都等人检查。
+测试套件是执行层的核心反馈机制。Agent 修改代码后立即运行测试、读取结果，形成"改→验→改"的自主闭环。
 
-- 测试命令必须可以无交互方式运行（`pytest`、`./gradlew test`、`npm test`），Agent 能直接调用
-- 测试输出必须是机器可读的结构化结果（通过/失败/报错行号），而不是只有一个退出码
-- 行为级测试比单元测试对 Agent 更有价值：行为测试的失败信息能直接告诉 Agent"哪个接口的哪个场景出错了"，而不是"哪行代码断言失败了"
+- 测试命令无交互运行（`pytest` / `./gradlew test`），输出结构化结果（通过/失败/报错行号），让 Agent 能直接读取
+- 行为级测试比单元测试对 Agent 更有价值：失败信息直接告诉 Agent"哪个接口的哪个场景出错了"，而非"哪行断言失败了"
 
 **可观测性 — Agent 能看到系统的运行状态**
 
-Agent 执行操作后需要确认效果，可观测性决定了它能"看"到多少：
+可观测性决定 Agent 能"看"到多少：
 
 - 结构化日志：应用运行时输出可解析的格式（JSON、明确的错误码），而不是只打印人类可读的字符串
 - 脚本反馈：`scripts/` 中的工具脚本应在执行后输出明确的结果（"已重置数据库，导入 42 条记录"），让 Agent 能确认操作是否生效
@@ -438,7 +372,7 @@ Agent 执行操作后需要确认效果，可观测性决定了它能"看"到多
 
 ## 改造优先级
 
-**最小可行改造**：写好 `CLAUDE.md`（技术栈、架构约束、命名规范、SDD 约束），为每个模块创建 `README.md`。这两步的投入产出比最高，也是大多数项目的起点。
+**最小可行改造**：写好 `CLAUDE.md` + 为每个模块创建 `README.md`——投入产出比最高，是大多数项目的起点。
 
 | 维度 | 改造成本 | Agent 收益 | 推荐顺序 |
 |------|---------|-----------|---------|
@@ -463,7 +397,7 @@ Agent 执行操作后需要确认效果，可观测性决定了它能"看"到多
 | `.claude/settings.local.json` | 个人对工具权限的微调，`.claude/settings.json` 已提供团队默认值 |
 | `.claude/memory/` | Agent 自动生成的个人记忆，每个开发者有自己的一份 |
 
-其余目录树中出现的所有 Harness 文件——`CLAUDE.md`、`SPEC.md`、`.mcp.json`、`hooks/`、`skills/`、`agents/`、`experience/INDEX.md`、`design-system/`、`docs/adr/`、`scripts/`、模块级 `README.md` 和 `EXPERIENCE.md`——全部提交。
+其余所有 Harness 文件默认提交。
 
 ### Code Review 策略
 
@@ -479,35 +413,25 @@ Agent 执行操作后需要确认效果，可观测性决定了它能"看"到多
 
 ### 个人偏好管理："分层覆盖"模型
 
-团队成员风格差异是现实。解决思路：**分层覆盖**——每一层有明确的权威范围和冲突解决规则。
+解决思路：**分层覆盖**——每一层权威范围不同，冲突向下收敛。
 
 ```
-个人层（.claude/settings.local.json, memory/）
+个人层（.claude/settings.local.json, memory/）      # 自由调整，但不能移除项目层的强制约束
   ↓ 覆盖
-项目层（.claude/settings.json, CLAUDE.md, hooks/, skills/）
+项目层（.claude/settings.json, CLAUDE.md, hooks/, skills/）  # 增删改走 PR 并附理由
   ↓ 引用
-模块层（src/modules/*/EXPERIENCE.md, README.md）
+模块层（src/modules/*/EXPERIENCE.md, README.md）     # EXPERIENCE.md 是建议，标注日期，超 6 个月标记待审查
   ↓ 被约束
-强制约束（CI, import-linter, pyproject.toml）
+强制约束（CI, import-linter, pyproject.toml）        # 不可绕过，代码合入的必要条件
 ```
-
-| 层 | 修改方式 | 补充说明 |
-|----|---------|---------|
-| **强制约束** | 不可绕过 | CI、import-linter、pyproject.toml 是硬约束，代码合入的必要条件 |
-| **项目层** | PR 博弈 | `CLAUDE.md`、`hooks/` 等团队级 Harness，增删改都要走 PR 并有理由 |
-| **模块层** | PR 博弈 | `EXPERIENCE.md` 属于文档层，本质是建议。觉得某条过时或误导 → 提 PR 删除并附理由。经验条目建议**标注日期**，超过 6 个月标记待审查 |
-| **个人层** | 自由调整 | `.claude/settings.local.json` 覆盖团队默认权限；不喜欢的 Skill 可以不调用。但**不能移除项目层的强制性约束** |
 
 ### 经验文件的质量管控
 
 `EXPERIENCE.md` 最容易引发"洁癖 vs 实用"的争议。几条质量原则：
 
 - **写"陷阱条件"，不写"个人偏好"**：`"当 token 为 None 时 refresh_token() 会抛未捕获异常"` ✅；`"不要用 async/await"` ❌
-- **标日期**：过时经验不如没有经验
-- **少而精**：5 条验证过的陷阱 > 50 条未经检验的"注意事项"
+- **少而精，标日期**：5 条验证过的陷阱 > 50 条未经检验的"注意事项"；条目超过 6 个月标记待审查
 - **实验性经验走 Memory 先验证**：不确定是否普适 → 写入 `.claude/memory/`（个人、不提交），验证有效后再提炼到 `EXPERIENCE.md`（团队共享）
-
-**总结**：Harness 治理的核心不是统一所有人的风格，而是建立清晰的**分层架构**——硬约束强制执行，软建议 PR 讨论，个人偏好有逃生舱。
 
 ---
 
@@ -517,8 +441,7 @@ Memory 与上面的地基和四个层级有本质区别：
 
 > **地基和四个层级是人写的、注入给 Agent 的；Memory 是 Agent 自己写的、自己维护的。**
 
-- 代码库基础结构、文档、经验、约束、执行 —— 都是**人主动编写的工程制品**，回答"我们希望 Agent 遵守什么"
-- `.claude/memory/`（`user.md` / `project.md` / `feedback.md` / `reference.md`）→ Agent 在对话中自动提取并持久化的跨会话记忆，回答"Agent 从这次会话中学到了什么"
+`.claude/memory/`（`user.md` / `project.md` / `feedback.md` / `reference.md`）是 Agent 在对话中自动提取并持久化的跨会话记忆，回答"Agent 从这次会话中学到了什么"。
 
 Memory 不是第六层，而是**横切所有层的持久化机制**。Agent 可以在任何一层学到东西并写入 memory：
 
