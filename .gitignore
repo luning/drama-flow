@@ -74,3 +74,5 @@ mp4/
 # Test agent generated files
 test-agent/assets/reports/
 test-agent/assets/screenshots/
+test-agent/web/.chrome-data/
+test-agent/test-agent/

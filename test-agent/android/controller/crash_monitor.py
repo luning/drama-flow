@@ -11,7 +11,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from . import adb_client as adb
+from android.controller import adb_client as adb
 
 
 # Patterns that indicate a crash or serious error

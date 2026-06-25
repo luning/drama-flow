@@ -117,7 +117,7 @@ class SessionRecorder:
 
     def generate_report(self, output_dir: Union[str, Path] = "assets/reports") -> Path:
         """Generate the final HTML report and return the file path."""
-        from .reporter import generate_report as _gen_report
+        from shared.reporter import generate_report as _gen_report
         result = self.build_result()
         return _gen_report(result, output_dir)
 

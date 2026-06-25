@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from typing import Optional, Union
 
-from . import adb_client as adb
+from android.controller import adb_client as adb
 
 
 class DeviceError(Exception):

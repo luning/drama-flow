@@ -3,7 +3,7 @@
   "permission": {
     "skill": {
       "*": "allow",
-      "superpowers-*": "deny"
+      "superpowers-*": "allow"
     }
   },
   "agent": {

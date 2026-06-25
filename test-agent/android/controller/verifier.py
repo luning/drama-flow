@@ -7,7 +7,7 @@ Generic: no app-specific knowledge, only monitors activity and screen state.
 import time
 from typing import Optional, Tuple
 
-from core.element_finder import ElementFinder
+from android.controller.element_finder import ElementFinder
 
 
 class ActionVerifier:

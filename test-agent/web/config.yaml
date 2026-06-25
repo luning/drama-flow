@@ -1,0 +1,11 @@
+# Web Test Agent Configuration
+base_url: "http://localhost:5173"
+start_path: "/"
+headless: false
+viewport_width: 390
+viewport_height: 844
+post_action_delay: 0.5
+
+recording:
+  output_dir: "assets/reports"
+  screenshot_dir: "assets/screenshots"
