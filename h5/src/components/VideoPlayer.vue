@@ -17,6 +17,7 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 const props = defineProps<{
   src: string
   startPosition: number
+  autoplay?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -48,8 +49,12 @@ onBeforeUnmount(() => {
 })
 
 function applyStartPosition() {
-  if (videoEl.value && props.startPosition > 0) {
+  if (!videoEl.value) return
+  if (props.startPosition > 0) {
     videoEl.value.currentTime = props.startPosition
+  }
+  if (props.autoplay) {
+    videoEl.value.play().catch(() => {/* autoplay blocked by browser policy */})
   }
 }
 
