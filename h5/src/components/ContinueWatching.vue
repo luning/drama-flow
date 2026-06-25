@@ -12,7 +12,7 @@
       >
         <div class="cw-thumb" :style="item.drama_cover ? { backgroundImage: `url(${item.drama_cover})` } : {}">
           <div class="cw-progress-bar">
-            <div class="cw-progress-fill" :style="{ width: `${Math.round(item.progress * 100)}%` }" />
+            <div class="cw-progress-fill" :style="{ width: `${Math.round(item.progress)}%` }" />
           </div>
         </div>
         <div class="cw-info">

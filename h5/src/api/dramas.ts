@@ -27,11 +27,3 @@ export function getBanners() {
 export function getCategories() {
   return client.get<{ id: number; name: string; slug: string }[]>('/categories')
 }
-export function listEpisodes(dramaId: number) {
-  return client.get(`/dramas/${dramaId}/episodes`)
-}
-
-// 对象式 API（BannerCarousel 等新组件使用）
-export const dramaApi = {
-  banners: () => client.get<Banner[]>('/banners'),
-}

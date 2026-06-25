@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getDramaDetail, listEpisodes } from '@/api/dramas'
+import { getDramaDetail } from '@/api/dramas'
+import type { DramaDetail } from '@/api/dramas'
+import { episodeApi } from '@/api/episodes'
+import type { Episode } from '@/api/episodes'
 import type { AxiosError } from 'axios'
 
 export const useDramaStore = defineStore('drama', () => {
-  const detail = ref<any>(null)
-  const episodes = ref<any[]>([])
+  const detail = ref<DramaDetail | null>(null)
+  const episodes = ref<Episode[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -15,7 +18,7 @@ export const useDramaStore = defineStore('drama', () => {
     try {
       const [detailResp, epResp] = await Promise.all([
         getDramaDetail(id),
-        listEpisodes(id),
+        episodeApi.list(id),
       ])
       detail.value = detailResp.data
       episodes.value = epResp.data

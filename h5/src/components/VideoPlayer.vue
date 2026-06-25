@@ -4,8 +4,9 @@
       ref="videoEl"
       controls
       class="video"
-      @ended="onEnded"
+      @play="onPlay"
       @pause="onPause"
+      @ended="onEnded"
     />
   </div>
 </template>
@@ -20,7 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   progress: [currentTime: number, duration: number]
-  ended: []
+  ended: [currentTime: number, duration: number]
 }>()
 
 const videoEl = ref<HTMLVideoElement | null>(null)
@@ -37,12 +38,12 @@ watch(() => props.src, (newSrc) => {
 onMounted(() => {
   if (!videoEl.value || !props.src) return
   videoEl.value.src = props.src
+  videoEl.value.load()
   videoEl.value.addEventListener('loadedmetadata', applyStartPosition, { once: true })
-  progressTimer = setInterval(emitProgress, 10000)
 })
 
 onBeforeUnmount(() => {
-  if (progressTimer) clearInterval(progressTimer)
+  stopProgressTimer()
   emitProgress()
 })
 
@@ -60,8 +61,29 @@ function emitProgress() {
   emit('progress', currentTime, duration)
 }
 
-function onPause() { emitProgress() }
-function onEnded() { emit('ended') }
+function startProgressTimer() {
+  if (!progressTimer) {
+    progressTimer = setInterval(emitProgress, 10000)
+  }
+}
+
+function stopProgressTimer() {
+  if (progressTimer) {
+    clearInterval(progressTimer)
+    progressTimer = null
+  }
+}
+
+function onPlay() { startProgressTimer() }
+function onPause() {
+  stopProgressTimer()
+  emitProgress()
+}
+function onEnded() {
+  stopProgressTimer()
+  const duration = videoEl.value?.duration ?? 0
+  emit('ended', duration, duration)
+}
 </script>
 
 <style scoped>

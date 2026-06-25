@@ -18,14 +18,20 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { DramaListItem } from '@/api/dramas'
 
-const props = defineProps<{ drama: any }>()
+type DramaCardItem = DramaListItem & { category_slug?: string }
+
+const props = defineProps<{ drama: DramaCardItem }>()
 
 const categoryNames: Record<string, string> = {
   romance: '甜宠', suspense: '悬疑', comedy: '搞笑', fantasy: '奇幻', president: '霸总',
 }
 
-const categoryName = computed(() => categoryNames[props.drama.category_slug] || props.drama.category_slug || '热门')
+const categoryName = computed(() => {
+  const slug = props.drama.category_slug
+  return (slug ? categoryNames[slug] : undefined) ?? slug ?? '热门'
+})
 
 const badgeText = computed(() => {
   return props.drama.status === 'completed' ? '完结' : '热门'

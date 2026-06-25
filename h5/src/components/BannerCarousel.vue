@@ -6,7 +6,7 @@
         :key="i"
         class="banner-slide"
         :class="{ active: i === current }"
-        @click="$router.push(`/drama/${item.drama_id}`)"
+        @click="$router.push(`/detail/${item.drama_id}`)"
       >
         <img class="banner-img" :src="item.image_url" :alt="item.title" />
         <div class="banner-overlay">

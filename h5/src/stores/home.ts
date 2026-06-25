@@ -1,13 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listDramas, getBanners, getCategories } from '@/api/dramas'
+import type { Banner, DramaListItem } from '@/api/dramas'
 import { continueWatching } from '@/api/watchRecord'
+import type { ContinueWatchingItem } from '@/api/watchRecord'
+
+type Category = { id: number; name: string; slug: string }
 
 export const useHomeStore = defineStore('home', () => {
-  const banners = ref<any[]>([])
-  const categories = ref<any[]>([])
-  const dramas = ref<any[]>([])
-  const continueWatchingList = ref<any[]>([])
+  const banners = ref<Banner[]>([])
+  const categories = ref<Category[]>([])
+  const dramas = ref<DramaListItem[]>([])
+  const continueWatchingList = ref<ContinueWatchingItem[]>([])
   const currentCategory = ref('all')
   const loading = ref(false)
 

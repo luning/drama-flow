@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { login as apiLogin, register as apiRegister, refreshToken } from '@/api/auth'
+import { login as apiLogin, register as apiRegister, logout as apiLogout, refreshToken } from '@/api/auth'
 import type { LoginData, RegisterData } from '@/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -21,7 +21,12 @@ export const useAuthStore = defineStore('auth', () => {
     await apiRegister(data)
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      await apiLogout()
+    } catch {
+      // Ignore API errors — clean up local state regardless
+    }
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     user.value = null
@@ -54,17 +59,22 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function tryRestoreSession() {
     const token = localStorage.getItem('access_token')
-    if (token) {
-      try {
-        const resp = await refreshToken(localStorage.getItem('refresh_token') || '')
-        const { access_token, refresh_token: newRefresh, user: userData } = resp.data
-        localStorage.setItem('access_token', access_token)
-        localStorage.setItem('refresh_token', newRefresh)
-        user.value = userData
-        isLoggedIn.value = true
-      } catch {
-        logout()
-      }
+    if (!token) return
+    const storedRefresh = localStorage.getItem('refresh_token')
+    if (!storedRefresh) {
+      // Trust the existing access token; 401 interceptor will handle expiry
+      isLoggedIn.value = true
+      return
+    }
+    try {
+      const resp = await refreshToken(storedRefresh)
+      const { access_token, refresh_token: newRefresh, user: userData } = resp.data
+      localStorage.setItem('access_token', access_token)
+      localStorage.setItem('refresh_token', newRefresh)
+      user.value = userData
+      isLoggedIn.value = true
+    } catch {
+      await logout()
     }
   }
 

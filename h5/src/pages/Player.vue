@@ -42,8 +42,8 @@ async function onProgress(currentTime: number, duration: number) {
   await wrStore.saveProgress(episodeId, currentTime, duration, false)
 }
 
-async function onEnded() {
-  await wrStore.saveProgress(episodeId, 0, 1, true)
+async function onEnded(currentTime: number, duration: number) {
+  await wrStore.saveProgress(episodeId, currentTime, duration, true)
   if (nextEpisode.value) {
     router.push(`/drama/${dramaId}/episode/${nextEpisode.value.id}`)
   }
@@ -57,6 +57,8 @@ onMounted(async () => {
       window.DramaFlowBridge.openPlayer(episodeId, dramaId, ep.episode_number)
     } catch (e) {
       console.error('openPlayer failed', e)
+    } finally {
+      loading.value = false
     }
     router.back()
     return

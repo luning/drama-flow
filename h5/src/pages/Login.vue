@@ -41,7 +41,9 @@ async function handleLogin() {
   try {
     await authStore.login({ email: email.value, password: password.value })
     const redirect = route.query.redirect as string | undefined
-    router.push(redirect || '/')
+    // Only allow same-origin relative paths to prevent open redirect attacks
+    const safePath = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+    router.push(safePath)
   } catch (e: any) {
     const msg = e.response?.data?.detail
     error.value = typeof msg === 'string' ? msg : '登录失败，请重试'
