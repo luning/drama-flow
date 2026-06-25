@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listDramas, getBanners, getCategories } from '@/api/dramas'
+import { continueWatching } from '@/api/watchRecord'
 
 export const useHomeStore = defineStore('home', () => {
   const banners = ref<any[]>([])
   const categories = ref<any[]>([])
   const dramas = ref<any[]>([])
+  const continueWatchingList = ref<any[]>([])
   const currentCategory = ref('all')
   const loading = ref(false)
 
@@ -29,10 +31,22 @@ export const useHomeStore = defineStore('home', () => {
     }
   }
 
+  async function fetchContinueWatching() {
+    try {
+      const resp = await continueWatching()
+      continueWatchingList.value = resp.data
+    } catch {
+      continueWatchingList.value = []
+    }
+  }
+
   function setCategory(cat: string) {
     currentCategory.value = cat
     fetchDramas(cat)
   }
 
-  return { banners, categories, dramas, currentCategory, loading, fetchBanners, fetchCategories, fetchDramas, setCategory }
+  return {
+    banners, categories, dramas, continueWatchingList, currentCategory, loading,
+    fetchBanners, fetchCategories, fetchDramas, fetchContinueWatching, setCategory,
+  }
 })
