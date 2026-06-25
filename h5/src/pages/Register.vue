@@ -28,9 +28,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { authApi } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
+
 const nickname = ref('')
 const email = ref('')
 const password = ref('')
@@ -45,7 +47,7 @@ async function handleRegister() {
   }
   loading.value = true
   try {
-    await authApi.register({ nickname: nickname.value, email: email.value, password: password.value })
+    await authStore.register({ nickname: nickname.value, email: email.value, password: password.value })
     router.push('/login')
   } catch (e: any) {
     const detail = e.response?.data?.detail

@@ -31,7 +31,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWatchRecordStore } from '@/stores/watchRecord'
-import { type ContinueWatchingItem } from '@/api/watchRecords'
+import type { ContinueWatchingItem } from '@/api/watchRecord'
 import NavBar from '@/components/NavBar.vue'
 
 const router = useRouter()

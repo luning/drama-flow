@@ -60,13 +60,8 @@ function emitProgress() {
   emit('progress', currentTime, duration)
 }
 
-function onPause() {
-  emitProgress()
-}
-
-function onEnded() {
-  emit('ended')
-}
+function onPause() { emitProgress() }
+function onEnded() { emit('ended') }
 </script>
 
 <style scoped>

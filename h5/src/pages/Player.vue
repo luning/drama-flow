@@ -50,6 +50,19 @@ async function onEnded() {
 }
 
 onMounted(async () => {
+  // WebView 环境：委托原生播放器，不渲染 H5 VideoPlayer
+  if (window.DramaFlowBridge) {
+    try {
+      const { data: ep } = await episodeApi.detail(episodeId)
+      window.DramaFlowBridge.openPlayer(episodeId, dramaId, ep.episode_number)
+    } catch (e) {
+      console.error('openPlayer failed', e)
+    }
+    router.back()
+    return
+  }
+
+  // 浏览器环境：加载签名 URL，渲染 H5 VideoPlayer
   try {
     const [urlResp, recordResp, episodesResp] = await Promise.all([
       episodeApi.videoUrl(episodeId),
@@ -61,8 +74,8 @@ onMounted(async () => {
     startPosition.value = recordResp.last_position ?? 0
 
     const episodes = episodesResp.data
-    episode.value = episodes.find((ep: any) => ep.id === episodeId) ?? null
-    const idx = episodes.findIndex((ep: any) => ep.id === episodeId)
+    episode.value = episodes.find((ep: Episode) => ep.id === episodeId) ?? null
+    const idx = episodes.findIndex((ep: Episode) => ep.id === episodeId)
     nextEpisode.value = idx >= 0 && idx < episodes.length - 1 ? episodes[idx + 1] : null
   } catch (e) {
     console.error('Player load failed', e)

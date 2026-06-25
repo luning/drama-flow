@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { watchRecordApi, type WatchRecord, type ContinueWatchingItem } from '@/api/watchRecords'
+import { watchRecordApi, type WatchRecord, type ContinueWatchingItem } from '@/api/watchRecord'
 
 export const useWatchRecordStore = defineStore('watchRecord', () => {
   const records = ref<Record<number, WatchRecord>>({})
@@ -12,14 +12,6 @@ export const useWatchRecordStore = defineStore('watchRecord', () => {
     return data
   }
 
-  async function fetchForEpisodes(episodeIds: number[]) {
-    await Promise.all(episodeIds.map(fetchRecord))
-  }
-
-  function cachedRecord(episodeId: number): WatchRecord | undefined {
-    return records.value[episodeId]
-  }
-
   async function saveProgress(episodeId: number, lastPosition: number, duration: number, completed = false) {
     const progress = duration > 0 ? Math.min(100, (lastPosition / duration) * 100) : 0
     const { data } = await watchRecordApi.upsert(episodeId, { progress, last_position: lastPosition, completed })
@@ -29,6 +21,14 @@ export const useWatchRecordStore = defineStore('watchRecord', () => {
   async function fetchHistory() {
     const { data } = await watchRecordApi.continueWatching()
     history.value = data
+  }
+
+  async function fetchForEpisodes(episodeIds: number[]) {
+    await Promise.all(episodeIds.map((id) => fetchRecord(id).catch(() => null)))
+  }
+
+  function cachedRecord(episodeId: number): WatchRecord | undefined {
+    return records.value[episodeId]
   }
 
   return { records, history, fetchRecord, fetchForEpisodes, cachedRecord, saveProgress, fetchHistory }

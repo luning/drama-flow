@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useHomeStore } from '@/stores/home'
-import Banner from '@/components/Banner.vue'
+import BannerCarousel from '@/components/BannerCarousel.vue'
 import CategoryTabs from '@/components/CategoryTabs.vue'
 import DramaCard from '@/components/DramaCard.vue'
 import ContinueWatching from '@/components/ContinueWatching.vue'
@@ -29,7 +29,7 @@ onMounted(async () => {
       <span class="logo">DramaFlow</span>
     </header>
 
-    <Banner :items="store.banners" />
+    <BannerCarousel :items="store.banners" />
 
     <ContinueWatching :items="store.continueWatchingList" />
 
