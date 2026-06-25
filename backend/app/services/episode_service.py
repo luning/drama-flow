@@ -3,6 +3,7 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from app.models.episode import Episode
 from app.services.tos_service import tos_service
+from app.services import media_urls
 from app.config import settings
 
 
@@ -14,8 +15,8 @@ def _sign_episode(ep: Episode) -> dict:
         "episode_number": ep.episode_number,
         "title": ep.title,
         "duration": ep.duration,
-        "video_url": tos_service.video_url(ep.video_url),
-        "cover_url": tos_service.cover_url(ep.video_url),
+        "video_url": media_urls.episode_video_url(ep.video_url),
+        "cover_url": media_urls.episode_cover_url(ep.video_url),
     }
     return data
 
@@ -38,13 +39,17 @@ def get_episode(db: Session, episode_id: int):
 
 
 def get_video_url(db: Session, episode_id: int):
-    """获取单集视频签名 URL 及过期时间"""
-    if not tos_service.is_available():
-        return None, None  # caller returns 503
-
+    """获取单集视频 URL 及过期时间（本地开发返回本地路径，生产返回 TOS 签名 URL）"""
     ep = db.query(Episode).filter(Episode.id == episode_id).first()
     if not ep:
         return None, None  # caller returns 404
+
+    if settings.local_media_base_url:
+        url = media_urls.episode_video_url(ep.video_url)
+        return url, None
+
+    if not tos_service.is_available():
+        return None, None  # caller returns 503
 
     url = tos_service.video_url(ep.video_url)
     expires_at = (datetime.now(timezone.utc) + timedelta(seconds=settings.tos_signed_url_expires)).isoformat()

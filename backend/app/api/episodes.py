@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.services import episode_service
 from app.services.tos_service import tos_service
+from app.config import settings
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ def episode_detail(episode_id: int, db: Session = Depends(get_db)):
 
 @router.get("/episodes/{episode_id}/video-url")
 def episode_video_url(episode_id: int, db: Session = Depends(get_db)):
-    if not tos_service.is_available():
+    if not settings.local_media_base_url and not tos_service.is_available():
         raise HTTPException(status_code=503, detail="视频服务暂不可用")
     url, expires_at = episode_service.get_video_url(db, episode_id)
     if not url:

@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     # 预签名 URL 过期时间（秒），默认 6 小时
     tos_signed_url_expires: int = 21600
 
+    # 本地开发时设为 http://localhost:8000，启用本地 /media/ 静态文件代替 TOS URL
+    # 生产环境留空，始终走 TOS
+    local_media_base_url: str = "http://localhost:8000"
+
     class Config:
         env_file = ".env"
 

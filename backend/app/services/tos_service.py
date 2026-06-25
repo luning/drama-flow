@@ -33,7 +33,7 @@ class TosService:
         return result.signed_url
 
     def video_url(self, path: str, expires: Optional[int] = None) -> str:
-        """根据数据库中的 video_url 路径生成签名 URL"""
+        """根据数据库中的 video_url 路径生成预签名 URL"""
         if not path:
             return ""
         key = path.removeprefix("/")
@@ -41,10 +41,12 @@ class TosService:
 
     def direct_url(self, object_key: str) -> str:
         """生成公开文件的直接访问 URL（不走签名）"""
+        if not object_key:
+            return ""
         return f"https://{settings.tos_domain}/{object_key}"
 
     def cover_url(self, video_path: str) -> str:
-        """根据 video_url 路径推断封面图 URL（封面对外公开，无需签名）"""
+        """根据 video_url 路径推断封面图的公开访问 URL"""
         if not video_path:
             return ""
         key = video_path.removeprefix("/")

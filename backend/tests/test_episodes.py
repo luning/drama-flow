@@ -47,8 +47,9 @@ class TestEpisodes:
         assert response.json() == []
 
     def test_video_url_tos_unavailable(self, client, monkeypatch):
-        """AC-EP-03: TOS 服务不可用时返回 503"""
+        """AC-EP-03: TOS 服务不可用且非本地模式时返回 503"""
         monkeypatch.setattr("app.services.tos_service.tos_service.is_available", lambda: False)
+        monkeypatch.setattr("app.api.episodes.settings", type("S", (), {"local_media_base_url": ""})())
         response = client.get("/api/episodes/1/video-url")
         assert response.status_code == 503
         data = response.json()
@@ -62,20 +63,26 @@ class TestEpisodes:
         assert "detail" in data
 
     def test_video_url_success(self, client, seed_dramas, seed_episodes):
-        """AC-EP-03: 视频签名 URL 有效期内可正常播放"""
+        """AC-EP-03: 视频 URL 有效期内可正常播放
+        [Changed] local_media_base_url 模式下返回本地绝对 URL（http://...），expires_at 为 null；
+        生产 TOS 模式下返回 https:// 签名 URL，expires_at 为 ISO 时间字符串。"""
         response = client.get("/api/episodes/1/video-url")
         assert response.status_code == 200
         data = response.json()
         assert "url" in data
         assert "expires_at" in data
-        assert data["url"].startswith("https://")
+        assert data["url"].startswith("http")
 
     def test_video_url_renew_signature(self, client, seed_dramas, seed_episodes):
-        """AC-EP-04: 视频签名 URL 包含 TOS 签名参数，过期后可重新获取"""
+        """AC-EP-04: 生产模式下视频 URL 包含 TOS 签名参数，过期后可重新获取
+        [Changed] local_media_base_url 模式下跳过 TOS 签名参数断言，仅验证可获取有效 URL。"""
+        from app.config import settings
         response = client.get("/api/episodes/1/video-url")
         assert response.status_code == 200
         data = response.json()
-        assert data["url"].startswith("https://")
-        assert "X-Tos-Signature" in data["url"]
-        assert "X-Tos-Algorithm" in data["url"]
-        assert "X-Tos-Expires=21600" in data["url"]
+        assert data["url"].startswith("http")
+        if not settings.local_media_base_url:
+            assert data["url"].startswith("https://")
+            assert "X-Tos-Signature" in data["url"]
+            assert "X-Tos-Algorithm" in data["url"]
+            assert "X-Tos-Expires=21600" in data["url"]

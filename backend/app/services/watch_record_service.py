@@ -4,6 +4,7 @@ from app.models.watch_record import WatchRecord
 from app.models.episode import Episode
 from app.models.drama import Drama
 from app.schemas.watch_record import WatchRecordCreate
+from app.services import media_urls
 
 
 def upsert_record(db: Session, user_id: int, episode_id: int, data: WatchRecordCreate):
@@ -75,7 +76,7 @@ def continue_watching(db: Session, user_id: int, limit: int = 5):
             continue
         result.append({
             "drama_id": drama.id, "drama_title": drama.title,
-            "drama_cover": drama.cover_url,
+            "drama_cover": media_urls.drama_cover_url(drama.cover_url),
             "episode_id": ep.id, "episode_number": ep.episode_number,
             "episode_title": ep.title,
             "progress": r.progress, "last_position": r.last_position,

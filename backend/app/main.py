@@ -47,6 +47,11 @@ async def unified_error_handler(request: Request, exc: Exception):
     )
 
 
+# 挂载本地媒体文件（LOCAL_MEDIA=true 时供开发环境使用）
+mp4_dir = Path(__file__).parent.parent.parent / "mp4"
+if mp4_dir.exists():
+    app.mount("/media", StaticFiles(directory=str(mp4_dir)), name="media")
+
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(dramas.router, prefix="/api", tags=["Dramas"])
 app.include_router(episodes.router, prefix="/api", tags=["Episodes"])
