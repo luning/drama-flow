@@ -33,8 +33,6 @@ Agent 执行时真正看到的只有两样东西：**Context** 和 **Instruction
 
 **嵌入式场景**：实现 CAN 过滤功能。Agent 真正需要的是芯片手册与寄存器定义、驱动框架与板级设计、AUTOSAR 规范、项目编码规范、历史实现参考——这些关键知识**根本不在代码库里**。
 
-这些关键知识**根本不在代码库里**。
-
 流程因此不是 `Spec → Code`，而是：
 
 ```
@@ -88,16 +86,23 @@ implement-uart-driver
 | 需要领域专属步骤或阻断条件 | 通过 Router 注入，不改动 Skill |
 | 现有 Skill 完全无法覆盖的全新交互模式 | 才新建 Skill，以现有 Skill 为子步骤编排 |
 
-### Knowledge：五层分层模型
+### Knowledge：五类知识模型
 
-#### Layer 1：Architecture Knowledge
+知识库不是文档堆，而是按**使用方式**分类的结构化上下文。五类知识的划分依据是"Agent 在什么情况下需要它"，这决定了加载时机、组织方式和维护策略。
 
-描述系统的整体结构，是 Agent 理解任何任务的基础。
+#### 结构知识
 
-**包含内容：** 架构图、模块关系、调用链、部署结构
+描述系统现状——它是什么、由什么组成、各部分如何连接。Agent 需要分析影响范围或定位具体模块时加载。
+
+结构知识有两个粒度，存储位置和加载时机都不同：
+
+- **系统级**（架构图）：存放在 `knowledge/structure/`，任务可能跨模块时加载，帮助 Agent 判断影响范围
+- **模块级**（模块地图）：**colocate 在 `src/[module]/MODULE.md`**，聚焦到具体模块后加载，帮助 Agent 找到正确的入口和 Owner
+
+模块级与代码同源的理由：模块的入口、Owner、依赖关系随代码一起变化，文件放得越远越容易在重构时漏掉同步。与任务经验（EXPERIENCE.md）采用同一约定：进入某个模块目录，该模块的所有元数据都在这里。
 
 ```markdown
-# 系统架构
+# knowledge/structure/architecture.md（系统级）
 
 语音唤醒 → ASR（语音识别）→ NLU（意图理解）→ TTS（语音合成）
 
@@ -107,11 +112,18 @@ implement-uart-driver
 - TTS 无状态，接收文本返回音频流
 ```
 
-#### Layer 2：Coding Standards
+```markdown
+# src/drivers/can/MODULE.md（模块级，colocate）
 
-规定项目内的统一编码规则，防止 Agent 生成风格不一致或违反约束的代码。
+- 入口：can_manager.c → can_manager_init()
+- 过滤配置：can_filter.c
+- 报文分发：通过事件总线，订阅者在 src/app/can_dispatcher.c
+- Owner：张三（驱动层）、李四（应用层分发）
+```
 
-**包含内容：** 命名规范、日志规范、异常处理、线程模型、内存管理规则
+#### 编码规范
+
+约束代码应该**写成什么样**——命名、日志、错误处理、内存管理等硬性规则。这是唯一需要在每个任务中全量加载的类别，因为任何代码生成任务都必须遵守它。
 
 ```markdown
 # 编码规范
@@ -129,30 +141,53 @@ implement-uart-driver
 - 错误向上传递，不在中间层静默吞掉
 ```
 
-#### Layer 3：ADR（Architecture Decision Record）
+#### 设计决策
 
-记录关键设计决策的**理由**，让 Agent 理解"为什么这么做"而不只是"做了什么"。
+记录设计层面的**选择与理由**——为什么这么设计、否决了什么方案、项目形成了哪些设计惯例。
 
-**包含内容：** 技术选型原因、被否决的方案、权衡取舍
+Agent 在做出新设计选择之前加载：无论是理解已有设计、引入新技术、还是重构某个模块，都需要先看已有的决策，避免走回头路或与项目设计惯例冲突。
 
 ```markdown
-# ADR-003：采用事件总线替代直接调用
+# 决策：采用事件总线替代跨模块直接调用
 
-## 决策
+## 选择
 模块间通信统一通过事件总线，禁止跨模块直接函数调用。
 
-## 原因
-- 直接调用导致模块间强耦合，历史上 NLU 改接口引发 5 个模块同步修改
+## 理由
+- 直接调用导致强耦合，历史上 NLU 改接口引发 5 个模块同步修改
 - 事件总线解耦后，新增业务模块无需修改已有代码
 
-## 被否决方案
+## 否决方案
 - 共享内存：并发控制复杂，历史上出现过竞态 bug
 - gRPC：引入网络开销，同进程内不必要
+
+## 设计惯例
+新增模块间通信时默认走事件总线，有充分理由才考虑例外，并记录在此。
 ```
 
-#### Layer 4：Domain Knowledge
+#### 任务经验
 
-嵌入式和汽车软件最重要的一层，存储领域专属的外部技术知识。
+记录**反复执行同类任务时积累的教训**——某类任务容易漏掉哪些步骤、有哪些项目特有的隐性约定无法从代码结构推断。
+
+与其他四类不同，任务经验**不是事先写的**，而是 Agent 在同类任务上反复犯同一类错误后才提炼——过早写只会制造维护负担。按任务类型索引，开始执行特定类型任务时加载。
+
+```markdown
+# 新增 API 路由 — 执行检查清单
+# （背景：Agent 多次遗漏步骤 4，接口不报错但返回 404）
+
+每次新增 API 路由时，必须修改以下位置：
+1. backend/app/api/        — 添加路由处理函数
+2. backend/app/services/   — 添加对应 Service 方法
+3. backend/app/schemas/    — 定义请求/响应模型
+4. backend/app/api/__init__.py — 注册新路由 ← 常见遗漏点
+5. tests/                  — 添加行为级测试
+```
+
+#### 领域知识
+
+来自**软件系统之外**的技术知识——芯片手册、协议规范、框架文档等。它与具体项目无关，是外部世界的客观规则。
+
+按技术领域按需加载；也可以在任务经验中被引用（例如任务清单里注明"配置 CAN 过滤器时参见领域知识：STM32 过滤器初始化顺序"）。领域知识是五类中唯一可以**跨项目高度复用**的，适合建独立仓库通过 submodule 共享。
 
 ```markdown
 # CAN 过滤器配置（STM32）
@@ -171,42 +206,21 @@ implement-uart-driver
 - 过滤器组编号从0开始，STM32F4 最多28组
 ```
 
-#### Layer 5：Project Knowledge
+#### 五类知识的加载策略
 
-企业最有价值的一层，记录在代码和文档中无法直接读出的隐性知识。
+| 类别 | 加载时机 | 加载方式 | 跨项目复用 |
+|------|---------|---------|-----------|
+| 结构知识 | 分析影响范围 / 定位具体模块时 | 按粒度按需加载 | 否，项目专属 |
+| 编码规范 | **每个任务** | 全量常驻 | 部分（公司级可共享） |
+| 设计决策 | 做出新设计选择之前 | 按决策领域按需加载 | 否，项目专属 |
+| 任务经验 | 开始执行特定类型任务时 | 按任务类型按需加载 | 否，依赖项目结构 |
+| 领域知识 | 涉及该技术领域时 | 按技术领域按需加载 | **是**，建共享仓库 |
 
-```markdown
-# 模块地图
+三个关键推论：
 
-## CAN 子系统
-- 入口：src/drivers/can/can_manager.c → can_manager_init()
-- 过滤配置：src/drivers/can/can_filter.c
-- 报文分发：通过事件总线，订阅者在 src/app/can_dispatcher.c
-- Owner：张三（负责驱动层），李四（负责应用层分发）
-
-## 历史 Bug
-- [2024-03] 过滤器未在 FINIT 模式下配置，导致部分 ID 漏报
-  修复：can_filter.c:45，增加 FINIT 位检查
-- [2024-07] 报文队列满时丢帧无告警，线上静默丢数据
-  修复：增加队列水位监控，超过 80% 触发 LOGW
-```
-
-#### 分层的实践意义
-
-五层在三个维度上有实质差异，直接影响知识库的组织和 Router 的写法：
-
-| 层 | 跨项目共享 | 变动频率 | Router 加载时机 |
-|----|-----------|---------|----------------|
-| L1 架构 | 否（项目专属） | 低 | 需要理解影响范围时 |
-| L2 编码规范 | 部分（公司级可共享） | 低 | **每个任务都加载** |
-| L3 ADR | 否 | 低 | 需要理解决策原因时 |
-| L4 领域知识 | **是**（可建共享 repo） | 低 | 按技术领域按需加载 |
-| L5 项目知识 | 否（项目专属） | **高**（持续更新） | 按模块按需加载 |
-
-两个关键推论：
-
-- **L4 可以跨项目共享**：STM32 手册、AUTOSAR 规范和具体项目无关，可以建独立 knowledge repo，多个项目通过 submodule 引用同一份，更新一次、全部受益。
-- **L2 需要全量加载**：编码规范适用于所有任务，Router 的 load 字段应始终包含它；其余各层按任务需要按需加载，避免无关知识干扰 Agent 推理。
+- **编码规范是唯一需要全量常驻的类别**：它约束所有代码生成任务，Router 的 load 字段应始终包含它。
+- **设计决策和任务经验的触发时机不同**：任务经验在任务开始时按任务类型主动加载；设计决策则是在任务执行过程中遇到需要做出设计选择时才引入——同一个编码任务里两者可能都会用到。两者都不需要常驻，按需加载避免无关知识干扰推理。
+- **领域知识可以被任务经验引用**：任务清单里可以写"参见领域知识 X"，不改变分类，但需要在索引里标注引用关系，确保 Agent 能一并加载。
 
 ### Router：连接任务与知识
 
@@ -259,41 +273,13 @@ Router 示例中的字段不是固定格式，而是从三个本质职责推导�
 
 #### 用 OpenSpec Schema 实现 Router
 
-使用 OpenSpec 时，**自定义 Schema 天然承担了 Router 的职责**，三个职责在 OpenSpec 里都有对应位置：
+使用 OpenSpec 时，自定义 Schema 天然承担 Router 职责：Schema 名称是选择器，`config.yaml` 的 `context` 字段是加载器，各 artifact 的 `instruction` 是精化器。`openspec new change <name> --schema embedded-can` 即可同时激活三项职责。
 
-| Router 职责 | 独立 Router 文件 | OpenSpec 实现 |
-|------------|----------------|--------------|
-| 选择器 | `task` / `module` 等字段 | Schema 名称本身（换场景 = 换 Schema） |
-| 加载器 | `load` 字段 | `config.yaml` 的 `context` / `rules` 字段 |
-| 精化器 | `steps` 字段 | 各 artifact 的 `instruction` 字段 |
-
-例如为嵌入式 CAN 模块定义一个 `embedded-can` Schema：
-
-- 在各 artifact 的 `instruction` 里写入寄存器配置顺序的约束（精化器）
-- 在 `config.yaml` 的 `context` 里列出 `can.md`、`coding-standard.md` 等知识文件（加载器）
-- 使用时只需 `openspec new change <name> --schema embedded-can`，两项职责同时激活
-
-**不使用 OpenSpec 的场景**，Router 通常以 YAML 或 Markdown 文件存在于 `router/` 目录，Agent 执行前主动读取——格式不固定，按三个职责按需设计即可。
+不使用 OpenSpec 时，Router 以 YAML 或 Markdown 文件存于 `router/` 目录，Agent 执行前主动读取，按三个职责按需设计字段即可。
 
 ---
 
 ## 落地 — 知识管理与推荐架构
-
-### 执行纪律：防止幻觉与跳步
-
-有了知识体系还不够——还需要解决"Agent 是否真的做完了每一步"。幻觉完成（声称做了但没做）和跳步（遇到不确定直接假设）是复杂项目最常见的执行问题。
-
-对策是在 Skill 里为每个步骤定义**完成标准**和**阻断条件**，不允许 Agent 靠自我声明推进：
-
-| 步骤 | 完成标准 | 阻断条件 |
-|------|---------|---------|
-| 确认需求范围 | 列出涉及的所有模块和文件 | 影响范围不明确时，停下来确认，不得假设 |
-| 查阅相关知识 | 列出查阅了哪些文件及关键约束 | 知识库无相关内容或有矛盾，向用户说明 |
-| 实现变更 | 展示关键代码，说明每条约束如何满足 | 遇到规范未覆盖的情况，不得自行决策 |
-| 逐条验收 | 每条 AC 注明"已覆盖/未覆盖/不适用" | 有未覆盖 AC 时不得声明完成 |
-| 运行测试 | 粘贴实际测试输出 | 不得仅声明"测试通过" |
-
-更系统的做法是引入**中间确认文档**——OpenSpec/Superpowers 的 propose → review → apply 就是这套机制：Agent 在实现前先输出一份包含"需求理解 / 影响范围 / 依据的知识 / **待确认项**"的结构化文档，用户确认后再开始写代码。"待确认项"强迫 Agent 在动手前把不确定的部分显式列出，而不是悄悄假设。
 
 ### 知识存储原则
 
@@ -304,7 +290,7 @@ Router 示例中的字段不是固定格式，而是从三个本质职责推导�
 | **放入哪个 repo** | 体量可控，单项目使用 | 直接放入项目 repo（`knowledge/` 目录） |
 | | 体量可控，多项目共享 | 建独立 knowledge repo，各项目通过 submodule 引用 |
 | | 体量过大，git 不好用 | 使用 RAG（向量化知识库） |
-| **是否与 src 混放** | ADR、架构文档、历史故障、外部规范 | repo 根目录下独立 `knowledge/` 目录 |
+| **是否与 src 混放** | 设计决策、架构文档、外部规范 | repo 根目录下独立 `knowledge/` 目录 |
 | | 接口定义、配置、Build 规则 | `src/` 内，与代码同目录 |
 
 - 多项目共享不是 RAG 的理由——独立 git repo 同样可以共享，且版本可以 pin
@@ -312,7 +298,7 @@ Router 示例中的字段不是固定格式，而是从三个本质职责推导�
 
 ### 推荐架构
 
-目录结构对应五层模型（embedded/automotive 为领域示例，按实际领域替换）：
+目录结构对应五类知识（embedded/automotive 为领域示例，按实际领域替换）：
 
 ```
 skills/
@@ -323,18 +309,26 @@ skills/
 ├── review-change
 └── investigate-performance
 
-knowledge/
-├── architecture/          # Layer 1：Architecture Knowledge
-├── coding-standard/       # Layer 2：Coding Standards
-├── adr/                   # Layer 3：ADR
-├── embedded/              # Layer 4：Domain Knowledge
-│   ├── stm32/
-│   ├── freertos/
-│   └── autosar/
-└── project/               # Layer 5：Project Knowledge
-    ├── module-map/
-    ├── bug-history/
-    └── owner-map/
+knowledge/                 # 集中存放：系统级、跨项目、稳定的知识
+├── structure/             # 结构知识（系统级）：架构图、模块边界、调用链
+├── coding-standard/       # 编码规范：每个任务常驻加载
+├── decisions/             # 设计决策：为什么这么设计、否决了什么
+└── embedded/              # 领域知识：外部技术规范（可跨项目共享）
+    ├── stm32/
+    ├── freertos/
+    └── autosar/
+
+src/                       # 模块级知识 colocate 在源码旁，随代码同步演化
+└── drivers/can/
+    ├── can_manager.c
+    ├── MODULE.md          # 结构知识（模块级）：入口、Owner、依赖关系
+    └── EXPERIENCE.md      # 任务经验：该模块的历史陷阱与执行清单
+
+.claude/
+├── structure/
+│   └── INDEX.md           # 所有模块 MODULE.md 的中央索引（供纵览用）
+└── experience/
+    └── INDEX.md           # 所有模块 EXPERIENCE.md 的中央索引（供 Router 按任务类型加载）
 
 router/
 └── knowledge-router       # 不使用 OpenSpec 时的独立 Router 文件
@@ -347,13 +341,7 @@ router/
 | 维度 | 传统认知 | AI Native 认知 |
 |------|----------|----------------|
 | 核心流程 | SDD → Skill → Code | SDD 工作流 + Engineering Knowledge System |
-| 质量瓶颈 | Spec 写得够不够详细 | Engineering Knowledge 积累得够不够丰富 |
+| 质量瓶颈 | Spec 写得够不够详细 | Engineering Knowledge 积累得够不够有效 |
 | 长期资产 | 流程文档 | Knowledge System |
 
-三个组件各司其职：
-
-- **Skill** — 决定 Agent 如何思考（推理模式）
-- **Knowledge** — 决定 Agent 思考什么（领域内容）
-- **Router** — 决定 Agent 在当前任务中应该看到什么（上下文装载）
-
-工程知识体系与 SDD 工作流配合使用时效果最佳：SDD 是推理的骨架，Knowledge 是推理的血肉。
+SDD 是推理的骨架，Knowledge 是推理的血肉。
