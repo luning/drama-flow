@@ -104,7 +104,7 @@ Agent 在重构时 `rm -rf` 了你没提交的本地配置。另一次，它因�
 你让 Agent 修复 `auth` 模块的一个 bug，它还"顺便"修改了 `profile/` 里一个它认为有关联的函数，破坏了一个调用约定，CI 红了。
 
 **引入**：
-1. **架构层**：每个模块的 `README.md` 明确声明 Interfaces 和 Constraints
+1. **知识层**：每个模块的 `README.md` 明确声明 Interfaces 和 Constraints
 2. **约束层**：`.importlinter` 配置模块依赖规则，违规则 CI 拦截
 
 **编码原则**：目录结构即边界，但边界对 Agent 不是自动可见的——README 声明意图，import-linter 让违规有成本。
@@ -316,14 +316,6 @@ main worktree（主线）
 | 经验无法共享 | L5 | `.claude/experience/INDEX.md` | 经验层 |
 | 不可逆副作用 + 无限重试 | L6 | 人机交接协议 + Hooks + 熔断规则 | 约束层 + 执行层 |
 | 并行 Agent 冲突 | L6 | Git Worktree 隔离 | 执行层 |
-
-```
-架构层（软约束）：模块边界可见性 → 防止 L2 跨模块越权
-文档层（软约束）：CLAUDE.md / SPEC / ADR → 防止 L2-L3 方向偏差
-经验层（软约束）：EXPERIENCE.md / INDEX → 防止 L3-L5 重复踩坑
-约束层（硬约束）：import-linter / CI / Hooks → 强制拦截 L1-L6 违规
-执行层（硬约束）：Skills / Sub-Agents / Worktrees → 规范 L4-L6 工作流
-```
 
 ---
 
