@@ -26,11 +26,8 @@ AI 编码工具已让写代码的门槛大幅降低，但新问题随之而来�
 
 ## 课前准备
 
-- AI 编码工具：Claude Code / Cursor / OpenCode（至少安装一种）
-- IDE：VS Code 或 IntelliJ IDEA
+- AI 编码工具（Claude Code / Cursor / OpenCode，至少装一种）+ IDE（VS Code 或 IntelliJ IDEA）
 - 课程涉及技术栈：Vue 3、Android（Kotlin）、Java Spring Boot、SQLite、Docker（无需安装运行环境，课上看懂即可）
-
----
 
 ## 课程大纲
 
@@ -40,8 +37,8 @@ AI 编码工具已让写代码的门槛大幅降低，但新问题随之而来�
 
 以 DramaFlow "短剧列表加载"为例，现场用 DevTools Network 抓请求，逐环节展开：
 
-- **请求发起**：浏览器 / App 发 HTTP 请求，讲清 URL 结构和方法含义（GET 读/POST 写/PUT 改/DELETE 删）；对比 Android 端如何发起请求
-- **路由分发**：Nginx 转发给后端，路由层根据 URL 和方法匹配到 Controller
+- **请求发起**：浏览器 / App 发 HTTP 请求，讲清 URL 结构和方法含义（GET/POST/PUT/DELETE）；对比 Android 端如何发起请求
+- **路由分发**：Web 服务器转发给后端，路由层根据 URL 和方法匹配到 Controller
 - **分层处理**（Controller→Service→Repository）：Controller 接参数调 Service 返响应；Service 承载业务逻辑；Repository 封装数据库操作。分三层的理由：改业务不改接口，改数据库不影响业务
 - **数据库查询**：ORM 把方法调用翻译成 SQL，数据库返回数据映射为 Java 对象。用 ORM 的理由：避免手写 SQL 的拼写错误和注入风险
 - **响应返回**：对象序列化为 JSON，设状态码（200/400/500），返回客户端
@@ -57,7 +54,7 @@ AI 编码工具已让写代码的门槛大幅降低，但新问题随之而来�
 - 组件怎么组织：template（画）、script（逻辑）、style（长相）三层结构；组件逐层嵌套，父传子 props、子通知父 emit
 - 数据怎么驱动 UI：ref/reactive 管数据，数据变 UI 自动变——响应式的核心
 - 页面怎么跳转：vue-router 把 URL 映射到组件
-- 代码怎么跑：Vite 构建打包、热更新、代码分割
+- 代码怎么跑：Vite 构建打包、热更新
 - 底线：任何数据加载必须考虑 loading/error/empty 三种状态
 
 **2.2 Web 技术选型**：React vs Vue、SPA vs SSR、局部状态 vs 全局状态
@@ -65,7 +62,7 @@ AI 编码工具已让写代码的门槛大幅降低，但新问题随之而来�
 **2.3 Android 程序结构**
 - 项目结构：java/（代码）、res/layout/（布局）、AndroidManifest.xml（声明）、build.gradle（依赖）
 - Activity = 一个屏幕；生命周期回调 —— 理解"屏幕在不同状态下能做什么"
-- ViewModel + LiveData：Android 的状态管理，屏幕旋转数据不丢（类比 Pinia），数据变化自动通知 UI
+- ViewModel + LiveData：Android 的状态管理，屏幕旋转数据不丢（类比 Pinia）
 - 布局：XML + ViewBinding vs Jetpack Compose（声明式 UI，接近 Vue/React 思维）
 - Navigation Component 管跳转（NavGraph，类比 vue-router）；Retrofit + OkHttp 发 HTTP 请求
 
@@ -83,12 +80,12 @@ AI 编码工具已让写代码的门槛大幅降低，但新问题随之而来�
 - Controller：接收参数，调用 Service，封装响应
 - Service：业务逻辑（筛选、排序、分页、权限）—— 多 Controller 复用 + 统一事务边界
 - Repository：Spring Data JPA 从方法名自动生成 SQL —— 避免手写 SQL 的拼写错误和注入风险
-- Entity：@Entity 标记持久化类，@Column 定义字段映射，@OneToMany/@ManyToOne 定义关联关系
+- Entity：标记 Java 类与数据库表的对应关系，定义字段和表关联
 
 **3.2 技术选型要点**
-- 框架：Spring Boot（企业级）vs Express（轻量）vs FastAPI（高性能 Python）
+- 框架：Spring Boot（主流企业级框架）
 - RESTful 约定：URL 用名词、方法决定操作、状态码表达结果
-- JWT 认证：三段式结构、Bearer 传递、过期刷新机制
+- JWT 认证：Token 传递、过期刷新机制
 - 错误处理与日志：统一异常处理 vs 逐个 try-catch；traceId 串联全链路日志
 
 **3.3 人需要判断什么**
@@ -161,34 +158,15 @@ AI 编码工具已让写代码的门槛大幅降低，但新问题随之而来�
 - 重新描述问题时给具体信息：不是"不对"，而是"期望返回 A，实际返回了 B"
 - 必要时缩小范围：把大需求拆成小步骤，一步步引导
 
-### 第八部分：调试实操 —— 出问题怎么定位和描述（约 30min）
+### 第八部分：收官 —— 判断清单与 Q&A（约 30min）
 
-> **目标**：出问题时人不慌，知道怎么判断问题层级，怎么把信息有效传递给 Agent。
+> **目标**：全天收敛，输出可落地使用的判断清单。
 
-**8.1 先判断是哪一层的问题**（核心：不要跳层猜原因）
-- 页面白屏/样式错乱 → 前端；数据不对/点了没反应 → 看 Network 面板请求和响应
-- 接口 4xx/5xx → 后端；数据不对 → 数据库；服务访问不了 → 容器
-- 大部分情况下 Agent 能自己根据错误信息修复，人只需要把现象描述清楚
-
-**8.2 怎么向 Agent 描述问题**
-- 不要只说"不对"、"报错了"，要给出具体现象和期望
-- 示例：坏的"搜索功能有问题" vs 好的"搜索'甄嬛传'返回了空列表，但数据库里有这条数据，接口 /api/dramas/search?q=甄嬛传 返回了空数组"
-- 必要时附上浏览器 Console 截图或后端日志片段
-
-### 第九部分：五大能力收官（约 30min）
-
-> **目标**：全天收敛为五大核心能力，输出可落地使用的判断清单。
-
-**9.1 五大能力**
-- **追踪**：跟着请求从客户端到数据库走完全链路
-- **读懂**：看懂各层程序结构：组件怎么组织、后端怎么分层、数据库表怎么设计
-- **拆解**：拿到需求能拆到各层——前端改什么、后端改什么、数据库改什么
-- **判断**：能评估 Agent 的方案是否合理、接口契约是否清晰、改动范围是否合适
-- **引导**：出问题能判断层级，能有效描述问题让 Agent 回到正轨
-
-**9.2 判断清单（A4 打印版）**
+**8.1 判断清单（A4 打印版）**
 - 拆解：需求涉及哪些层？新做还是扩展？小需求是否小改动？
 - 契约：接口参数和返回值定了吗？异常情况约定了吗？前后端字段名一致吗？
 - 设计：Agent 的方案和现有风格一致吗？改动量合理吗？有更简单做法吗？
 - 验证：正常路径跑了吗？异常路径跑了吗？有没有破坏已有功能？
 - 引导：出问题时，现象描述具体吗？期望说清楚了吗？需要缩小范围吗？
+
+**8.2 Q&A 与反馈**
