@@ -77,18 +77,17 @@ def resolve_token_ref(ref: str) -> str:
     if parts[0] == "text":
         return f"var(--text-{parts[1]})"
 
-    # Colors map to --color-xxx or --xxx
+    # Colors map to --color-xxx
     if parts[0] == "color":
-        # Convert camelCase to kebab-case: primaryLight → primary-light
         name = parts[1]
         kebab = re.sub(r'([A-Z])', r'-\1', name).lower()
-        return f"var(--color{kebab})"
+        return f"var(--color-{kebab})"
 
     # Backgrounds: background.card → --bg-card
     if parts[0] == "background":
         name = parts[1]
         kebab = re.sub(r'([A-Z])', r'-\1', name).lower()
-        return f"var(--bg{kebab})"
+        return f"var(--bg-{kebab})"
 
     # Borders: border.subtle → --border-subtle
     if parts[0] == "border":
@@ -97,13 +96,13 @@ def resolve_token_ref(ref: str) -> str:
         if name == "default":
             return "var(--border)"
         kebab = re.sub(r'([A-Z])', r'-\1', name).lower()
-        return f"var(--border{kebab})"
+        return f"var(--border-{kebab})"
 
     # Surface: surface.subtle → --surface-subtle
     if parts[0] == "surface":
         name = parts[1]
         kebab = re.sub(r'([A-Z])', r'-\1', name).lower()
-        return f"var(--surface{kebab})"
+        return f"var(--surface-{kebab})"
 
     # Spacing: convert to scale
     if parts[0] == "spacing":
@@ -160,7 +159,11 @@ def resolve_value(value) -> str:
                 return f"linear-gradient({angle}, {stops})"
             elif value["type"] == "solid":
                 return resolve_value(value.get("color", ""))
-        return str(value)
+        # Generic dict: treat as CSS shorthand (e.g., {color: "xxx"} → resolve to the color value)
+        # or expand to space-separated values
+        if "color" in value and len(value) == 1:
+            return resolve_value(value["color"])
+        return " ".join(f"{css_property(k)}: {resolve_value(v)}" for k, v in value.items())
     return str(value)
 
 
@@ -188,10 +191,42 @@ def generate_components_css(components_yaml: Path) -> str:
     lines.append("")
 
     css_property_skip = {"type", "figma_component_id", "extends", "description",
-                         "parts", "states", "variants", "animation"}
+                         "parts", "states", "variants", "animation", "typography"}
 
-    for comp_name, comp in data.get("components", {}).items():
+    components = data.get("components", {})
+
+    def expand_typography(base: dict) -> dict:
+        """Flatten 'typography' dict into top-level CSS properties."""
+        result = dict(base)
+        typography = result.pop("typography", None)
+        if isinstance(typography, dict):
+            for key, value in typography.items():
+                if not isinstance(value, dict):
+                    result[key] = value
+        return result
+
+    def resolve_base(comp: dict) -> dict:
+        """Resolve 'extends' by merging parent base properties, child overrides parent."""
         base = comp.get("base", {})
+        parent_name = base.get("extends")
+        if parent_name and parent_name in components:
+            parent = components[parent_name]
+            parent_base = resolve_base(parent)
+            # Deep-merge typography and states (work on copies to avoid mutating source)
+            parent_typo = dict(parent_base.get("typography", {}))
+            child_typo = dict(base.get("typography", {}))
+            parent_states = dict(parent_base.get("states", {}))
+            child_states = dict(base.get("states", {}))
+            merged = {**parent_base, **base}
+            if parent_typo or child_typo:
+                merged["typography"] = {**parent_typo, **child_typo}
+            if parent_states or child_states:
+                merged["states"] = {**parent_states, **child_states}
+            return merged
+        return base
+
+    for comp_name, comp in components.items():
+        base = resolve_base(comp)
         description = comp.get("description", "")
 
         lines.append(f"/* {'─' * 60} */")
@@ -202,6 +237,7 @@ def generate_components_css(components_yaml: Path) -> str:
         lines.append("")
 
         # --- Base state ---
+        base = expand_typography(base)
         lines.append(f".{comp_name} {{")
         for prop, value in base.items():
             if prop in css_property_skip:

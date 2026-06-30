@@ -12,23 +12,23 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    background: var(--bg-outer);
+    background: #f0f0f4;
     font-family: -apple-system, 'Noto Sans SC', 'Roboto', sans-serif;
-    color: var(--text-primary);
+    color: #1a1a2e;
     padding: 32px;
   }
 
   .gallery-header {
     margin-bottom: 40px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
     padding-bottom: 24px;
   }
   .gallery-header h1 { font-size: 24px; font-weight: 800; }
-  .gallery-header p { color: var(--text-tertiary); font-size: 14px; margin-top: 6px; }
+  .gallery-header p { color: #666; font-size: 14px; margin-top: 6px; }
   .version-badge {
     display: inline-block;
     background: var(--color-primary-tint);
-    color: var(--color-primary-light);
+    color: var(--color-primary);
     font-size: 12px;
     padding: 2px 10px;
     border-radius: 12px;
@@ -41,7 +41,7 @@
   .section-title {
     font-size: 12px;
     font-weight: 700;
-    color: var(--text-muted);
+    color: #888;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     margin-bottom: 20px;
@@ -53,7 +53,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: var(--border-subtle);
+    background: rgba(0,0,0,0.1);
   }
 
   .component-row {
@@ -68,10 +68,11 @@
     border-radius: var(--radius-card);
     padding: 20px 24px;
     min-width: 180px;
+    color: var(--text-primary);
   }
   .component-item .label {
     font-size: 11px;
-    color: var(--text-muted);
+    color: #aaa;
     margin-top: 10px;
     font-family: monospace;
   }
@@ -93,19 +94,20 @@
   .swatch-info {
     background: var(--bg-card);
     padding: 8px 10px;
+    color: var(--text-primary);
   }
   .swatch-name { font-size: 12px; font-weight: 600; }
-  .swatch-var { font-size: 10px; color: var(--text-muted); font-family: monospace; margin-top: 2px; }
-  .swatch-hex { font-size: 10px; color: var(--text-tertiary); font-family: monospace; }
+  .swatch-var { font-size: 10px; color: #aaa; font-family: monospace; margin-top: 2px; }
+  .swatch-hex { font-size: 10px; color: #888; font-family: monospace; }
 
   /* ── Typography ──────────────────────────────────────── */
   .type-sample { margin-bottom: 8px; }
-  .type-sample .size { color: var(--text-muted); font-size: 11px; font-family: monospace; }
+  .type-sample .size { color: #999; font-size: 11px; font-family: monospace; }
 
   /* ── Spacing ─────────────────────────────────────────── */
   .space-sample { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
   .space-block { background: var(--color-primary); border-radius: 2px; height: 16px; }
-  .space-label { font-size: 11px; color: var(--text-muted); font-family: monospace; width: 100px; }
+  .space-label { font-size: 11px; color: #999; font-family: monospace; width: 100px; }
 
   /* ── Phone frame ─────────────────────────────────────── */
   .phone-frame {
