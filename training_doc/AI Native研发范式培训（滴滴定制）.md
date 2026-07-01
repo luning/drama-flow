@@ -444,7 +444,7 @@ Agent 接管大量执行性工作后，各角色的价值集中到 Agent 无法�
 
 - 范式演进三阶段：手写 Prompt 调 API → Agent 框架组装（LangChain）→ 用最优商业 Agent
 - 工作流 vs Agent 选型：是否动态决策？错误容忍度？推理成本？
-- 为什么用现成最优 Agent：顶级 Agent 内核复杂度远超手写 Prompt；工程师杠杆点在知识管理与 Harness 设计
+- 为什么用现成最优 Agent：顶级 Agent 内核复杂度远超手写 Prompt；工程师杠杆点在知识工程与 Harness 设计
 - LLM 应用工程化四大抽象：Agent（目标与能力）/ Environment（执行环境）/ Session（会话实例）/ Event（基于事件通信）
 - 强约束解决确定性不足：借鉴 SDD 机制建立结构化合同；Harness 减少不必要推理；可审计执行轨迹 vs Prompt 黑盒
 - [案例] 大型保险公司自动责任核定：智能体 + 业务专家知识库实现核定与估损自动化，替代人工，解决准确性、规范性和审计挑战
