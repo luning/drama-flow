@@ -1,0 +1,28 @@
+# Router: BMS 功能开发
+# 适用场景: 新增或修改 BMS 保护逻辑、ADC 采样、SoC 估算、均衡策略
+
+task: implement-change
+module: bms
+
+steps:
+  - 阅读 EcoFlow/knowledge/structure/ems-system.md §模块边界约束，确认 BMS 只接受
+    PowerSetpoint，不受 EMS 直接寄存器操控
+  - 阅读 EcoFlow/src/bms/EXPERIENCE.md，执行两个检查清单：
+    保护逻辑清单（FINIT 序列 / GPIO 后备 / 故障日志 / 锁存不自动恢复）
+    ADC 采样清单（MUX 建立时间 / 转换超时 / 合法性范围 / 满充清零）
+  - 涉及 BQ76952 寄存器操作（0x05/0x06/0x07）→
+    对照 knowledge/domain/portable-power/bms-inverter.md §A.1 寄存器映射；
+    使用 bq76952_write_protected_reg()，不直接调用 bq76952_write_reg()
+  - 涉及保护阈值数值 → 对照 bms-inverter.md §附录B 保护阈值总表；
+    不得独自修改阈值（需评审），修改后同步更新附录B
+  - 安全关断路径实现 → GPIO 直驱作为第一动作（见 EXPERIENCE.md 陷阱2）；
+    通过 xQueueSendFromISR 异步通知故障处理任务，不在关断路径等互斥锁
+  - 编码风格 → 对照 knowledge/coding-standard/firmware.md：
+    任务命名（Task_<模块>_<功能>）、优先级分层、ISR 约束、MISRA-C 子集
+  - 完成后逐条对照 AC，未覆盖项须列出并确认
+
+load:
+  - EcoFlow/knowledge/coding-standard/firmware.md
+  - EcoFlow/knowledge/structure/ems-system.md
+  - EcoFlow/knowledge/domain/portable-power/bms-inverter.md
+  - EcoFlow/src/bms/EXPERIENCE.md

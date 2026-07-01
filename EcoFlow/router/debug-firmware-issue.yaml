@@ -1,0 +1,27 @@
+# Router: 固件 Bug 调试
+# 适用场景: 调查 BMS / EMS 模块运行时异常、保护误触发、数据不准
+
+task: debug-issue
+module: bms_or_ems
+
+steps:
+  - 先读 EcoFlow/src/bms/EXPERIENCE.md 历史陷阱（BMS 报告）
+    或 EcoFlow/src/ems/EXPERIENCE.md（EMS 报告）；
+    90% 的 Bug 在陷阱列表中已有先例，先对照再开始探查
+  - 对照 knowledge/domain/portable-power/bms-inverter.md §RULE-BMS-010
+    故障码寄存器（0x10），确认当前 fault_code 的准确含义和锁存状态
+  - 检查 NVRAM 事件日志（nvram_fault_log_read()），找到故障前 50ms
+    的电流/电压波形（参见 bms-inverter.md §RULE-BMS-004 短路保护的日志格式）
+  - 怀疑 I2C 竞态 → 对照 firmware.md §优先级分层，确认两个相关任务的
+    PRIO 值；检查安全关断路径是否等待了互斥锁（见 EXPERIENCE.md 陷阱2）
+  - 怀疑 BQ76952 写入无效 → 先确认代码是否通过 bq76952_write_protected_reg()
+    进行了 FINIT 进退序列（见 EXPERIENCE.md 陷阱1）；对照 §A.1 确认寄存器地址
+  - 怀疑 SoC 偏移 → 检查满充后是否调用了 bms_soc_record_full_charge()
+    而非单独调用 bms_soc_set_full()（见 EXPERIENCE.md 陷阱3）
+  - 根因确认后：若与已有陷阱不同，在 EXPERIENCE.md 末尾追加新条目
+    （格式：已触发次数 / 症状 / 根因 / 代码示例 / 规则 / 参考规格）
+
+load:
+  - EcoFlow/knowledge/coding-standard/firmware.md
+  - EcoFlow/knowledge/domain/portable-power/bms-inverter.md
+  - EcoFlow/src/bms/EXPERIENCE.md
