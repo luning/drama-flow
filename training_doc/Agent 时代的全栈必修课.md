@@ -30,8 +30,8 @@ AI 编码工具已经把"写出能跑的代码"的门槛大幅拉低，功能实
 ## 课前准备
 
 - AI 编码工具（Claude Code / Cursor / OpenCode，至少装一种）+ IDE（VS Code 或 IntelliJ IDEA）
-- 课程涉及技术栈：Vue 3、Android（Kotlin）、Java Spring Boot、SQLite、Docker（无需安装运行环境，课上看懂即可）
-- 课程涉及 SDD 工具：OpenSpec、Superpowers（讲师机演示为主，学员机器可选装）
+- 课程涉及技术栈：Vue 3、Android（Kotlin）、Java Spring Boot、SQLite、Docker
+- 课程涉及 SDD 工具：OpenSpec、Superpowers
 
 ## 课程大纲
 
@@ -55,7 +55,7 @@ AI 编码工具已经把"写出能跑的代码"的门槛大幅拉低，功能实
 
 **2.1 为什么中间产物才是评审的关键点**：Agent 写代码前先产出 proposal / design，描述前后端各做什么；等代码写完再挑错成本远高于方案阶段，且审方案不需要精通对方那端的实现细节
 
-**2.2 OpenSpec 实操流程**：`explore`（可选）→ `propose`（产出 proposal.md/specs/design.md/tasks.md）→ `apply`（照 tasks.md 实现）→ `archive`（归档）；现场演示一次真实小变更的 propose，看 proposal.md 怎么描述前后端改动范围
+**2.2 OpenSpec 实操流程**：`explore`（可选）→ `propose`（产出 proposal.md/specs/design.md/tasks.md）→ `apply`（照 tasks.md 实现）→ `archive`（归档）
 
 **2.3 Superpowers 实操流程**：brainstorming（design.md）→ writing-plans（plan.md）→ 执行（subagent-driven 最常用）→ finishing；design.md / plan.md 和 OpenSpec 的 proposal / specs 起同样的评审作用
 
@@ -122,7 +122,7 @@ AI 编码工具已经把"写出能跑的代码"的门槛大幅拉低，功能实
 
 **4.5 AI 协作要点：前端专属 checkpoint**
 
-- 三态检查 + Design Token 合规（结合项目 `design-check` 脚本演示）
+- 三态检查 + Design Token 合规
 - 视觉核对：截图比对设计稿，评估组件树改动的影响范围
 - 规模适配核验：状态塞进大组件了吗？没走 Store 直接组件间传值吗？
 
