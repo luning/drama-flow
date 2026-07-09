@@ -137,6 +137,10 @@ python scripts/check/check_components.py   # 组件使用
 - 播放器状态机必须覆盖：IDLE → BUFFERING → READY → PLAYING ↔ PAUSED → ERROR/ENDED
 - Token 过期后自动尝试刷新，刷新失败再跳转登录页，不能直接闪退或白屏
 
+## 培训大纲文档规范
+
+`training_doc/` 下的课程大纲类文档（如"XXX必修课.md"）禁止使用表格，一律用列表/加粗小标题表达对比和分类内容。
+
 ## Python 环境
 
 - 虚拟环境位于 `backend/drama-flow/`
